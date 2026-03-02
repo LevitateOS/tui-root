@@ -12,13 +12,20 @@
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
-      "@levitate/tui-kit": ["src/types/tui-kit-shim.d.ts"]
+      "@levitate/tui-kit": ["types/tui-kit-shim.d.ts"]
     },
     "types": ["bun", "node"]
   },
   "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/**/*.d.ts"
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "cli/**/*.ts",
+    "domain/**/*.ts",
+    "flows/**/*.ts",
+    "presentation/**/*.ts",
+    "presentation/**/*.tsx",
+    "types/**/*.d.ts",
+    "index.ts",
+    "main.ts"
   ]
 }

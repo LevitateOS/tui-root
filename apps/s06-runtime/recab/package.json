@@ -1,0 +1,31 @@
+{
+  "name": "@levitate/tui-s06-recab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "levitate-s06-recab": "./main.ts"
+  },
+  "scripts": {
+    "build": "bunx tsc -p tsconfig.json",
+    "start": "bun run index.ts",
+    "test": "bun test",
+    "typecheck": "bunx tsc --noEmit -p tsconfig.json",
+    "lint": "bunx oxlint --config ../../../../.oxlintrc.json app cli domain flows presentation index.ts main.ts --deny-warnings",
+    "lint:fix": "bunx oxlint --config ../../../../.oxlintrc.json app cli domain flows presentation index.ts main.ts --fix",
+    "format": "bunx oxfmt --config ../../../../.oxfmtrc.json --write app cli domain flows presentation types index.ts main.ts package.json tsconfig.json",
+    "format:check": "bunx oxfmt --config ../../../../.oxfmtrc.json --check app cli domain flows presentation types index.ts main.ts package.json tsconfig.json",
+    "check": "bun run typecheck && bun run lint && bun run format:check && bun run test"
+  },
+  "dependencies": {
+    "@levitate/tui-kit": "file:../../../kit/core",
+    "ink": "^6.8.0",
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.17",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "typescript": "^5.9.2"
+  }
+}
