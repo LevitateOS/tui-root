@@ -33,4 +33,4 @@
 │                              ││ │20 │    ctx                                                                       │ │
 │                              ││ │21 │}                                                                             │ │
 └──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
- [docs] | q quit | ←/→↑/↓ h/j/k/l nav | PgUp/PgDn b/space page | g/G top/end | page 11/37
+ [docs] | navigation | q quit | tab toggle pane | m sidebar mode | page 11/37 | h/l [/] pages/sections | j/k content |

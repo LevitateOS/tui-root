@@ -33,4 +33,4 @@
 │                              ││ don't need network access.                                                           │
 │                              ││                                                                                      │
 └──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
- [docs] | q quit | ←/→↑/↓ h/j/k/l nav | PgUp/PgDn b/space page | g/G top/end | page 3/37
+ [docs] | navigation | q quit | tab toggle pane | m sidebar mode | page 3/37 | h/l [/] pages/sections | j/k content |
