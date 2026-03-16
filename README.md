@@ -11,7 +11,7 @@ Centralized TUI workspace for LevitateOS.
 
 ## Ownership
 
-- `apps/s02-live-tools/install-docs` is the canonical S02 session UX/docs app.
+- `apps/live-tools/install-docs` is the canonical live-tools session UX/docs app.
 - Stage-native apps are canonical (for example `apps/s03-install/disk-plan`).
 - `apps/recpart` is a temporary compatibility shim only, not a canonical owner.
 

@@ -11,7 +11,7 @@ Date: 2026-02-24
 - `tui/kit/core`: reusable runtime/primitives/components/chrome/theme only.
 - `tui/kit/presets-install`: cross-app install UX composition presets (no domain data access).
 - `tui/kit/testing`: shared test harness and snapshot utilities.
-- `tui/apps/s02-live-tools/install-docs`: docs domain, content adapters, navigation, CLI, rendering plan, app wiring.
+- `tui/apps/live-tools/install-docs`: docs domain, content adapters, navigation, CLI, rendering plan, app wiring.
 
 Why this layer can enforce it:
 - `apps/*` keeps domain behavior local.
@@ -64,7 +64,7 @@ Chosen model:
 ```text
 /tui
   /apps
-    /s02-live-tools/install-docs
+    /live-tools/install-docs
     /s03-install/*
     /s04-login-gate/*
     /s06-runtime/*
@@ -94,7 +94,7 @@ Move as-is first (no API change):
 Do not move into core:
 - docs-domain rendering/navigation/data mapping
 
-### 2) docs/tui -> tui/apps/s02-live-tools/install-docs
+### 2) docs/tui -> tui/apps/live-tools/install-docs
 
 Move as-is first:
 - `src/adapters/*`
@@ -149,7 +149,7 @@ Required command equivalents after migration:
 ### Phase 0: Path Mirror (no behavior change)
 
 1. Copy `shared/tui-kit` into `tui/kit/core`.
-2. Copy `docs/tui` into `tui/apps/s02-live-tools/install-docs`.
+2. Copy `docs/tui` into `tui/apps/live-tools/install-docs`.
 3. Keep old paths active with deprecation warnings.
 
 ### Phase 1: Workspace Wiring
@@ -178,7 +178,7 @@ Required command equivalents after migration:
 
 ## Cutover Checklist
 
-- [ ] `tui/apps/s02-live-tools/install-docs` matches old `docs/tui` snapshots.
+- [ ] `tui/apps/live-tools/install-docs` matches old `docs/tui` snapshots.
 - [ ] `tui/kit/core` exports match old `shared/tui-kit` public API.
 - [ ] `just docs-tui` and `just docs-tui-split` run from new path.
 - [ ] No direct imports from `apps/*` into any `kit/*` package.

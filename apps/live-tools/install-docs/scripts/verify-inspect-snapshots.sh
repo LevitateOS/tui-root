@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../.." && pwd)"
-SNAP_DIR="$ROOT/tui/apps/s02-live-tools/install-docs/snapshots/inspect/120x36"
+SNAP_DIR="$ROOT/tui/apps/live-tools/install-docs/snapshots/inspect/120x36"
 OUT_BASE="$ROOT/.artifacts/out/tui/install-docs-inspect-regression"
 
 COLUMNS=120

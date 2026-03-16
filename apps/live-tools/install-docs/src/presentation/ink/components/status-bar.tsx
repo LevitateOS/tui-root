@@ -21,7 +21,7 @@ export function installStatusBar(
 	const safeFocus = focus ?? "navigation";
 
 	const segments: StatusSegment[] = [
-		scopeStatusSegment("s02-install-docs"),
+		scopeStatusSegment("docs"),
 		textStatusSegment("focus", safeFocus, safeFocus === "navigation" ? "warning" : "accent"),
 		hotkeyStatusSegment("quit", "q", "quit"),
 		hotkeyStatusSegment("focus", "tab", "toggle pane"),
