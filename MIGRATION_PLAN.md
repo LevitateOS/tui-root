@@ -65,9 +65,9 @@ Chosen model:
 /tui
   /apps
     /live-tools/install-docs
-    /s03-install/*
-    /s04-login-gate/*
-    /s06-runtime/*
+    /install/*
+    /login-gate/*
+    /runtime/*
   /kit
     /core
     /presets-install
@@ -182,4 +182,4 @@ Required command equivalents after migration:
 - [ ] `tui/kit/core` exports match old `shared/tui-kit` public API.
 - [ ] `just docs-tui` and `just docs-tui-split` run from new path.
 - [ ] No direct imports from `apps/*` into any `kit/*` package.
-- [ ] `tools/recpart` remains backend owner; S03 UI stays in `tui/apps/s03-install/disk-plan`.
+- [ ] `tools/recpart` remains backend owner; disk-plan UI stays in `tui/apps/install/disk-plan`.
