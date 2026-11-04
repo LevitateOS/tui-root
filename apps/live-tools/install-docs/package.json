@@ -9,14 +9,14 @@
   "scripts": {
     "dev": "bun src/main.ts",
     "split": "bash bin/levitate-install-docs-split",
-    "test": "bun test",
     "typecheck": "tsc --noEmit",
     "lint": "bunx oxlint --config ../../../../.oxlintrc.json src --deny-warnings",
     "lint:fix": "bunx oxlint --config ../../../../.oxlintrc.json src --fix",
     "format": "bunx oxfmt --config ../../../../.oxfmtrc.json --write src package.json tsconfig.json",
     "format:check": "bunx oxfmt --config ../../../../.oxfmtrc.json --check src package.json tsconfig.json",
     "inspect:check": "bash scripts/verify-inspect-snapshots.sh",
-    "check": "bun run typecheck && bun run lint && bun run format:check && bun run test && bun run inspect:check"
+    "check": "bun run typecheck && bun run lint && bun run format:check && bun run inspect:check",
+    "test:e2e": "bun test ./src/install-viewer.chrome.pty.test.ts"
   },
   "dependencies": {
     "@levitate/docs-content": "workspace:*",

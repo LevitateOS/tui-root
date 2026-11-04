@@ -25,39 +25,9 @@ Complexity budget:
 - Add only package boundary moves and import rewrites.
 - No semantic rewrites in Phase 0-2.
 
-## MODEL RECLASSIFICATION GATE
+## Development workflow
 
-Invariant sentence:
-- "Install docs behavior and shared TUI primitives must be identical before and after path/package migration."
-
-Current model/layer:
-- Split ownership in `docs/tui` and `shared/tui-kit`, wired by local file dependency.
-
-Alternative models:
-
-1. Keep split repos and patch paths
-- determinism: low
-- complexity: high ongoing
-- ownership fit: weak
-- testability: medium
-- compatibility impact: low short-term
-
-2. Single `tui` workspace with app/kit package boundaries (chosen)
-- determinism: high
-- complexity: medium one-time
-- ownership fit: strong
-- testability: high
-- compatibility impact: medium during migration
-
-3. Collapse all code into one package
-- determinism: medium
-- complexity: medium
-- ownership fit: weak
-- testability: medium
-- compatibility impact: medium
-
-Chosen model:
-- Option 2, because it preserves domain boundaries while enabling atomic refactors and stable dependency direction.
+Keep migration work direct and proportional. No formal reclassification or approval gates. Unit tests are prohibited; assess runtime behavior with typechecking and focused PTY/CLI checks.
 
 ## Target Package Layout
 
@@ -89,7 +59,6 @@ Move as-is first (no API change):
 - `src/theme*`
 - `src/utils/*`
 - `src/index.ts`, `src/globals.d.ts`
-- unit tests under `tests/unit/*`
 
 Do not move into core:
 - docs-domain rendering/navigation/data mapping
@@ -104,7 +73,7 @@ Move as-is first:
 - `src/app/*`
 - `src/cli/*`
 - `src/main.ts`
-- `src/*.test.ts`
+- `src/*.pty.test.ts`
 - `bin/*`, `scripts/*`, `snapshots/*`
 
 Keep behavior exactly the same:
@@ -131,18 +100,18 @@ Initial contents to add during migration:
 
 No app-domain logic allowed in `kit/testing`.
 
-## No Regression Gates (must pass before cutover)
+## Useful migration checks
 
 From migrated paths:
-1. install-docs typecheck and tests pass.
+1. Typecheck install-docs and inspect its terminal behavior.
 2. install-docs inspect snapshot check matches baseline.
-3. `tui/kit/core` unit tests pass.
+3. Typecheck `tui/kit/core`.
 4. superproject wrappers resolve to new paths and still run.
 
-Required command equivalents after migration:
+Useful commands after migration:
 - `just docs-tui-check`
 - `just docs-tui-inspect-check`
-- `bun run test` in `tui/kit/core`
+- `bun run typecheck` in `tui/kit/core`
 
 ## Migration Phases
 

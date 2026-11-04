@@ -29,7 +29,7 @@ Legacy non-interactive flags (`--list`, `--page`, `--all`) were removed.
 ```bash
 bun install
 bun run typecheck
-bun run test
+bun run test:e2e
 bun run inspect:check
 bun run check
 ```

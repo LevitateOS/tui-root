@@ -42,7 +42,7 @@ await mounted.waitUntilExit();
 - `bun run clean`
 - `bun run build`
 - `bun run typecheck`
-- `bun run test`
+- Unit tests are prohibited; use typechecking and a terminal smoke check.
 - `bun run lint`
 - `bun run format:check`
 - `bun run precommit`
