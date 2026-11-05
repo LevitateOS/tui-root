@@ -4,7 +4,7 @@ export {
   RECPART_MANIFEST,
   RECPART_ROOT,
   buildPlanCommand,
-  extractInlineJson,
+  extractJsonPayload,
   runRecpartPlan,
 } from "./app/plan-runner";
 export { cliHelpText, parseCliArgs } from "./cli/parse-args";

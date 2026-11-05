@@ -1,3 +1,4 @@
+import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import type { DiskMode } from "../cli/parse-args";
 
@@ -5,20 +6,22 @@ export const REPO_ROOT = resolve(import.meta.dir, "../../../../../../");
 export const RECPART_ROOT = resolve(REPO_ROOT, "tools/recpart");
 export const RECPART_MANIFEST = resolve(RECPART_ROOT, "Cargo.toml");
 
-export type PlanRunResult = {
+export type RecpartRunResult = {
   command: string[];
   exitCode: number;
   stdout: string;
   stderr: string;
-  jsonLine: string | null;
+  /** The recpart JSON document (stdout on success, stderr error payload on failure). */
+  json: string | null;
 };
 
-export type ApplyRunResult = {
-  command: string[];
-  exitCode: number;
-  stdout: string;
-  stderr: string;
-  jsonLine: string | null;
+export type PlanRunResult = RecpartRunResult;
+export type ApplyRunResult = RecpartRunResult;
+
+/** A running recpart process: await `result`, or `kill()` it. */
+export type RecpartRun = {
+  result: Promise<RecpartRunResult>;
+  kill: () => void;
 };
 
 export type DiskCandidate = {
@@ -51,67 +54,65 @@ export function buildApplyCommand(
   return command;
 }
 
-export function extractInlineJson(output: string): string | null {
-  const lines = output.split(/\r?\n/).map((line) => line.trim());
-  for (let index = lines.length - 1; index >= 0; index -= 1) {
-    const line = lines[index];
-    if (line.startsWith("{") && line.endsWith("}")) {
-      return line;
+/**
+ * Extract the JSON document recpart printed. recpart pretty-prints, so the
+ * whole stream is the document; fall back to the text from the first line
+ * that opens an object in case anything was printed before it.
+ */
+export function extractJsonPayload(output: string): string | null {
+  const trimmed = output.trim();
+  if (trimmed.length === 0) {
+    return null;
+  }
+  const candidates = [trimmed];
+  const start = trimmed.search(/^\{/m);
+  if (start > 0) {
+    candidates.push(trimmed.slice(start));
+  }
+  for (const candidate of candidates) {
+    try {
+      JSON.parse(candidate);
+      return candidate;
+    } catch {
+      // try the next candidate
     }
   }
   return null;
 }
 
-export async function runRecpartPlan(disk: string, mode: DiskMode): Promise<PlanRunResult> {
-  const command = buildPlanCommand(disk, mode);
+function spawnRecpart(command: string[]): RecpartRun {
   const proc = Bun.spawn(command, {
     cwd: REPO_ROOT,
     stdout: "pipe",
     stderr: "pipe",
   });
 
-  const [stdout, stderr, exitCode] = await Promise.all([
+  const result = Promise.all([
     new Response(proc.stdout).text(),
     new Response(proc.stderr).text(),
     proc.exited,
-  ]);
-
-  const combined = [stdout, stderr].filter((part) => part.trim().length > 0).join("\n");
-  return {
+  ]).then(([stdout, stderr, exitCode]) => ({
     command,
     exitCode,
     stdout,
     stderr,
-    jsonLine: extractInlineJson(combined),
-  };
+    json: extractJsonPayload(exitCode === 0 ? stdout : stderr) ?? extractJsonPayload(stdout),
+  }));
+
+  return { result, kill: () => proc.kill() };
 }
 
-export async function runRecpartApply(
-  disk: string,
-  mode: DiskMode,
-  options: { dryRun: boolean; confirmDestroy?: boolean },
-): Promise<ApplyRunResult> {
-  const command = buildApplyCommand(disk, mode, options);
-  const proc = Bun.spawn(command, {
-    cwd: REPO_ROOT,
-    stdout: "pipe",
-    stderr: "pipe",
-  });
+export function runRecpartPlan(disk: string, mode: DiskMode): Promise<PlanRunResult> {
+  return spawnRecpart(buildPlanCommand(disk, mode)).result;
+}
 
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
-    proc.exited,
-  ]);
+export function runRecpartDryRun(disk: string, mode: DiskMode): Promise<ApplyRunResult> {
+  return spawnRecpart(buildApplyCommand(disk, mode, { dryRun: true })).result;
+}
 
-  const combined = [stdout, stderr].filter((part) => part.trim().length > 0).join("\n");
-  return {
-    command,
-    exitCode,
-    stdout,
-    stderr,
-    jsonLine: extractInlineJson(combined),
-  };
+/** Start the destructive apply. Callers must hold the handle and start it once. */
+export function startRecpartApply(disk: string, mode: DiskMode): RecpartRun {
+  return spawnRecpart(buildApplyCommand(disk, mode, { dryRun: false, confirmDestroy: true }));
 }
 
 type LsblkDevice = {
@@ -166,30 +167,56 @@ async function readUdevProperties(devicePath: string): Promise<UdevProps | null>
   return parseUdevProperties(stdout);
 }
 
-export async function listHostDisks(): Promise<DiskCandidate[]> {
-  const proc = Bun.spawn(
-    ["lsblk", "-J", "-d", "-o", "PATH,SIZE,MODEL,VENDOR,SERIAL,TRAN,ROTA,RM,TYPE"],
-    {
-      cwd: REPO_ROOT,
-      stdout: "pipe",
-      stderr: "pipe",
-    },
-  );
+/** Canonical device path (resolves /dev/disk/by-id/... links); input if unresolvable. */
+export function resolveDiskPath(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
+}
+
+const LSBLK_COLUMNS = "PATH,SIZE,MODEL,VENDOR,SERIAL,TRAN,ROTA,RM,TYPE";
+
+async function lsblkDevices(extraArgs: string[]): Promise<LsblkDevice[]> {
+  const proc = Bun.spawn(["lsblk", "-J", "-d", "-o", LSBLK_COLUMNS, ...extraArgs], {
+    cwd: REPO_ROOT,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
   const [stdout, exitCode] = await Promise.all([new Response(proc.stdout).text(), proc.exited]);
   if (exitCode !== 0) {
     return [];
   }
-
-  let parsed: LsblkJson | null = null;
   try {
-    parsed = JSON.parse(stdout) as LsblkJson;
+    return (JSON.parse(stdout) as LsblkJson).blockdevices ?? [];
   } catch {
     return [];
   }
+}
 
-  const raw = parsed.blockdevices ?? [];
+/**
+ * List install-target candidates. `explicitDisk` (the --disk argument) is
+ * always included when it is a whole disk or loop device, even though loop
+ * devices are not listed by default, so an explicit target is never silently
+ * replaced by another disk.
+ */
+export async function listHostDisks(explicitDisk = ""): Promise<DiskCandidate[]> {
+  const raw = await lsblkDevices([]);
+  const explicit = explicitDisk.trim().length > 0 ? resolveDiskPath(explicitDisk.trim()) : "";
+  if (explicit.length > 0 && !raw.some((device) => device.path === explicit)) {
+    const extra = await lsblkDevices([explicit]);
+    raw.push(...extra.filter((device) => device.type === "disk" || device.type === "loop"));
+  }
+
   const disks = raw
-    .filter((device) => device.type === "disk" && typeof device.path === "string")
+    .filter(
+      (device) =>
+        typeof device.path === "string" &&
+        (device.type === "disk" || (device.type === "loop" && device.path === explicit)),
+    )
+    // zram swap devices report TYPE=disk but are never install targets.
+    .filter((device) => !/^\/dev\/zram\d+$/.test((device.path ?? "").trim()))
     .map((device) => {
       const path = (device.path ?? "").trim();
       const size = (device.size ?? "?").trim();
