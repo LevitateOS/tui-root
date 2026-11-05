@@ -1054,7 +1054,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 
   return (
     <SurfaceFrame
-      title="LevitateOS S03 Disk Plan"
+      title="LevitateOS Disk Plan"
       showHeader={false}
       leftWidth={38}
       footer={footer}

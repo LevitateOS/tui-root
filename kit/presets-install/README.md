@@ -1,6 +1,6 @@
 # @levitate/tui-presets-install (Stub)
 
-Shared install UX composition presets for 02LiveTools and 03Install apps.
+Shared install UX composition presets for live environment and installation apps.
 
 Intended scope:
 - session layout presets (tmux/shell integration contracts)

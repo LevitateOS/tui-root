@@ -13,4 +13,4 @@ These rules apply to this repository, every nested directory, and nested submodu
 
 - Keep one canonical owner per behavior.
 - Apps consume `tui/kit/core`; kit must not import from apps.
-- Stage boundaries and contracts stay explicit.
+- Product boundaries and contracts stay explicit.

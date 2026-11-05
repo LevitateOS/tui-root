@@ -236,7 +236,7 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
 
   return (
     <SurfaceFrame
-      title="LevitateOS S06 Runtime Tools"
+      title="LevitateOS Runtime Tools"
       showHeader={false}
       leftWidth={40}
       footer={footer}
