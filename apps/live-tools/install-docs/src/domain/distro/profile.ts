@@ -1,6 +1,6 @@
 import type { DocsPageMeta, DocsProduct, DocsScope } from "../content/contracts";
 
-export type DistroId = "levitate" | "acorn" | "ralph";
+export type DistroId = "levitate" | "acorn";
 
 export type DistroProfile = {
 	id: DistroId;
