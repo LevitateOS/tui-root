@@ -6,6 +6,7 @@ export type { RenderedTuiApp } from "./app/render-app";
 export { resolveChromeGlyphSet } from "./chrome/glyph-sets";
 export { KeyValue } from "./components/data/key-value";
 export {
+	keymapStatusSegments,
 	SegmentedStatusLine,
 	hotkeyStatusSegment,
 	scopeStatusSegment,
@@ -18,7 +19,6 @@ export { TreeNav } from "./components/navigation/tree-nav";
 export { useFocusPlane } from "./hooks/use-focus-plane";
 export type { FocusPlane } from "./hooks/use-focus-plane";
 export { useGridNavigation } from "./hooks/use-grid-navigation";
-export { useHotkeys } from "./hooks/use-hotkeys";
 export { useListNavigation } from "./hooks/use-list-navigation";
 export { useScrollState } from "./hooks/use-scroll-state";
 export { linkRuns } from "./primitives/display/link";
@@ -41,3 +41,5 @@ export {
 	truncateLine,
 	wrapBoundedText,
 } from "./utils/strings";
+export { keyHint, keymapHelp, useKeymap } from "./runtime/keymap";
+export type { KeyBinding, KeyHandlers, KeyName, Keymap } from "./runtime/keymap";

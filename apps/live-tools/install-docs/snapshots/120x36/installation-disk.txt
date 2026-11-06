@@ -33,4 +33,4 @@
 │                              ││ don't need network access.                                                           │
 │                              ││                                                                                      │
 └──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
- [docs] | navigation | q quit | tab toggle pane | m sidebar mode | <masked> | h/l [/] pages/sections | j/k content |
+ [docs] | navigation | <masked> | h/l prev/next page | [/] prev/next section | j/k scroll content | q quit | Tab

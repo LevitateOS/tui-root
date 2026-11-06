@@ -1,17 +1,18 @@
 import { useApp } from "ink";
 import type { CommandBlock, ContentBlock, InlineNode, RichText } from "@levitate/docs-content";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	SurfaceFrame,
 	UiText,
 	resolveSurfaceFrameGeometry,
 	truncateLine,
-	useHotkeys,
+	useKeymap,
 	useFocusPlane,
 	useScrollState,
 	useTuiTheme,
 	useTuiViewport,
 } from "@levitate/tui-kit";
+import { BACKWARD_KEYS, CONTENT_KEYS, NAV_KEYS, VIEWER_KEYS } from "../keymap";
 import type { DocsContentLike, FlatDocsNavItem } from "../../../domain/content/contracts";
 import { resolveDocsLinkTarget } from "../../../domain/navigation/link-target";
 import type { DocRenderItem } from "../../../domain/render/types";
@@ -19,7 +20,7 @@ import { computeDocsViewport } from "../../../rendering/pipeline/viewport";
 import { measureDocItemLines } from "../../../rendering/plan/line-metrics";
 import { InstallContentPane } from "../components/content-pane";
 import { InstallSidebar, type SidebarMode } from "../components/sidebar";
-import { installStatusBar } from "../components/status-bar";
+import { InstallStatusBar } from "../components/status-bar";
 import type { DocsRendererRegistry } from "../document/renderer-registry";
 import { useInstallNavigation } from "../hooks/use-install-navigation";
 
@@ -209,15 +210,20 @@ export function InstallViewerScreen({
 	const [actionableIndex, setActionableIndex] = useState(0);
 	const [runtimeNote, setRuntimeNote] = useState<string | undefined>(undefined);
 	const focus = useFocusPlane({ initial: "navigation" });
-	const contentNavLock = useRef<number | null>(null);
-	const contentNavAllowedIndex = useRef<number | null>(null);
 
 	const quit = () => {
 		onExit?.();
 		exit();
 	};
 
-	useHotkeys(["q", "escape", "C-c"], quit);
+	useKeymap(VIEWER_KEYS, {
+		quit,
+		focus: () => focus.togglePlane(),
+		sidebarMode: () =>
+			setSidebarMode((previous) =>
+				previous === "focus-section" ? "all-sections" : "focus-section",
+			),
+	});
 	if (navItems.length === 0) {
 		return (
 			<SurfaceFrame
@@ -285,36 +291,6 @@ export function InstallViewerScreen({
 	}, [currentItem.slug]);
 
 	useEffect(() => {
-		if (focus.isContent) {
-			contentNavLock.current = navigation.safeIndex;
-			contentNavAllowedIndex.current = null;
-			return;
-		}
-		contentNavLock.current = null;
-		contentNavAllowedIndex.current = null;
-	}, [focus.isContent, navigation.safeIndex]);
-
-	useEffect(() => {
-		const locked = contentNavLock.current;
-		if (!focus.isContent || locked === null) {
-			return;
-		}
-		if (navigation.safeIndex === locked) {
-			return;
-		}
-		if (
-			contentNavAllowedIndex.current !== null &&
-			navigation.safeIndex === contentNavAllowedIndex.current
-		) {
-			contentNavAllowedIndex.current = null;
-			contentNavLock.current = navigation.safeIndex;
-			return;
-		}
-		navigation.setPage(locked);
-		setRuntimeNote("blocked navigation mutation while content focus is active");
-	}, [focus.isContent, navigation, navigation.safeIndex]);
-
-	useEffect(() => {
 		if (actionableTargets.length === 0) {
 			if (actionableIndex !== 0) {
 				setActionableIndex(0);
@@ -372,10 +348,7 @@ export function InstallViewerScreen({
 		}
 		const payload = selected.kind === "command" ? selected.commandText : selected.href;
 		const copied = copyToClipboardOsc52(payload);
-		const actionLabel =
-			selected.kind === "command"
-				? `command ${actionableIndex + 1}/${actionableTargets.length}`
-				: `link ${actionableIndex + 1}/${actionableTargets.length} (${selected.label})`;
+		const actionLabel = selected.kind === "command" ? "command" : `link (${selected.label})`;
 		setRuntimeNote(
 			copied ? `copied ${actionLabel}` : "copy failed (terminal clipboard unsupported)",
 		);
@@ -395,7 +368,6 @@ export function InstallViewerScreen({
 			setRuntimeNote(`invalid docs link target: '${selected.href}' (${resolution.reason})`);
 			return;
 		}
-		contentNavAllowedIndex.current = resolution.index;
 		navigation.setPage(resolution.index);
 		scroll.reset();
 		setActionableIndex(0);
@@ -403,106 +375,35 @@ export function InstallViewerScreen({
 	};
 	const pageJump = Math.max(1, contentRows - 1);
 
-	useHotkeys(["m"], () => {
-		setSidebarMode((previous) => (previous === "focus-section" ? "all-sections" : "focus-section"));
-	});
-	useHotkeys(
-		["left", "h"],
-		() => {
-			movePage(-1);
-			setRuntimeNote(undefined);
+	useKeymap(
+		NAV_KEYS,
+		{
+			page: (key) => {
+				movePage(BACKWARD_KEYS.has(key) ? -1 : 1);
+				setRuntimeNote(undefined);
+			},
+			section: (key) => moveSection(BACKWARD_KEYS.has(key) ? -1 : 1),
+			scroll: (key) => scrollBy(BACKWARD_KEYS.has(key) ? -1 : 1),
 		},
-		{ isActive: focus.isNavigation },
+		{ active: focus.isNavigation },
 	);
-	useHotkeys(
-		["right", "l"],
-		() => {
-			movePage(1);
-			setRuntimeNote(undefined);
+	useKeymap(
+		CONTENT_KEYS,
+		{
+			action: (key) => moveActionable(BACKWARD_KEYS.has(key) ? -1 : 1),
+			activate: () => activateSelectedActionable(),
+			copy: () => copySelectedActionable(),
+			pageScroll: (key) => scrollBy(BACKWARD_KEYS.has(key) ? -pageJump : pageJump),
+			top: () => {
+				scroll.scrollToTop();
+				setRuntimeNote(undefined);
+			},
+			bottom: () => {
+				scroll.scrollToBottom(docsViewport.maxScroll);
+				setRuntimeNote(undefined);
+			},
 		},
-		{ isActive: focus.isNavigation },
-	);
-	useHotkeys(
-		["[", "{"],
-		() => {
-			moveSection(-1);
-		},
-		{ isActive: focus.isNavigation },
-	);
-	useHotkeys(
-		["]", "}"],
-		() => {
-			moveSection(1);
-		},
-		{ isActive: focus.isNavigation },
-	);
-	useHotkeys(
-		["up", "k"],
-		() => {
-			moveActionable(-1);
-		},
-		{ isActive: focus.isContent },
-	);
-	useHotkeys(
-		["up", "k"],
-		() => {
-			scrollBy(-1);
-		},
-		{ isActive: focus.isNavigation },
-	);
-	useHotkeys(
-		["down", "j"],
-		() => {
-			moveActionable(1);
-		},
-		{ isActive: focus.isContent },
-	);
-	useHotkeys(
-		["down", "j"],
-		() => {
-			scrollBy(1);
-		},
-		{ isActive: focus.isNavigation },
-	);
-	useHotkeys(
-		["enter"],
-		() => {
-			activateSelectedActionable();
-		},
-		{ isActive: focus.isContent },
-	);
-	useHotkeys(["pageup", "b"], () => {
-		if (!focus.isContent) {
-			return;
-		}
-		scrollBy(-pageJump);
-	});
-	useHotkeys(["pagedown", "space"], () => {
-		if (!focus.isContent) {
-			return;
-		}
-		scrollBy(pageJump);
-	});
-	useHotkeys(["g", "home"], () => {
-		if (!focus.isContent) {
-			return;
-		}
-		scroll.scrollToTop();
-		setRuntimeNote(undefined);
-	});
-	useHotkeys(["G", "end", "S-g"], () => {
-		if (!focus.isContent) {
-			return;
-		}
-		scroll.scrollToBottom(docsViewport.maxScroll);
-		setRuntimeNote(undefined);
-	});
-	useHotkeys(
-		["c", "y"],
-		() => {
-			copySelectedActionable();
-		},
-		{ isActive: focus.isContent },
+		{ active: focus.isContent },
 	);
 
 	const sidebar = (
@@ -514,13 +415,18 @@ export function InstallViewerScreen({
 			mode={sidebarMode}
 		/>
 	);
-	const footer = installStatusBar(
-		navigation.safeIndex,
-		navItems.length,
-		runtimeNote ?? navigation.startupNote,
-		focus.plane,
-		actionableTargets.length,
-		actionableIndex,
+	const footer = (
+		<InstallStatusBar
+			page={navigation.safeIndex + 1}
+			pageCount={navItems.length}
+			focus={focus.plane}
+			action={
+				actionableTargets.length > 0
+					? `${actionableIndex + 1}/${actionableTargets.length}`
+					: undefined
+			}
+			note={runtimeNote ?? navigation.startupNote}
+		/>
 	);
 	const contentPaneMeta = `lines ${docsViewport.startItem}-${docsViewport.endItem}/${Math.max(docsViewport.totalItems, 1)}`;
 	const contentPaneTitle = truncateLine(

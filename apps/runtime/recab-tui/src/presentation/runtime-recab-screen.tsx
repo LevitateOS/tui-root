@@ -6,14 +6,15 @@ import {
 	SegmentedStatusLine,
 	SurfaceFrame,
 	UiText,
-	hotkeyStatusSegment,
+	keymapStatusSegments,
 	scopeStatusSegment,
 	textStatusSegment,
-	useHotkeys,
+	useKeymap,
 	useListNavigation,
 } from "@levitate/tui-kit";
 import { runRecabCommand, runRecabStatus } from "../app/recab-runner";
 import {
+	RECAB_KEYMAP,
 	RUNTIME_RECAB_ACTIONS,
 	type RuntimeRecabAction,
 	type RuntimeRecabActionId,
@@ -141,27 +142,29 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
 		void refreshStatus();
 	}, [recabBin]);
 
-	useHotkeys(["q", "escape", "C-c"], () => exit());
-	useHotkeys(["down", "j"], () => {
-		if (!isBusy) {
-			nav.moveBy(1);
-		}
+	const runningMutation = runningActionId !== null && runningActionId !== "status-refresh";
+	useKeymap(RECAB_KEYMAP, {
+		move: (key) => {
+			if (!isBusy) {
+				nav.moveBy(key === "up" || key === "k" ? -1 : 1);
+			}
+		},
+		run: () => {
+			if (activeAction) {
+				void runAction(activeAction);
+			}
+		},
+		...Object.fromEntries(
+			RUNTIME_RECAB_ACTIONS.map((action) => [action.id, () => runActionById(action.id)]),
+		),
+		quit: () => {
+			if (runningMutation) {
+				setNotice(`can't quit while recab ${runningActionId} is running`);
+				return;
+			}
+			exit();
+		},
 	});
-	useHotkeys(["up", "k"], () => {
-		if (!isBusy) {
-			nav.moveBy(-1);
-		}
-	});
-	useHotkeys(["enter"], () => {
-		if (!activeAction) {
-			return;
-		}
-		void runAction(activeAction);
-	});
-	// One hotkey per action; the action table is static, so the hook order is too.
-	for (const action of RUNTIME_RECAB_ACTIONS) {
-		useHotkeys([action.hotkey], () => runActionById(action.id));
-	}
 
 	const sidebarItems = useMemo(
 		() =>
@@ -181,14 +184,9 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
 				runningActionId ? `running=${runningActionId}` : statusLoading ? "refreshing" : "idle",
 				runningActionId || statusLoading ? "warning" : "accent",
 			),
-			hotkeyStatusSegment("move", "j/k", "select"),
-			hotkeyStatusSegment("run", "enter", "execute"),
-			hotkeyStatusSegment(
-				"quick",
-				RUNTIME_RECAB_ACTIONS.map((action) => action.hotkey).join("/"),
-				"actions",
+			...keymapStatusSegments(
+				RECAB_KEYMAP.filter((b) => ["move", "run", "quit"].includes(b.action)),
 			),
-			hotkeyStatusSegment("quit", "q", "quit"),
 		];
 		if (statusError) {
 			segments.push(textStatusSegment("status-error", "status-error", "error", true));

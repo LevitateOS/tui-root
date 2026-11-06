@@ -29,9 +29,7 @@ Implemented thin shell pages:
 cargo xtask tui disk-plan --disk /dev/sdX --mode ab
 ```
 
-## Keybinds
+## Keys
 
-- `q` / `Esc` / `Ctrl-C`: quit
-- `Enter` / `n` / `→` / `l`: next page
-- `p` / `←` / `h`: previous page
-- `m`: toggle mode (`ab`/`mutable`) on mode page
+`bun src/main.ts --help` lists every key; the footer shows the ones that work on the
+current page and pane. Both come from `src/presentation/keymap.ts`.

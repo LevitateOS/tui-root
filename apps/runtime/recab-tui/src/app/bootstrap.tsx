@@ -7,8 +7,5 @@ export type StartRuntimeRecabOptions = {
 
 export function startRuntimeRecabApp(options: StartRuntimeRecabOptions): RenderedTuiApp {
 	const app = createTuiApp();
-	return renderApp(<RuntimeRecabScreen recabBin={options.recabBin} />, {
-		app,
-		exitOnCtrlC: false,
-	});
+	return renderApp(<RuntimeRecabScreen recabBin={options.recabBin} />, { app });
 }

@@ -1,3 +1,12 @@
+import { keymapHelp } from "@levitate/tui-kit";
+import {
+	CONFIRM_KEYS,
+	CONTENT_KEYS,
+	DISK_KEYS,
+	GLOBAL_KEYS,
+	MODE_KEYS,
+	NAV_KEYS,
+} from "../presentation/keymap";
 import { INSTALL_MODES, type InstallMode } from "../contract/recpart";
 
 export type DiskMode = InstallMode;
@@ -70,6 +79,14 @@ export function cliHelpText(): string {
 		"  - mode defaults to 'ab'",
 		"  - --disk is optional (interactive selection if omitted)",
 		"  - command runs: recpart plan --disk <disk> --mode <mode> --json",
-		"  - q/esc/ctrl-c exits the TUI",
+		"",
+		"Keys (every page):",
+		keymapHelp(GLOBAL_KEYS),
+		"Keys (page list focused):",
+		keymapHelp(NAV_KEYS),
+		"Keys (page content focused):",
+		keymapHelp([...CONTENT_KEYS, ...DISK_KEYS, ...MODE_KEYS]),
+		"Keys (destructive-confirm page; other typing goes into the token):",
+		keymapHelp(CONFIRM_KEYS),
 	].join("\n");
 }

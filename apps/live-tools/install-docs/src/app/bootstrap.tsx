@@ -45,9 +45,6 @@ export function startInstallDocsApp(options: StartInstallDocsOptions = {}): Rend
 			title={profile.title}
 			renderers={renderers}
 		/>,
-		{
-			app,
-			exitOnCtrlC: false,
-		},
+		{ app },
 	);
 }

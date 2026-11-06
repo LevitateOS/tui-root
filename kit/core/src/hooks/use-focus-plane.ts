@@ -1,11 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
-import { useHotkeys } from "./use-hotkeys";
 
 export type FocusPlane = "navigation" | "content";
 
 type FocusPlaneOptions = {
 	initial?: FocusPlane;
-	bindTabKeys?: boolean;
 };
 
 type FocusPlaneState = {
@@ -27,8 +25,6 @@ export function useFocusPlane(options: FocusPlaneOptions = {}): FocusPlaneState 
 	const togglePlane = useCallback(() => {
 		setPlane((current) => toggleFocusPlane(current));
 	}, []);
-
-	useHotkeys(options.bindTabKeys === false ? undefined : ["tab", "S-tab"], togglePlane);
 
 	return useMemo(
 		() => ({

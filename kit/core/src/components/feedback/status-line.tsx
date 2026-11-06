@@ -1,3 +1,4 @@
+import { keyHint, type Keymap } from "../../runtime/keymap";
 import { Text } from "ink";
 
 import type { ColorIntent } from "../../theme/tokens";
@@ -141,4 +142,11 @@ export function textStatusSegment(
 			},
 		],
 	};
+}
+
+/** Footer segments for a keymap: each binding's keys and label. */
+export function keymapStatusSegments(keymap: Keymap): StatusSegment[] {
+	return keymap.map((binding) =>
+		hotkeyStatusSegment(binding.action, keyHint(binding), binding.label),
+	);
 }

@@ -3,10 +3,10 @@ import type { ReactElement } from "react";
 import { createTuiApp, type CreateTuiAppOptions, type TuiApp } from "./create-app";
 import { AppProvider } from "./app-provider";
 import { ErrorBoundary } from "./error-boundary";
+import { KeyboardProvider } from "../runtime/keymap";
 
 type RenderAppOptions = CreateTuiAppOptions & {
 	app?: TuiApp;
-	exitOnCtrlC?: boolean;
 };
 
 type InkRenderHandle = {
@@ -25,7 +25,9 @@ export type RenderedTuiApp = {
 function wrapWithProvider(app: TuiApp, element: ReactElement): ReactElement {
 	return (
 		<AppProvider app={app}>
-			<ErrorBoundary>{element}</ErrorBoundary>
+			<ErrorBoundary>
+				<KeyboardProvider>{element}</KeyboardProvider>
+			</ErrorBoundary>
 		</AppProvider>
 	);
 }
@@ -38,7 +40,8 @@ export function renderApp(element: ReactElement, options: RenderAppOptions = {})
 		});
 
 	const handle = render(wrapWithProvider(app, element), {
-		exitOnCtrlC: options.exitOnCtrlC ?? false,
+		// KeyboardProvider handles Ctrl-C, so an app's quit binding can refuse it.
+		exitOnCtrlC: false,
 	}) as unknown as InkRenderHandle;
 
 	let unmounted = false;

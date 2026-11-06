@@ -1,3 +1,4 @@
+import type { Keymap } from "@levitate/tui-kit";
 import { SLOTS, type Slot } from "../domain/contract";
 
 export type RuntimeRecabActionId =
@@ -53,3 +54,17 @@ export const RUNTIME_RECAB_ACTIONS: ReadonlyArray<RuntimeRecabAction> = [
 		hotkey: "x",
 	},
 ];
+
+/** Every key the screen binds; the footer and `--help` are drawn from it. */
+export const RECAB_KEYMAP = [
+	{ action: "move", keys: ["down", "j", "up", "k"], hint: "j/k", label: "select action" },
+	{ action: "run", keys: ["enter"], label: "run selected" },
+	...RUNTIME_RECAB_ACTIONS.map((action) => ({
+		action: action.id,
+		keys: [action.hotkey],
+		label: action.label,
+	})),
+	{ action: "quit", keys: ["q", "escape", "C-c"], hint: "q", label: "quit" },
+] as const satisfies Keymap;
+
+export type RecabKeyAction = (typeof RECAB_KEYMAP)[number]["action"];

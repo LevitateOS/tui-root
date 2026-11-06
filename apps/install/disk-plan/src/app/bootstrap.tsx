@@ -9,8 +9,5 @@ type StartDiskPlanOptions = {
 
 export function startDiskPlanApp(options: StartDiskPlanOptions): RenderedTuiApp {
 	const app = createTuiApp();
-	return renderApp(<DiskPlanScreen disk={options.disk ?? ""} mode={options.mode} />, {
-		app,
-		exitOnCtrlC: false,
-	});
+	return renderApp(<DiskPlanScreen disk={options.disk ?? ""} mode={options.mode} />, { app });
 }

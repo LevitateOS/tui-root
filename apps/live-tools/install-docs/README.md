@@ -15,13 +15,10 @@ On the live ISO the builder bundles it and launches it as `levitate-install-docs
 
 Legacy non-interactive flags (`--list`, `--page`, `--all`) were removed.
 
-## Keybinds
+## Keys
 
-- `q` / `Esc` / `Ctrl-C`: quit
-- `h` / `l`: previous/next page
-- `j` / `k`: scroll
-- `PgUp` / `PgDn`: fast scroll
-- `g` / `G`: top/bottom
+`bun src/main.ts --help` lists every key; the status bar shows the ones that work in
+the focused pane. Both come from `src/presentation/ink/keymap.ts`.
 
 ## Development
 

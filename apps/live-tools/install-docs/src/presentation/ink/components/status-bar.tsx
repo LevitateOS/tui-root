@@ -1,57 +1,47 @@
 import {
 	SegmentedStatusLine,
-	hotkeyStatusSegment,
+	keymapStatusSegments,
 	scopeStatusSegment,
 	textStatusSegment,
-	type StatusSegment,
 	type FocusPlane,
+	type StatusSegment,
 } from "@levitate/tui-kit";
 import type { ReactNode } from "react";
+import { CONTENT_KEYS, NAV_KEYS, VIEWER_KEYS } from "../keymap";
 
-export function installStatusBar(
-	currentIndex: number,
-	pageCount: number,
-	note?: string,
-	focus?: FocusPlane,
-	actionableCount = 0,
-	actionableIndex = 0,
-): ReactNode {
-	const safePageCount = Math.max(1, pageCount);
-	const safeCurrentPage = Math.max(1, Math.min(safePageCount, currentIndex + 1));
-	const safeFocus = focus ?? "navigation";
+type InstallStatusBarProps = {
+	page: number;
+	pageCount: number;
+	focus: FocusPlane;
+	/** Position of the selected action, e.g. "2/5", when there are actions. */
+	action?: string;
+	note?: string;
+};
 
+export function InstallStatusBar({
+	page,
+	pageCount,
+	focus,
+	action,
+	note,
+}: InstallStatusBarProps): ReactNode {
 	const segments: StatusSegment[] = [
 		scopeStatusSegment("docs"),
-		textStatusSegment("focus", safeFocus, safeFocus === "navigation" ? "warning" : "accent"),
-		hotkeyStatusSegment("quit", "q", "quit"),
-		hotkeyStatusSegment("focus", "tab", "toggle pane"),
-		hotkeyStatusSegment("mode", "m", "sidebar mode"),
-		textStatusSegment("page", `page ${safeCurrentPage}/${safePageCount}`),
+		textStatusSegment("focus", focus, focus === "navigation" ? "warning" : "accent"),
+		textStatusSegment("page", `page ${page}/${pageCount}`),
+		...(focus === "content"
+			? [textStatusSegment("action", action ?? "no actions", action ? "accent" : "dimText")]
+			: []),
+		...keymapStatusSegments(focus === "navigation" ? NAV_KEYS : CONTENT_KEYS),
+		...keymapStatusSegments(VIEWER_KEYS),
 	];
-	if (safeFocus === "navigation") {
-		segments.push(hotkeyStatusSegment("nav", "h/l [/]", "pages/sections"));
-		segments.push(hotkeyStatusSegment("scroll", "j/k", "content"));
-		segments.push(hotkeyStatusSegment("open", "tab", "content"));
-	} else {
-		segments.push(hotkeyStatusSegment("actions", "j/k", "next/prev"));
-		segments.push(hotkeyStatusSegment("activate", "enter", "open/copy"));
-		segments.push(hotkeyStatusSegment("copy", "c/y", "action"));
-		segments.push(hotkeyStatusSegment("scroll", "PgUp/PgDn", "content"));
-		segments.push(hotkeyStatusSegment("jump", "g/G b/space", "top/end/page"));
+	if (focus === "content") {
 		segments.push(
-			textStatusSegment(
-				"action",
-				actionableCount > 0
-					? `${Math.max(1, Math.min(actionableCount, actionableIndex + 1))}/${actionableCount}`
-					: "none",
-				actionableCount > 0 ? "accent" : "dimText",
-			),
+			textStatusSegment("action", action ?? "no actions", action ? "accent" : "dimText"),
 		);
 	}
-
-	if (typeof note === "string" && note.trim().length > 0) {
+	if (note && note.trim().length > 0) {
 		segments.push(textStatusSegment("note", note.trim(), "warning"));
 	}
-
 	return <SegmentedStatusLine segments={segments} />;
 }

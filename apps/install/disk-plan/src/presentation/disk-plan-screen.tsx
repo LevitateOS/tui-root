@@ -1,4 +1,5 @@
-import { Box, Text, useApp, useInput } from "ink";
+import { CONFIRM_KEYS, CONTENT_KEYS, DISK_KEYS, GLOBAL_KEYS, MODE_KEYS, NAV_KEYS } from "./keymap";
+import { Box, Text, useApp } from "ink";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
@@ -6,12 +7,12 @@ import {
 	SegmentedStatusLine,
 	SurfaceFrame,
 	UiText,
-	hotkeyStatusSegment,
+	keymapStatusSegments,
 	resolveGridColumns,
 	scopeStatusSegment,
 	textStatusSegment,
 	useGridNavigation,
-	useHotkeys,
+	useKeymap,
 	useTuiViewport,
 } from "@levitate/tui-kit";
 import type { DiskMode } from "../cli/parse-args";
@@ -168,6 +169,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 	const [diskListError, setDiskListError] = useState<string | null>(null);
 	const [diskCandidates, setDiskCandidates] = useState<DiskInventory[]>([]);
 	const [activePane, setActivePane] = useState<"nav" | "content">("nav");
+	const [notice, setNotice] = useState<string | null>(null);
 	const [failureReturnIndex, setFailureReturnIndex] = useState<number | null>(null);
 	// The one destructive apply of this session. Held so it can never be started
 	// twice (navigation does not start it; only an explicit confirm does).
@@ -289,27 +291,6 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 		}
 		setFlow((state) => ({ ...state, disk: selectedPath }));
 	}, [diskCandidates, diskNav.safeIndex, flow.disk, page]);
-
-	useInput((input, key) => {
-		if (page !== "destructive-confirm") {
-			return;
-		}
-		if (key.backspace || key.delete) {
-			setConfirmToken((value) => value.slice(0, -1));
-			return;
-		}
-		if (key.return) {
-			startApply();
-			return;
-		}
-		if (key.ctrl || key.meta || input.length !== 1) {
-			return;
-		}
-		if (!/[a-zA-Z]/.test(input)) {
-			return;
-		}
-		setConfirmToken((value) => (value + input.toUpperCase()).slice(0, CONFIRM_TOKEN.length));
-	});
 
 	useEffect(() => {
 		if (page !== "plan-preview") {
@@ -452,6 +433,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 	const quit = () => {
 		// Never abandon a running partition/format/mount sequence half-way.
 		if (applyRunRef.current !== null) {
+			setNotice("can't quit while recpart apply is running");
 			return;
 		}
 		exit();
@@ -520,176 +502,91 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 		}
 	}, [activePane, pageAllowsContentPane]);
 
-	useHotkeys(["q", "escape", "C-c"], quit);
-	useHotkeys(["tab", "S-tab"], () => {
-		if (!pageAllowsContentPane) {
-			setActivePane("nav");
-			return;
-		}
-		setActivePane((pane) => (pane === "nav" ? "content" : "nav"));
-	});
-	useHotkeys(["n"], () => {
-		if (!isContentFocus) {
-			return;
-		}
-		onNext();
-	});
-	useHotkeys(["p"], () => {
-		if (!isContentFocus) {
-			return;
-		}
-		onPrev();
-	});
-	useHotkeys(["right", "l"], () => {
-		if (isNavFocus) {
-			onNext();
-			return;
-		}
-		if (!isContentFocus) {
-			return;
-		}
-		if (isDiskPage) {
-			diskNav.moveRight();
-			return;
-		}
-		if (isModePage) {
-			toggleMode();
-			return;
-		}
-	});
-	useHotkeys(["left", "h"], () => {
-		if (isNavFocus) {
-			onPrev();
-			return;
-		}
-		if (!isContentFocus) {
-			return;
-		}
-		if (isDiskPage) {
-			diskNav.moveLeft();
-			return;
-		}
-		if (isModePage) {
-			toggleMode();
-			return;
-		}
-	});
-	useHotkeys(["down", "j"], () => {
-		if (isNavFocus) {
-			onNext();
-			return;
-		}
-		if (!isContentFocus) {
-			return;
-		}
-		if (isDiskPage) {
-			diskNav.moveDown();
-			return;
-		}
-		if (isModePage) {
-			toggleMode();
-			return;
-		}
-	});
-	useHotkeys(["up", "k"], () => {
-		if (isNavFocus) {
-			onPrev();
-			return;
-		}
-		if (!isContentFocus) {
-			return;
-		}
-		if (isDiskPage) {
-			diskNav.moveUp();
-			return;
-		}
-		if (isModePage) {
-			toggleMode();
-			return;
-		}
-	});
-	useHotkeys(["enter"], () => {
-		if (isNavFocus) {
-			if (pageAllowsContentPane) {
-				setActivePane("content");
+	const isConfirmPage = page === "destructive-confirm";
+	const moveDisk = (key: string) => {
+		if (key === "up" || key === "k") diskNav.moveUp();
+		else if (key === "down" || key === "j") diskNav.moveDown();
+		else if (key === "left" || key === "h") diskNav.moveLeft();
+		else diskNav.moveRight();
+	};
+	const isBackward = (key: string) => ["up", "k", "left", "h"].includes(key);
+	useKeymap(GLOBAL_KEYS, {
+		quit,
+		focus: () =>
+			setActivePane((pane) => (pane === "nav" && pageAllowsContentPane ? "content" : "nav")),
+		failure: () => {
+			if (!failure || page === "failure-diagnostics") {
+				return;
 			}
-			return;
-		}
-		if (!isContentFocus) {
-			return;
-		}
-		if (isDiskPage) {
-			selectDiskAtIndex(diskNav.safeIndex);
-		}
-		onNext();
+			// Read-only view; onPrev returns to the page it was opened from.
+			setFailureReturnIndex(flow.pageIndex);
+			setFlow((state) => ({ ...state, pageIndex: failureIndex }));
+		},
 	});
-	useHotkeys(["m"], () => {
-		if (!isModePage) {
-			return;
-		}
-		toggleMode();
-	});
-	useHotkeys(["F"], () => {
-		if (!failure) {
-			return;
-		}
-		if (page === "failure-diagnostics") {
-			return;
-		}
-		// Read-only view; onPrev returns to the page it was opened from.
-		setFailureReturnIndex(flow.pageIndex);
-		setFlow((state) => ({ ...state, pageIndex: failureIndex }));
-	});
+	useKeymap(
+		NAV_KEYS,
+		{
+			page: (key) => (isBackward(key) ? onPrev() : onNext()),
+			open: () => {
+				if (pageAllowsContentPane) {
+					setActivePane("content");
+				}
+			},
+		},
+		{ active: isNavFocus },
+	);
+	useKeymap(
+		CONTENT_KEYS,
+		{
+			next: () => {
+				if (isDiskPage) {
+					selectDiskAtIndex(diskNav.safeIndex);
+				}
+				onNext();
+			},
+			back: onPrev,
+		},
+		{ active: isContentFocus && !isConfirmPage },
+	);
+	useKeymap(DISK_KEYS, { move: moveDisk }, { active: isContentFocus && isDiskPage });
+	useKeymap(MODE_KEYS, { toggle: toggleMode }, { active: isModePage });
+	useKeymap(
+		CONFIRM_KEYS,
+		{
+			apply: startApply,
+			erase: () => setConfirmToken((value) => value.slice(0, -1)),
+		},
+		{
+			active: isConfirmPage,
+			onText: (text) => setConfirmToken((value) => (value + text).slice(0, CONFIRM_TOKEN.length)),
+		},
+	);
 
-	const footer = useMemo(() => {
-		const nextKeys = isNavFocus ? "j/k/h/l" : "enter/n";
-		const backKeys = isNavFocus ? "tab" : "p";
-		const segments = [
-			scopeStatusSegment("disk-plan"),
-			textStatusSegment("focus", activePane, isNavFocus ? "warning" : "accent"),
-			textStatusSegment(
-				"page",
-				`${page} (${flow.pageIndex + 1}/${DISK_PLAN_PAGES.length})`,
-				"accent",
-			),
-			hotkeyStatusSegment("next", nextKeys, "next"),
-			hotkeyStatusSegment("back", backKeys, "back"),
-			hotkeyStatusSegment(
-				"focus",
-				pageAllowsContentPane ? "tab" : "-",
-				pageAllowsContentPane ? "toggle pane" : "nav-only page",
-			),
-			hotkeyStatusSegment("quit", "q", "quit"),
-		];
-		if (isModePage) {
-			segments.push(hotkeyStatusSegment("mode", "m/h/l", "toggle"));
-		}
-		if (isDiskPage) {
-			segments.push(hotkeyStatusSegment("pick", "enter/h/j/k/l", "select disk"));
-		}
-		if (page === "destructive-confirm") {
-			segments.push(hotkeyStatusSegment("apply", "enter", `apply after ${CONFIRM_TOKEN}`));
-		}
-		if (isNavFocus) {
-			segments.push(hotkeyStatusSegment("nav", "j/k/h/l", "browse pages"));
-			if (pageAllowsContentPane) {
-				segments.push(hotkeyStatusSegment("open", "enter", "activate content"));
-			}
-		}
-		if (failure) {
-			segments.push(hotkeyStatusSegment("fail", "Shift+f", "failure"));
-		}
-		return <SegmentedStatusLine segments={segments} />;
-	}, [
-		activePane,
-		failure,
-		flow.pageIndex,
-		isDiskPage,
-		isModePage,
-		isNavFocus,
-		page,
-		pageAllowsContentPane,
-	]);
+	const footer = (
+		<SegmentedStatusLine
+			segments={[
+				scopeStatusSegment("disk-plan"),
+				textStatusSegment("focus", activePane, isNavFocus ? "warning" : "accent"),
+				textStatusSegment(
+					"page",
+					`${page} (${flow.pageIndex + 1}/${DISK_PLAN_PAGES.length})`,
+					"accent",
+				),
+				...keymapStatusSegments(
+					isConfirmPage
+						? CONFIRM_KEYS
+						: isNavFocus
+							? NAV_KEYS
+							: [...CONTENT_KEYS, ...(isDiskPage ? DISK_KEYS : [])],
+				),
+				...(isModePage ? keymapStatusSegments(MODE_KEYS) : []),
+				...keymapStatusSegments(
+					GLOBAL_KEYS.filter((b) => b.action !== "failure" || failure !== null),
+				),
+				...(notice ? [textStatusSegment("notice", notice, "warning")] : []),
+			]}
+		/>
+	);
 
 	const sidebar = (
 		<Box flexDirection="column">

@@ -25,6 +25,13 @@
 	"levitate": {
 		"tools": [
 			"recab"
-		]
+		],
+		"inspect": {
+			"refuse": [
+				"recab commit",
+				"recab rollback",
+				"recab set-next"
+			]
+		}
 	}
 }

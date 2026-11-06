@@ -1,4 +1,5 @@
-import { RUNTIME_RECAB_ACTIONS } from "../flows";
+import { keymapHelp } from "@levitate/tui-kit";
+import { RECAB_KEYMAP } from "../flows";
 
 export type CliOptions = {
 	recabBin: string;
@@ -49,10 +50,7 @@ export function cliHelpText(): string {
 		"  --recab-bin <path>   Recab binary path (default: recab from PATH)",
 		"  -h, --help           Show this help",
 		"",
-		"Hotkeys:",
-		"  j/k, arrows          Move action selection",
-		"  enter                Execute selected action",
-		...RUNTIME_RECAB_ACTIONS.map((action) => `  ${action.hotkey.padEnd(21)}${action.label}`),
-		"  q, esc, ctrl-c       Quit",
+		"Keys:",
+		keymapHelp(RECAB_KEYMAP),
 	].join("\n");
 }
