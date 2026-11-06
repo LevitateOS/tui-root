@@ -32,8 +32,8 @@ holds a stand-in for every tool it runs (`fixtures/`), so they never touch a dis
   variant's docs pane at the install screen's sizes), snapshots, and every story.
 - `cargo xtask stories` serves a page of live terminals (xterm.js), one per story, each running the
   real app; it also has each variant's whole install screen. It listens on every address and prints
-  a URL with an access token; open that URL from any machine. Without the token, nothing that can
-  start a program answers.
+  a URL with an access token; open that URL (from another machine, through an SSH tunnel to the
+  port if a firewall is in the way). Without the token, nothing that can start a program answers.
 
 ## Stories
 
