@@ -17,7 +17,7 @@ export type Status = {
 	known_good_slot: Slot | null;
 	/**
 	 * The running slot is the known-good slot. After a trial boot this is
-	 * false until `recab commit`; an uncommitted slot is left on next boot.
+	 * false until it is committed; an uncommitted slot is left on next boot.
 	 */
 	committed: boolean;
 	/**
