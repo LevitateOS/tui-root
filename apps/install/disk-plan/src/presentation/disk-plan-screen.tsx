@@ -134,6 +134,15 @@ function runState<T extends { schema_version: number }>(
   return { kind: "success", value };
 }
 
+/** What the user runs after the disk is ready: this installer's guidance. */
+function nextInstallSteps(target: string): string[] {
+  return [
+    `recstrap ${target}`,
+    `recfstab ${target} >> ${target}/etc/fstab`,
+    `recchroot ${target}   (then set a root password and install the bootloader)`,
+  ];
+}
+
 function hasInteractiveContent(page: DiskPlanPageId): boolean {
   return page === "target-disk" || page === "mode-selection" || page === "destructive-confirm";
 }
@@ -1094,10 +1103,16 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
               {entry.device}
             </UiText>
           ))}
+          {handoff.mode_context.install_target_slot ? (
+            <UiText>
+              A/B slot installed now: {handoff.mode_context.install_target_slot} (slot{" "}
+              {handoff.mode_context.inactive_slot_hint} stays unmounted)
+            </UiText>
+          ) : null}
           <UiText> </UiText>
-          <Text bold>Next Commands</Text>
-          {handoff.next_commands.map((command) => (
-            <UiText key={command}>{command}</UiText>
+          <Text bold>Next Steps</Text>
+          {nextInstallSteps(handoff.install_target).map((step) => (
+            <UiText key={step}>{step}</UiText>
           ))}
         </Box>
       );

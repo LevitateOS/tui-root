@@ -42,21 +42,21 @@ export type PartitionPlan = { schema_version: number, mode: InstallMode, layout_
 
 export type MountMapping = { path: string, device: string, };
 
-export type ModeContext = { install_target_slot: string | null, inactive_slot_hint: string | null, slot_a_device: string | null, slot_b_device: string | null, notes: Array<string>, };
+export type ModeContext = { install_target_slot: string | null, inactive_slot_hint: string | null, slot_a_device: string | null, slot_b_device: string | null, };
 
-export type HandoffPayload = { schema_version: number, mode: InstallMode, install_target: string, mount_map: Array<MountMapping>, next_commands: Array<string>, mode_context: ModeContext, };
+export type HandoffPayload = { schema_version: number, mode: InstallMode, install_target: string, mount_map: Array<MountMapping>, mode_context: ModeContext, };
 
 export type CommandRecord = { phase: string, command: string, program: string, args: Array<string>, status: number | null, stdout: string | null, stderr: string | null, dry_run: boolean, };
 
-export type ApplyResult = { schema_version: number, mode: InstallMode, layout_request: LayoutRequest, resolved_layout: ResolvedLayout, disk: DiskTarget, dry_run: boolean, steps: Array<CommandRecord>, partition_map: Array<PartitionTemplate>, formatted_devices: Array<string>, mounted: Array<MountMapping>, handoff: HandoffPayload, warnings: Array<string>, };
+export type ApplyResult = { schema_version: number, mode: InstallMode, layout_request: LayoutRequest, resolved_layout: ResolvedLayout, disk: DiskTarget, dry_run: boolean, steps: Array<CommandRecord>, partition_map: Array<PartitionTemplate>, formatted_devices: Array<string>, handoff: HandoffPayload, warnings: Array<string>, };
 
 export type ErrorPayload = { schema_version: number, code: string, component: string, expectation: string, observed: string, remediation: string, };
 
 export const PLAN_SCHEMA_VERSION = 1 as const;
 
-export const APPLY_SCHEMA_VERSION = 1 as const;
+export const APPLY_SCHEMA_VERSION = 2 as const;
 
-export const HANDOFF_SCHEMA_VERSION = 1 as const;
+export const HANDOFF_SCHEMA_VERSION = 2 as const;
 
 export const ERROR_SCHEMA_VERSION = 1 as const;
 
