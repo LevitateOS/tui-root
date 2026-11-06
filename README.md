@@ -31,8 +31,9 @@ holds a stand-in for every tool it runs (`fixtures/`), so they never touch a dis
 - `cargo xtask check tui` checks every TUI package: typecheck, lint, format, renders (including each
   variant's docs pane at the install screen's sizes), snapshots, and every story.
 - `cargo xtask stories` serves a page of live terminals (xterm.js), one per story, each running the
-  real app; it also has each variant's whole install screen. From another machine, tunnel the port:
-  `ssh -L 7681:127.0.0.1:7681 <this host>`, then open http://127.0.0.1:7681/.
+  real app; it also has each variant's whole install screen. It listens on every address and prints
+  a URL with an access token; open that URL from any machine. Without the token, nothing that can
+  start a program answers.
 
 ## Stories
 
