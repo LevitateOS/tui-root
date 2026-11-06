@@ -44,6 +44,7 @@ export function padRight(text: string, width: number): string {
 	return fitted + " ".repeat(safe - textWidth(fitted));
 }
 
-export function horizontalRule(width: number, char = "─"): string {
-	return char.repeat(cells(width));
+/** The message of a thrown value, whatever was thrown. */
+export function errorMessage(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
 }

@@ -4,6 +4,7 @@ import { AppProvider } from "./app-provider";
 import { KeyboardProvider, keymapHelp, type Keymap } from "../runtime/keymap";
 import { detectColorRuntime } from "../theme/colors";
 import { defaultTuiTheme, type TuiTheme } from "../theme/tokens";
+import { errorMessage } from "../utils/strings";
 
 /** A command-line flag. Without `value` it is a switch; with it, it takes one argument. */
 export type Flag = {
@@ -36,10 +37,6 @@ export type AppSpec = {
 	 */
 	run: (args: Args) => ReactElement | undefined;
 };
-
-export function errorMessage(error: unknown): string {
-	return error instanceof Error ? error.message : String(error);
-}
 
 function helpText(spec: AppSpec): string {
 	const flags = [...(spec.flags ?? []), { name: "help", alias: "h", help: "show this help" }];

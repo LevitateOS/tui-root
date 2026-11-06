@@ -1,5 +1,5 @@
 import type { ColorIntent, ThemeColor } from "../theme/tokens";
-import { textWidth, truncateLine } from "./strings";
+import { textWidth } from "./strings";
 
 /** A stretch of text in one style: the one styled-text type every component and app uses. */
 export type RichTextRun = {
@@ -129,19 +129,4 @@ export function truncateLines(text: string, max: number): string {
 	const lines = text.split("\n");
 	if (lines.length <= max) return text;
 	return [...lines.slice(0, max), `... (${lines.length - max} more lines)`].join("\n");
-}
-
-/** Word-wraps plain text to `width` cells (see `wrapRuns`). */
-export function wrapText(text: string, width: number): string[] {
-	return wrapRuns([{ text }], width).map(runsText);
-}
-
-/** Wraps `text` after `prefix ` and indents continuation lines to line up under it. */
-export function prefixWrappedText(prefix: string, text: string, width: number): string[] {
-	const safe = Math.max(1, Math.floor(width) || 1);
-	const lead = prefix.length > 0 ? `${prefix} ` : "";
-	const indent = " ".repeat(textWidth(lead));
-	return wrapText(text, Math.max(1, safe - textWidth(lead))).map((line, index) =>
-		truncateLine(`${index === 0 ? lead : indent}${line}`, safe),
-	);
 }

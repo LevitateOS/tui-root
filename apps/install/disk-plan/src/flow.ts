@@ -93,8 +93,6 @@ export type Page = {
 	back: (session: Session) => PageId | null;
 };
 
-const applyStarted = (session: Session) => session.apply.kind !== "idle";
-
 /** The flow: each page, its gate, and where Next and Back lead. */
 export const PAGES: readonly Page[] = [
 	{ id: "welcome", interactive: false, next: () => "target-disk", back: () => null },
@@ -141,7 +139,7 @@ export const PAGES: readonly Page[] = [
 		gate: { rule: `${CONFIRM_TOKEN} is typed, then Enter starts the apply`, holds: canApply },
 		// Only the apply action leaves this page forwards.
 		next: () => null,
-		back: (s) => (applyStarted(s) ? null : "preflight-checks"),
+		back: () => "preflight-checks",
 	},
 	{
 		id: "apply-progress",
@@ -160,7 +158,7 @@ export const PAGES: readonly Page[] = [
 		id: "failure-diagnostics",
 		interactive: false,
 		next: () => null,
-		back: (s) => (applyStarted(s) ? "apply-progress" : null),
+		back: () => "apply-progress",
 	},
 ];
 

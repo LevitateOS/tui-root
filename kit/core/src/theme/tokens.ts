@@ -25,15 +25,11 @@ export type ColorIntent =
 	| "linkActive"
 	| "linkActiveBackground"
 	// the two-pane frame
-	| "border"
 	| "navBorder"
 	| "contentBorder"
-	| "background"
 	| "navBackground"
 	| "contentBackground"
-	| "headerBackground"
 	| "footerBackground"
-	| "footerSeparator"
 	// navigation lists
 	| "navHeading"
 	| "navItem"
@@ -81,15 +77,11 @@ export const defaultThemeColors: ThemeColors = {
 	link: palette.sky300,
 	linkActive: palette.slate900,
 	linkActiveBackground: palette.slate300,
-	border: palette.white,
 	navBorder: palette.white,
 	contentBorder: palette.slate500,
-	background: palette.zinc950,
 	navBackground: palette.blue900,
 	contentBackground: palette.zinc900,
-	headerBackground: palette.slate800,
 	footerBackground: palette.slate900,
-	footerSeparator: palette.gray500,
 	navHeading: palette.blue100,
 	navItem: palette.blue200,
 	selection: palette.slate900,

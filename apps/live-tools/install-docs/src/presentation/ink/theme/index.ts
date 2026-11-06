@@ -36,12 +36,9 @@ export const MARKERS = {
 export function createInstallDocsTheme(): TuiTheme {
 	return createTheme(
 		{
-			background: "inherit",
-			border: ink.border,
 			navBorder: ink.border,
 			navBackground: "inherit",
 			contentBackground: "inherit",
-			headerBackground: "inherit",
 			footerBackground: "inherit",
 			navHeading: ink.text,
 			navItem: "#b8b3c9",

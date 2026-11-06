@@ -36,11 +36,6 @@ export function InstallStatusBar({
 		...keymapStatusSegments(focus === "navigation" ? NAV_KEYS : CONTENT_KEYS),
 		...keymapStatusSegments(VIEWER_KEYS),
 	];
-	if (focus === "content") {
-		segments.push(
-			textStatusSegment("action", action ?? "no actions", action ? "accent" : "dimText"),
-		);
-	}
 	if (note && note.trim().length > 0) {
 		segments.push(textStatusSegment("note", note.trim(), "warning"));
 	}

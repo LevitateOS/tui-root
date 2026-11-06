@@ -7,20 +7,12 @@ type GridNavigationOptions = {
 	count: number;
 	columns: number;
 	initialIndex?: number;
-	disabled?: boolean;
 };
 
 type GridNavigationState = {
-	currentIndex: number;
 	safeIndex: number;
-	row: number;
-	column: number;
 	setIndex: (index: number) => void;
 	move: (direction: GridDirection) => void;
-	moveLeft: () => void;
-	moveRight: () => void;
-	moveUp: () => void;
-	moveDown: () => void;
 };
 
 function transitionGridIndex(
@@ -55,7 +47,6 @@ export function useGridNavigation({
 	count,
 	columns,
 	initialIndex = 0,
-	disabled = false,
 }: GridNavigationOptions): GridNavigationState {
 	const safeTotal = Math.max(0, Math.floor(count));
 	const safeColumns = toPositiveInt(columns, 1);
@@ -66,44 +57,14 @@ export function useGridNavigation({
 	}, [safeTotal]);
 
 	const safeIndex = clampIndex(currentIndex, safeTotal);
-
 	const setIndex = useCallback(
-		(index: number) => {
-			setCurrentIndex(clampIndex(index, safeTotal));
-		},
+		(index: number) => setCurrentIndex(clampIndex(index, safeTotal)),
 		[safeTotal],
 	);
-
 	const move = useCallback(
-		(direction: GridDirection) => {
-			if (disabled) {
-				return;
-			}
-			setCurrentIndex((value) => transitionGridIndex(value, safeTotal, safeColumns, direction));
-		},
-		[disabled, safeColumns, safeTotal],
+		(direction: GridDirection) =>
+			setCurrentIndex((value) => transitionGridIndex(value, safeTotal, safeColumns, direction)),
+		[safeColumns, safeTotal],
 	);
-
-	const moveLeft = useCallback(() => move("left"), [move]);
-	const moveRight = useCallback(() => move("right"), [move]);
-	const moveUp = useCallback(() => move("up"), [move]);
-	const moveDown = useCallback(() => move("down"), [move]);
-	const row = Math.floor(safeIndex / safeColumns);
-	const column = safeIndex % safeColumns;
-
-	return useMemo(
-		() => ({
-			currentIndex,
-			safeIndex,
-			row,
-			column,
-			setIndex,
-			move,
-			moveLeft,
-			moveRight,
-			moveUp,
-			moveDown,
-		}),
-		[column, currentIndex, move, moveDown, moveLeft, moveRight, moveUp, row, safeIndex, setIndex],
-	);
+	return useMemo(() => ({ safeIndex, setIndex, move }), [move, safeIndex, setIndex]);
 }

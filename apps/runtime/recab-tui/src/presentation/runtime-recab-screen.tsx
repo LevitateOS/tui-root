@@ -1,6 +1,6 @@
 import { Box, Text, useApp } from "ink";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
 	KeyValue,
 	NavList,
@@ -21,12 +21,7 @@ import {
 
 import { readRecabStatus, runRecabCommand } from "../app/recab-runner";
 
-import {
-	RECAB_KEYMAP,
-	RUNTIME_RECAB_ACTIONS,
-	type RuntimeRecabAction,
-	type RuntimeRecabActionId,
-} from "../flows";
+import { RECAB_KEYMAP, RUNTIME_RECAB_ACTIONS, type RuntimeRecabAction } from "../flows";
 
 import type { Status } from "../generated/recab";
 
@@ -35,14 +30,14 @@ import { formatSlot } from "../domain/recab";
 /** Results kept in the log. */
 const LOG_ENTRIES = 5;
 
-function compactOutput(result: CommandResult, maxLines = 10): string {
+function compactOutput(result: CommandResult): string {
 	const combined = [result.stderr.trim(), result.stdout.trim()]
 		.filter((value) => value.length > 0)
 		.join("\n");
 	if (combined.length === 0) {
 		return "(no command output)";
 	}
-	return truncateLines(combined, maxLines);
+	return truncateLines(combined, 10);
 }
 
 const STATUS_ROWS: ReadonlyArray<[string, (status: Status) => string]> = [
@@ -92,22 +87,27 @@ export function RuntimeRecabScreen() {
 				? statusRead.reason
 				: null;
 	const isBusy = running !== null;
+	// A ref, not state: two keys handled in one batch must not both start a run.
+	const busy = useRef(false);
 
 	const runAction = async (action: RuntimeRecabAction) => {
-		if (isBusy) {
+		if (action.section === "Read") {
+			// The status panel runs `recab status` itself.
+			setRefreshes((n) => n + 1);
 			return;
 		}
+		if (busy.current) {
+			return;
+		}
+		busy.current = true;
 		setRunning(action);
-		const result = await runRecabCommand(action.args);
-		setLog((entries) => [{ label: action.label, result }, ...entries].slice(0, LOG_ENTRIES));
-		setRunning(null);
-		setRefreshes((n) => n + 1);
-	};
-
-	const runActionById = (id: RuntimeRecabActionId) => {
-		const action = RUNTIME_RECAB_ACTIONS.find((item) => item.id === id);
-		if (action) {
-			void runAction(action);
+		try {
+			const result = await runRecabCommand(action.args);
+			setLog((entries) => [{ label: action.label, result }, ...entries].slice(0, LOG_ENTRIES));
+		} finally {
+			busy.current = false;
+			setRunning(null);
+			setRefreshes((n) => n + 1);
 		}
 	};
 
@@ -124,7 +124,7 @@ export function RuntimeRecabScreen() {
 			}
 		},
 		...Object.fromEntries(
-			RUNTIME_RECAB_ACTIONS.map((action) => [action.id, () => runActionById(action.id)]),
+			RUNTIME_RECAB_ACTIONS.map((action) => [action.id, () => void runAction(action)]),
 		),
 		quit: () => {
 			if (runningMutation) {

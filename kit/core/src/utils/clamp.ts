@@ -14,10 +14,6 @@ export function toPositiveInt(value: unknown, fallback: number): number {
 	return Math.max(1, toInt(value, fallback));
 }
 
-export function toNonNegativeInt(value: unknown, fallback = 0): number {
-	return Math.max(0, toInt(value, fallback));
-}
-
 export function clampNumber(value: number, min: number, max: number): number {
 	const lower = Math.min(min, max);
 	const upper = Math.max(min, max);

@@ -14,14 +14,14 @@ too (`navItem`, `heading`, `panelBorder`); an app's own colours sit in its theme
 
 - `src/index.ts`: the public surface, exactly what the apps import (one entry, no subpaths).
 - `app/`: `runApp` (flags and `--help`, TTY check, providers, exit status), `startCommand`/`runCommand` (the one way to run a backend tool), the app provider and its hooks.
-- `runtime/`: key input and terminal size.
-- `hooks/`: hotkeys, focus between panes, list/grid navigation, scroll state.
-- `primitives/`: text, rich text, grid layout.
+- `runtime/`: key input: keymaps, `useKeymap`, the keyboard provider.
+- `hooks/`: focus between panes, list/grid navigation, scroll state, async tasks.
+- `primitives/`: text and rich text.
 - `components/`: navigation lists and grids, status line, key/value table.
 - `surfaces/`: `useShellLayout` and `AppShell`, the two-pane frame every app uses.
 - `chrome/`: the one box-drawing glyph table (and the same glyphs as an Ink `borderStyle`).
 - `theme/`: colour intents, palette, colour runtime, `createTheme`.
-- `utils/`: string width/wrap/pad and number helpers.
+- `utils/`: string width, rich-text runs and wrapping, number clamping, error messages.
 
 ## The frame
 

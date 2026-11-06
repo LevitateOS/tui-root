@@ -4,7 +4,6 @@ import { contentBySlug, docsNav, type DocsContent } from "@levitate/docs-content
 export type FlatDocsNavItem = {
 	sectionTitle: string;
 	title: string;
-	href: string;
 	slug: string;
 };
 
@@ -23,7 +22,7 @@ export const PAGES: readonly FlatDocsNavItem[] = (() => {
 			const slug = docsSlugFromHref(item.href);
 			if (contentBySlug[slug] === undefined || seen.has(slug)) continue;
 			seen.add(slug);
-			pages.push({ sectionTitle: section.title, title: item.title, href: item.href, slug });
+			pages.push({ sectionTitle: section.title, title: item.title, slug });
 		}
 	}
 	return pages;

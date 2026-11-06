@@ -1,5 +1,5 @@
 import { Box, useApp, useStdout } from "ink";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
 	AppShell,
 	RichTextLine,
@@ -51,14 +51,10 @@ export function InstallViewerScreen({ title, initialIndex }: InstallViewerScreen
 	const actions = page.anchors;
 	const selectedAnchor = focus.isContent && actions.length > 0 ? actionIndex : undefined;
 
-	useEffect(() => {
-		setActionIndex(0);
-		setRuntimeNote(undefined);
-	}, [currentItem.slug]);
-
 	const showPage = (move: () => void) => {
 		move();
 		scroll.toTop();
+		setActionIndex(0);
 		setRuntimeNote(undefined);
 	};
 	const reveal = (index: number) => {
@@ -100,7 +96,6 @@ export function InstallViewerScreen({ title, initialIndex }: InstallViewerScreen
 			return;
 		}
 		showPage(() => navigation.setPage(target.index));
-		setActionIndex(0);
 		setRuntimeNote(`opened docs page '${target.slug}'`);
 	};
 	const pageJump = Math.max(1, rows - 1);

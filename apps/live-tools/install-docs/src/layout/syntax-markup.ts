@@ -12,7 +12,7 @@ function restoreEscapes(value: string): string {
 	return value.replaceAll(ESCAPED_OPEN, "[[").replaceAll("\\{", "{").replaceAll("\\}", "}");
 }
 
-export function pushToken(target: SyntaxToken[], token: SyntaxToken): void {
+function pushToken(target: SyntaxToken[], token: SyntaxToken): void {
 	if (token.text.length === 0) {
 		return;
 	}

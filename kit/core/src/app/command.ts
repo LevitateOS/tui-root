@@ -1,3 +1,5 @@
+import { errorMessage } from "../utils/strings";
+
 export type CommandResult = {
 	argv: readonly string[];
 	/** null when the program could not be started (the reason is in `stderr`). */
@@ -34,8 +36,7 @@ export function startCommand(argv: readonly string[]): RunningCommand {
 		]).then(([stdout, stderr, exitCode]) => done(exitCode, stdout, stderr));
 		return { result, kill: () => proc.kill() };
 	} catch (error) {
-		const reason = error instanceof Error ? error.message : String(error);
-		return { result: Promise.resolve(done(null, "", reason)), kill: () => {} };
+		return { result: Promise.resolve(done(null, "", errorMessage(error))), kill: () => {} };
 	}
 }
 

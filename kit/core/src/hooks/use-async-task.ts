@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { errorMessage } from "../utils/strings";
 
 export type AsyncTask<T> =
 	| { kind: "idle" }
@@ -30,8 +31,7 @@ export function useAsyncTask<T>(key: string | null, run: () => Promise<T>): Asyn
 		};
 		new Promise<T>((resolve) => resolve(latest.current())).then(
 			(value) => settle({ kind: "done", value }),
-			(error: unknown) =>
-				settle({ kind: "error", message: error instanceof Error ? error.message : String(error) }),
+			(error: unknown) => settle({ kind: "error", message: errorMessage(error) }),
 		);
 		return () => {
 			current = false;

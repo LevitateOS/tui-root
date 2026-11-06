@@ -100,11 +100,7 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 		1,
 		Math.min(4, Math.floor(layout.content.textColumns / DISK_CARD_COLUMNS)),
 	);
-	const diskNav = useGridNavigation({
-		count: choices.length,
-		columns,
-		disabled: pageId !== "target-disk",
-	});
+	const diskNav = useGridNavigation({ count: choices.length, columns });
 	useEffect(() => {
 		if (listing.kind === "done" && wanted) {
 			const resolved = resolveDiskPath(wanted);
@@ -190,13 +186,15 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 		DISK_KEYS,
 		{
 			move: (key) =>
-				["up", "k"].includes(key)
-					? diskNav.moveUp()
-					: ["down", "j"].includes(key)
-						? diskNav.moveDown()
-						: ["left", "h"].includes(key)
-							? diskNav.moveLeft()
-							: diskNav.moveRight(),
+				diskNav.move(
+					["up", "k"].includes(key)
+						? "up"
+						: ["down", "j"].includes(key)
+							? "down"
+							: ["left", "h"].includes(key)
+								? "left"
+								: "right",
+				),
 		},
 		{ active: contentFocus && pageId === "target-disk" },
 	);
