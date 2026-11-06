@@ -14,6 +14,12 @@ type StartInstallDocsOptions = {
 	distro?: DistroId;
 };
 
+/** The slugs of every page the viewer can show, in nav order. */
+export function listPageSlugs(): string[] {
+	const session = createInstallSession(createMappedDocsSource(), getDistroProfile("levitate"));
+	return session.navItems.map((item) => item.slug);
+}
+
 export function startInstallDocsApp(options: StartInstallDocsOptions = {}): RenderedTuiApp {
 	const profile = getDistroProfile(options.distro ?? "levitate");
 	const source = createMappedDocsSource();

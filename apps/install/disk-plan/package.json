@@ -11,9 +11,8 @@
 			"recpart"
 		],
 		"inspect": {
-			"args": [
-				"--disk",
-				"/dev/sda"
+			"refuse": [
+				"recpart apply --confirm"
 			]
 		}
 	},

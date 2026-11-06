@@ -1,4 +1,4 @@
-import { startInstallDocsApp } from "../app/bootstrap";
+import { listPageSlugs, startInstallDocsApp } from "../app/bootstrap";
 import { AppError, formatErrorMessage } from "../app/errors";
 import { installDocsCliHelpText } from "./help";
 import { parseCliArgs } from "./parse-args";
@@ -14,6 +14,11 @@ export function runCli(args: string[] = process.argv.slice(2)): void {
 	if (options.error) {
 		console.error(options.error);
 		process.exit(2);
+	}
+
+	if (options.pages) {
+		console.log(listPageSlugs().join("\n"));
+		return;
 	}
 
 	try {

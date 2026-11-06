@@ -2,10 +2,20 @@
 	"name": "@levitate/install-docs",
 	"version": "0.2.0",
 	"license": "(MIT OR Apache-2.0)",
-	"type": "module",
 	"bin": {
 		"install-docs": "./src/main.ts"
 	},
+	"levitate": {
+		"inspect": {
+			"pages": {
+				"list": [
+					"--pages"
+				],
+				"arg": "--slug"
+			}
+		}
+	},
+	"type": "module",
 	"scripts": {
 		"typecheck": "tsc --noEmit",
 		"lint": "oxlint --config ../../../../.oxlintrc.json src --deny-warnings",

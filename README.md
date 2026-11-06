@@ -23,5 +23,5 @@ app and the kit share one copy. Lint and format use the root `.oxlintrc.json`
 and `.oxfmtrc.json`.
 
 Run any app with `cargo xtask tui <name>` (it builds the app's Rust tools and puts
-them on PATH first), render one headlessly with `cargo xtask inspect tui <name>`,
+them on PATH first), render one headlessly with `cargo xtask inspect <name>` (`--input` types keys),
 and typecheck everything with `cargo xtask check`.

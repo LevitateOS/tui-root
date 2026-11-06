@@ -2,12 +2,14 @@ const REMOVED_FLAGS = new Set(["--list", "-l", "--page", "-p", "--all", "-a", "-
 
 type CliOptions = {
 	help: boolean;
+	pages?: boolean;
 	slug?: string;
 	error?: string;
 };
 
 export function parseCliArgs(args: string[]): CliOptions {
 	let slug: string | undefined;
+	let pages = false;
 
 	for (let index = 0; index < args.length; index += 1) {
 		const arg = args[index];
@@ -22,6 +24,11 @@ export function parseCliArgs(args: string[]): CliOptions {
 				help: false,
 				error: `Flag '${flag}' was removed. Run interactive mode with no flags or use '--slug <page-slug>'.`,
 			};
+		}
+
+		if (arg === "--pages") {
+			pages = true;
+			continue;
 		}
 
 		if (arg.startsWith("--slug=")) {
@@ -57,6 +64,7 @@ export function parseCliArgs(args: string[]): CliOptions {
 
 	return {
 		help: false,
+		pages,
 		slug,
 	};
 }

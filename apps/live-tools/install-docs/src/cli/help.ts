@@ -6,6 +6,7 @@ Usage:
   levitate-install-docs
   levitate-install-docs --slug <page-slug>
   levitate-install-docs --slug=<page-slug>
+  levitate-install-docs --pages      Print every page slug, one per line
   levitate-install-docs --help
 
 Navigation:
