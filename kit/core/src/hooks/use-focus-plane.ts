@@ -3,12 +3,12 @@ import { useHotkeys } from "./use-hotkeys";
 
 export type FocusPlane = "navigation" | "content";
 
-export type FocusPlaneOptions = {
+type FocusPlaneOptions = {
 	initial?: FocusPlane;
 	bindTabKeys?: boolean;
 };
 
-export type FocusPlaneState = {
+type FocusPlaneState = {
 	plane: FocusPlane;
 	isNavigation: boolean;
 	isContent: boolean;
@@ -16,7 +16,7 @@ export type FocusPlaneState = {
 	togglePlane: () => void;
 };
 
-export function toggleFocusPlane(plane: FocusPlane): FocusPlane {
+function toggleFocusPlane(plane: FocusPlane): FocusPlane {
 	return plane === "navigation" ? "content" : "navigation";
 }
 

@@ -1,9 +1,10 @@
 import { Text } from "ink";
 import type { ReactNode } from "react";
 import { useTuiColors, useTuiTheme } from "../../app/app-provider";
-import { resolveIntentColor, type ColorIntent } from "../../theme";
+import { resolveIntentColor } from "../../theme/colors";
+import { type ColorIntent } from "../../theme/tokens";
 
-export type UiTextProps = {
+type UiTextProps = {
 	children: ReactNode;
 	intent?: ColorIntent;
 	bold?: boolean;

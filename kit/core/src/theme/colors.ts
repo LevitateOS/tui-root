@@ -7,7 +7,7 @@ export type ColorRuntime = {
 	enabled: boolean;
 };
 
-export type DetectColorRuntimeOptions = {
+type DetectColorRuntimeOptions = {
 	env?: Record<string, string | undefined>;
 	isTTY?: boolean;
 	mode?: ColorMode;
@@ -69,14 +69,6 @@ function fromHex(hex: string): Rgb {
 		g: Number.parseInt(clean.slice(2, 4), 16),
 		b: Number.parseInt(clean.slice(4, 6), 16),
 	};
-}
-
-function toHex(rgb: Rgb): string {
-	const toHexPart = (value: number): string => {
-		const normalized = clampNumber(Math.round(value), 0, 255);
-		return normalized.toString(16).padStart(2, "0");
-	};
-	return `#${toHexPart(rgb.r)}${toHexPart(rgb.g)}${toHexPart(rgb.b)}`;
 }
 
 function ansi256ToRgb(index: number): Rgb {
@@ -265,7 +257,7 @@ export function detectColorRuntime(options: DetectColorRuntimeOptions = {}): Col
 	return { mode: "ansi16", enabled: true };
 }
 
-export function resolveLiteralColor(color: string, runtime: ColorRuntime): string | undefined {
+function resolveLiteralColor(color: string, runtime: ColorRuntime): string | undefined {
 	if (!runtime.enabled || runtime.mode === "mono") {
 		return undefined;
 	}
@@ -346,27 +338,7 @@ export function resolveIntentColor(
 	return resolveColorValue(theme.colors[intent], runtime);
 }
 
-export function resolveIntentMono(theme: TuiTheme, intent: ColorIntent): ColorValue["mono"] {
-	return theme.colors[intent].mono;
-}
-
-export function resolveColorReference(
-	reference: string,
-	theme: TuiTheme,
-	runtime: ColorRuntime,
-): string | undefined {
-	const trimmed = reference.trim();
-	if (trimmed.startsWith("$")) {
-		const intent = trimmed.slice(1) as ColorIntent;
-		if (!(intent in theme.colors)) {
-			return undefined;
-		}
-		return resolveIntentColor(theme, intent, runtime);
-	}
-	return resolveLiteralColor(trimmed, runtime);
-}
-
-export function colorOverrideToDefaults(literal: string, fallback: ColorValue): ColorValue {
+function colorOverrideToDefaults(literal: string, fallback: ColorValue): ColorValue {
 	const truecolor = resolveLiteralColor(literal, TRUECOLOR_RUNTIME) ?? fallback.truecolor;
 	const ansi256Resolved = resolveLiteralColor(literal, ANSI256_RUNTIME);
 	const ansi256 = clampAnsi256(
@@ -412,26 +384,4 @@ export function normalizeColorValue(
 		ansi16: normalizedAnsi16,
 		mono: normalizedMono,
 	};
-}
-
-export function normalizeThemeColorMode(value: string | undefined): ColorMode | null {
-	if (!value) {
-		return null;
-	}
-	const normalized = value.trim().toLowerCase();
-	if (normalized === "truecolor" || normalized === "ansi256" || normalized === "ansi16") {
-		return normalized;
-	}
-	if (normalized === "mono" || normalized === "none") {
-		return "mono";
-	}
-	return null;
-}
-
-export function resolveRgbLiteral(value: string): string | null {
-	const rgb = parseRgb(value);
-	if (!rgb) {
-		return null;
-	}
-	return toHex(rgb);
 }

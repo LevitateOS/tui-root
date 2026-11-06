@@ -1,7 +1,7 @@
 import { Text } from "ink";
-import type { ColorIntent } from "../../theme";
+import type { ColorIntent } from "../../theme/tokens";
 import { useTuiColors, useTuiTheme } from "../../app/app-provider";
-import { resolveIntentColor } from "../../theme";
+import { resolveIntentColor } from "../../theme/colors";
 
 export type RichTextRun = {
 	text: string;
@@ -13,7 +13,7 @@ export type RichTextRun = {
 	underline?: boolean;
 };
 
-export type RichTextLineProps = {
+type RichTextLineProps = {
 	runs: ReadonlyArray<RichTextRun>;
 	fallbackIntent?: ColorIntent;
 };

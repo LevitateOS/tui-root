@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { ColorIntent } from "../theme";
+import type { ColorIntent } from "../theme/tokens";
 
 export type ChromeLineWeight = "single" | "double" | "round" | "bold";
 

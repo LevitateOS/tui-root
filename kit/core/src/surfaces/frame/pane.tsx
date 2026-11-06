@@ -1,15 +1,10 @@
 import { Box, Text } from "ink";
 import type { ReactNode } from "react";
-import {
-	ChromeFrame,
-	ChromeLayer,
-	ChromeSeam,
-	ChromeText,
-	type ChromeLineWeight,
-} from "../../chrome";
+import { ChromeFrame, ChromeLayer, ChromeSeam, ChromeText } from "../../chrome/components";
+import { type ChromeLineWeight } from "../../chrome/types";
 import { useTuiColors, useTuiTheme } from "../../app/app-provider";
-import { resolveIntentColor } from "../../theme";
-import { padRight, truncateLine } from "../../utils";
+import { resolveIntentColor } from "../../theme/colors";
+import { padRight, truncateLine } from "../../utils/strings";
 import type { SurfacePaneProps } from "./types";
 
 function renderNode(value: ReactNode, color?: string, bold = false): ReactNode {

@@ -112,9 +112,7 @@ function collectInstructions(children: ReactNode, output: ChromeInstruction[]): 
 }
 
 export const ChromeFrame = createChromeNode<ChromeFrameProps>("frame", "ChromeFrame");
-export const ChromeRule = createChromeNode<ChromeRuleProps>("rule", "ChromeRule");
 export const ChromeSeam = createChromeNode<ChromeSeamProps>("seam", "ChromeSeam");
-export const ChromeSplit = createChromeNode<ChromeSplitProps>("split", "ChromeSplit");
 export const ChromeText = createChromeNode<ChromeTextProps>("text", "ChromeText");
 
 export function ChromeLayer({

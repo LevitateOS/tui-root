@@ -1,17 +1,19 @@
 import { Box, Text } from "ink";
-import { clampNumber, padRight, toNonNegativeInt, truncateBoundedLine } from "../../utils";
+import { clampNumber, toNonNegativeInt } from "../../utils/clamp";
+import { padRight, truncateBoundedLine } from "../../utils/strings";
 import { useTuiColors, useTuiTheme } from "../../app/app-provider";
-import { resolveIntentColor, type ColorIntent } from "../../theme";
+import { resolveIntentColor } from "../../theme/colors";
+import { type ColorIntent } from "../../theme/tokens";
 
-export type TreeNavMode = "focus-section" | "all-sections";
+type TreeNavMode = "focus-section" | "all-sections";
 
-export type TreeNavItem = {
+type TreeNavItem = {
 	key: string;
 	section: string;
 	label: string;
 };
 
-export type TreeNavRow = {
+type TreeNavRow = {
 	key: string;
 	text: string;
 	kind: "section" | "item" | "gap";
@@ -19,7 +21,7 @@ export type TreeNavRow = {
 	collapsed?: boolean;
 };
 
-export type BuildTreeNavRowsOptions = {
+type BuildTreeNavRowsOptions = {
 	selectedIndex: number;
 	maxWidth?: number;
 	currentSection?: string;
@@ -71,7 +73,7 @@ function groupSections(items: ReadonlyArray<TreeNavItem>): GroupedSection[] {
 	return groups;
 }
 
-export function buildTreeNavRows(
+function buildTreeNavRows(
 	items: ReadonlyArray<TreeNavItem>,
 	options: BuildTreeNavRowsOptions,
 ): TreeNavRow[] {
@@ -150,7 +152,7 @@ export function buildTreeNavRows(
 	return rows;
 }
 
-export type TreeNavProps = BuildTreeNavRowsOptions & {
+type TreeNavProps = BuildTreeNavRowsOptions & {
 	items: ReadonlyArray<TreeNavItem>;
 	sectionIntent?: ColorIntent;
 	collapsedSectionIntent?: ColorIntent;

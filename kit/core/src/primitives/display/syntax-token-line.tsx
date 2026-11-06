@@ -1,11 +1,6 @@
-import { Text } from "ink";
-import type { ColorIntent } from "../../theme";
-import { useTuiColors, useTuiTheme } from "../../app/app-provider";
-import { resolveIntentColor } from "../../theme";
-
 const ESCAPED_OPEN = "\u0000TUI_ESCAPED_OPEN\u0000";
 
-export type SyntaxToken = {
+type SyntaxToken = {
 	text: string;
 	color?: string;
 };
@@ -91,31 +86,4 @@ export function parseSyntaxTokenLine(line: string): SyntaxToken[] {
 	}
 
 	return tokens;
-}
-
-export type SyntaxTokenLineProps = {
-	line: string;
-	fallbackIntent?: ColorIntent;
-	bold?: boolean;
-};
-
-export function SyntaxTokenLine({
-	line,
-	fallbackIntent = "text",
-	bold = false,
-}: SyntaxTokenLineProps) {
-	const theme = useTuiTheme();
-	const colors = useTuiColors();
-	const fallbackColor = resolveIntentColor(theme, fallbackIntent, colors);
-	const tokens = parseSyntaxTokenLine(line);
-
-	return (
-		<Text>
-			{tokens.map((token, index) => (
-				<Text key={`${index}-${token.text}`} color={token.color ?? fallbackColor} bold={bold}>
-					{token.text}
-				</Text>
-			))}
-		</Text>
-	);
 }

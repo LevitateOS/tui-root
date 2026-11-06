@@ -4,7 +4,7 @@ import { createTuiApp, type CreateTuiAppOptions, type TuiApp } from "./create-ap
 import { AppProvider } from "./app-provider";
 import { ErrorBoundary } from "./error-boundary";
 
-export type RenderAppOptions = CreateTuiAppOptions & {
+type RenderAppOptions = CreateTuiAppOptions & {
 	app?: TuiApp;
 	exitOnCtrlC?: boolean;
 };
@@ -34,7 +34,6 @@ export function renderApp(element: ReactElement, options: RenderAppOptions = {})
 	const app =
 		options.app ??
 		createTuiApp({
-			title: options.title,
 			theme: options.theme,
 			colorMode: options.colorMode,
 			colorEnabled: options.colorEnabled,

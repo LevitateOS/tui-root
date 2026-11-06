@@ -1,39 +1,20 @@
-import { toPositiveInt } from "./utils/clamp";
-import {
-	detectColorRuntime,
-	normalizeColorValue,
-	normalizeThemeColorMode,
-	resolveColorReference,
-	resolveIntentColor,
-	resolveIntentMono,
-	resolveLiteralColor,
-	resolveRgbLiteral,
-	type ColorRuntime,
-	type DetectColorRuntimeOptions,
-} from "./theme/colors";
+import { toPositiveInt } from "../utils/clamp";
+
+import { normalizeColorValue } from "./colors";
 import {
 	defaultThemeChrome,
 	defaultThemeColors,
 	defaultThemeLayout,
-	defaultTuiTheme,
 	type ColorIntent,
-	type ColorMode,
 	type ThemeChrome,
 	type ThemeColorOverride,
 	type ThemeColors,
 	type ThemeColorsOverride,
 	type ThemeLayout,
 	type TuiTheme,
-} from "./theme/tokens";
+} from "./tokens";
 
-export * from "./theme/tokens";
-export * from "./theme/palette";
-export * from "./theme/spacing";
-export * from "./theme/typography";
-export * from "./theme/theme-provider";
-export * from "./theme/colors";
-
-export function normalizeThemeLayout(layout: Partial<ThemeLayout>): ThemeLayout {
+function normalizeThemeLayout(layout: Partial<ThemeLayout>): ThemeLayout {
 	const candidate: ThemeLayout = {
 		sidebarWidth: toPositiveInt(
 			layout.sidebarWidth ?? defaultThemeLayout.sidebarWidth,
@@ -70,7 +51,7 @@ export function normalizeThemeLayout(layout: Partial<ThemeLayout>): ThemeLayout 
 	return candidate;
 }
 
-export function normalizeThemeChrome(chrome: Partial<ThemeChrome> = {}): ThemeChrome {
+function normalizeThemeChrome(chrome: Partial<ThemeChrome> = {}): ThemeChrome {
 	const safePaddingX = Number.isFinite(chrome.panePaddingX)
 		? Math.max(0, Math.floor(chrome.panePaddingX ?? 0))
 		: defaultThemeChrome.panePaddingX;
@@ -89,20 +70,9 @@ export function normalizeThemeChrome(chrome: Partial<ThemeChrome> = {}): ThemeCh
 			chrome.borderGlyphSet === "single"
 				? chrome.borderGlyphSet
 				: defaultThemeChrome.borderGlyphSet,
-		titleStyle:
-			chrome.titleStyle === "slot" ||
-			chrome.titleStyle === "notched" ||
-			chrome.titleStyle === "plain"
-				? chrome.titleStyle
-				: defaultThemeChrome.titleStyle,
 		panePaddingX: safePaddingX,
 		panePaddingY: safePaddingY,
 		framePaneGap: safeFramePaneGap,
-		sidebarHeaderMode:
-			chrome.sidebarHeaderMode === "current-section-title" ||
-			chrome.sidebarHeaderMode === "all-section-headers"
-				? chrome.sidebarHeaderMode
-				: defaultThemeChrome.sidebarHeaderMode,
 	};
 }
 
@@ -116,7 +86,7 @@ function normalizeColorOverride(
 	return normalizeColorValue(override, base);
 }
 
-export function normalizeThemeColors(
+function normalizeThemeColors(
 	colors: ThemeColorsOverride = {},
 	fallback: ThemeColors = defaultThemeColors,
 ): ThemeColors {
@@ -136,7 +106,6 @@ export function normalizeThemeColors(
 		sidebarBackground: normalizeColorOverride("sidebarBackground", colors, fallback),
 		contentBackground: normalizeColorOverride("contentBackground", colors, fallback),
 		headerBackground: normalizeColorOverride("headerBackground", colors, fallback),
-		headerAccentBackground: normalizeColorOverride("headerAccentBackground", colors, fallback),
 		footerBackground: normalizeColorOverride("footerBackground", colors, fallback),
 		sidebarSectionText: normalizeColorOverride("sidebarSectionText", colors, fallback),
 		sidebarItemText: normalizeColorOverride("sidebarItemText", colors, fallback),
@@ -150,7 +119,6 @@ export function normalizeThemeColors(
 		footerSeparator: normalizeColorOverride("footerSeparator", colors, fallback),
 		commandBarBackground: normalizeColorOverride("commandBarBackground", colors, fallback),
 		commandPrompt: normalizeColorOverride("commandPrompt", colors, fallback),
-		warningBackground: normalizeColorOverride("warningBackground", colors, fallback),
 		sectionHeading: normalizeColorOverride("sectionHeading", colors, fallback),
 		sectionSubheading: normalizeColorOverride("sectionSubheading", colors, fallback),
 		cardBorder: normalizeColorOverride("cardBorder", colors, fallback),
@@ -169,34 +137,3 @@ export function createTheme(
 		chrome: normalizeThemeChrome(chrome),
 	};
 }
-
-export function footerHint(scope: string, extra?: string): string {
-	const safeScope = scope.trim().length > 0 ? scope.trim() : "tui";
-	const base = `[${safeScope}] q quit | arrows navigate`;
-	if (!extra || extra.trim().length === 0) {
-		return base;
-	}
-	return `${base} | ${extra.trim()}`;
-}
-
-export {
-	defaultThemeChrome,
-	defaultThemeColors,
-	defaultThemeLayout,
-	defaultTuiTheme,
-	detectColorRuntime,
-	normalizeThemeColorMode,
-	resolveColorReference,
-	resolveIntentColor,
-	resolveIntentMono,
-	resolveLiteralColor,
-	resolveRgbLiteral,
-};
-
-export type {
-	ColorIntent,
-	ColorMode,
-	ColorRuntime,
-	DetectColorRuntimeOptions,
-	ThemeColorsOverride,
-};

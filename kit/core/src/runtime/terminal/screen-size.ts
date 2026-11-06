@@ -5,7 +5,7 @@ export type TerminalSize = {
 	rows: number;
 };
 
-export const DEFAULT_TERMINAL_SIZE: TerminalSize = {
+const DEFAULT_TERMINAL_SIZE: TerminalSize = {
 	columns: 80,
 	rows: 24,
 };
@@ -14,7 +14,7 @@ function normalizeDimension(value: unknown, fallback: number): number {
 	return toPositiveIntOrFallback(value, fallback);
 }
 
-export function normalizeTerminalSize(
+function normalizeTerminalSize(
 	size: Partial<TerminalSize>,
 	fallback: TerminalSize = DEFAULT_TERMINAL_SIZE,
 ): TerminalSize {
@@ -36,16 +36,6 @@ export function readScreenSize(
 			rows: target?.rows,
 		},
 		safeFallback,
-	);
-}
-
-export function getTerminalSize(fallback: TerminalSize = DEFAULT_TERMINAL_SIZE): TerminalSize {
-	return readScreenSize(
-		{
-			columns: process.stdout.columns,
-			rows: process.stdout.rows,
-		},
-		fallback,
 	);
 }
 

@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
-import type { ColorIntent } from "../../theme";
+import type { ColorIntent } from "../../theme/tokens";
 
-export type SurfacePaneTitleStyle = "slot" | "notched" | "plain";
-export type SurfacePaneTitleMode = "none" | "inline" | "slot";
+type SurfacePaneTitleMode = "none" | "inline" | "slot";
 
 export type SurfacePaneProps = {
 	title?: ReactNode;
@@ -17,7 +16,6 @@ export type SurfacePaneProps = {
 	textIntent?: ColorIntent;
 	titleIntent?: ColorIntent;
 	titleMode?: SurfacePaneTitleMode;
-	titleStyle?: SurfacePaneTitleStyle;
 	paddingX?: number;
 	paddingY?: number;
 };

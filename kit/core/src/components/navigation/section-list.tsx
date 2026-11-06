@@ -2,12 +2,12 @@ import { Text } from "ink";
 import { clampNumber, toNonNegativeInt } from "../../utils/clamp";
 import { normalizeTextWidth, truncateBoundedLine } from "../../utils/strings";
 
-export type SectionListItem = {
+type SectionListItem = {
 	section: string;
 	label: string;
 };
 
-export type RenderSectionListOptions = {
+type RenderSectionListOptions = {
 	maxWidth?: number;
 	emptyLabel?: string;
 	marker?: string;
@@ -22,7 +22,7 @@ function marker(token: string | undefined, fallback: string): string {
 	return fallback;
 }
 
-export function renderSectionList(
+function renderSectionList(
 	items: ReadonlyArray<SectionListItem>,
 	selectedIndex: number,
 	options: RenderSectionListOptions = {},
@@ -62,7 +62,7 @@ export function renderSectionList(
 	return lines.join("\n");
 }
 
-export type SectionListProps = {
+type SectionListProps = {
 	items: ReadonlyArray<SectionListItem>;
 	selectedIndex: number;
 	maxWidth?: number;

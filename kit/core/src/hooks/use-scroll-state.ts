@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { clampNumber, toNonNegativeInt } from "../utils/clamp";
 
-export type ScrollState = {
+type ScrollState = {
 	scrollOffset: number;
 	scrollBy: (delta: number, maxScroll: number) => void;
 	scrollToTop: () => void;

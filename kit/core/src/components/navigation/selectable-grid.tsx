@@ -8,7 +8,7 @@ type RenderItemContext = {
 	selected: boolean;
 };
 
-export type SelectableGridProps<T> = {
+type SelectableGridProps<T> = {
 	items: ReadonlyArray<T>;
 	selectedIndex: number;
 	columns?: GridColumnSpec;
@@ -20,7 +20,7 @@ export type SelectableGridProps<T> = {
 	renderItem: (item: T, context: RenderItemContext) => ReactNode;
 };
 
-export function mapSelectableGridItems<T>(
+function mapSelectableGridItems<T>(
 	items: ReadonlyArray<T>,
 	selectedIndex: number,
 	renderItem: (item: T, context: RenderItemContext) => ReactNode,

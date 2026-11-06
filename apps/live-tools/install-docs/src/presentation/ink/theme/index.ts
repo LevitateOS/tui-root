@@ -17,7 +17,6 @@ export function createInstallDocsTheme(): TuiTheme {
 			sidebarBackground: "default",
 			contentBackground: "default",
 			headerBackground: "default",
-			headerAccentBackground: "default",
 			footerBackground: "default",
 			sidebarSectionText: {
 				truecolor: "#eceaf4",
@@ -65,7 +64,6 @@ export function createInstallDocsTheme(): TuiTheme {
 			warning: "#ffc76a",
 			commandBarBackground: "default",
 			commandPrompt: "#8ab8ff",
-			warningBackground: "default",
 			sectionHeading: "#9cc4ff",
 			sectionSubheading: "#7db3ff",
 			cardBorder: "#49455e",
@@ -79,11 +77,9 @@ export function createInstallDocsTheme(): TuiTheme {
 		},
 		{
 			borderGlyphSet: "single",
-			titleStyle: "slot",
 			panePaddingX: 1,
 			panePaddingY: 0,
 			framePaneGap: 0,
-			sidebarHeaderMode: "current-section-title",
 		},
 	);
 }

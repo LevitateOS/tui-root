@@ -1,7 +1,7 @@
 import { createChromeGrid } from "./grid";
 import type { ChromeGlyphSet, ChromeInstruction, ChromeRenderedRow } from "./types";
 
-export function applyChromeInstruction(
+function applyChromeInstruction(
 	grid: ReturnType<typeof createChromeGrid>,
 	instruction: ChromeInstruction,
 ): void {
@@ -45,13 +45,4 @@ export function renderChromeRows(options: {
 		applyChromeInstruction(grid, instruction);
 	}
 	return grid.renderRows(options.glyphSet);
-}
-
-export function renderChromeRowStrings(options: {
-	width: number;
-	height: number;
-	glyphSet: ChromeGlyphSet;
-	instructions: ReadonlyArray<ChromeInstruction>;
-}): string[] {
-	return renderChromeRows(options).map((row) => row.text);
 }

@@ -6,8 +6,7 @@
 	"license": "(MIT OR Apache-2.0)",
 	"type": "module",
 	"exports": {
-		".": "./src/index.ts",
-		"./theme": "./src/theme.ts"
+		".": "./src/index.ts"
 	},
 	"scripts": {
 		"typecheck": "tsc --noEmit",

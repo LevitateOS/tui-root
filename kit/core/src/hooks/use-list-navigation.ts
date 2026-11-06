@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { clampIndex } from "../utils/clamp";
 
-export type ListNavigationState = {
+type ListNavigationState = {
 	currentIndex: number;
 	safeIndex: number;
 	moveBy: (delta: number) => void;

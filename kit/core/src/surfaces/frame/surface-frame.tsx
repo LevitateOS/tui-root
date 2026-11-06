@@ -2,7 +2,7 @@ import { Box, Text } from "ink";
 import { useTuiColors, useTuiTheme, useTuiViewport } from "../../app/app-provider";
 import { UiText } from "../../primitives/display/text";
 import { terminalMeetsMinimum } from "../../runtime/terminal/screen-size";
-import { resolveIntentColor } from "../../theme";
+import { resolveIntentColor } from "../../theme/colors";
 import { FrameCanvas } from "./frame-canvas";
 import { SurfacePane } from "./pane";
 import type {

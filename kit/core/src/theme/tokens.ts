@@ -18,7 +18,6 @@ export type ColorIntent =
 	| "sidebarBackground"
 	| "contentBackground"
 	| "headerBackground"
-	| "headerAccentBackground"
 	| "footerBackground"
 	| "sidebarSectionText"
 	| "sidebarItemText"
@@ -28,7 +27,6 @@ export type ColorIntent =
 	| "footerSeparator"
 	| "commandBarBackground"
 	| "commandPrompt"
-	| "warningBackground"
 	| "sectionHeading"
 	| "sectionSubheading"
 	| "cardBorder"
@@ -57,11 +55,9 @@ export type ThemeLayout = {
 
 export type ThemeChrome = {
 	borderGlyphSet: "single" | "double" | "round" | "bold";
-	titleStyle: "slot" | "notched" | "plain";
 	panePaddingX: number;
 	panePaddingY: number;
 	framePaneGap: number;
-	sidebarHeaderMode: "current-section-title" | "all-section-headers";
 };
 
 export type TuiTheme = {
@@ -161,12 +157,6 @@ export const defaultThemeColors: ThemeColors = {
 		ansi16: "gray",
 		mono: "normal",
 	},
-	headerAccentBackground: {
-		truecolor: palette.slate600,
-		ansi256: 60,
-		ansi16: "blue",
-		mono: "bold",
-	},
 	footerBackground: {
 		truecolor: palette.slate900,
 		ansi256: 233,
@@ -221,12 +211,6 @@ export const defaultThemeColors: ThemeColors = {
 		ansi16: "yellow",
 		mono: "bold",
 	},
-	warningBackground: {
-		truecolor: palette.amber800,
-		ansi256: 94,
-		ansi16: "yellow",
-		mono: "normal",
-	},
 	sectionHeading: {
 		truecolor: "#e2e8f0",
 		ansi256: 255,
@@ -263,11 +247,9 @@ export const defaultThemeLayout: ThemeLayout = {
 
 export const defaultThemeChrome: ThemeChrome = {
 	borderGlyphSet: "single",
-	titleStyle: "notched",
 	panePaddingX: 1,
 	panePaddingY: 0,
 	framePaneGap: 1,
-	sidebarHeaderMode: "current-section-title",
 };
 
 export const defaultTuiTheme: TuiTheme = {

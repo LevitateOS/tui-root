@@ -1,4 +1,4 @@
-import type { ColorIntent } from "../theme";
+import type { ColorIntent } from "../theme/tokens";
 import type { ChromeGlyphSet, ChromeRect, ChromeRenderedRow, ChromeRenderedSpan } from "./types";
 
 const MASK_NORTH = 1;
@@ -81,7 +81,7 @@ function maskToGlyph(mask: number, glyphs: ChromeGlyphSet): string {
 	return " ";
 }
 
-export class ChromeGrid {
+class ChromeGrid {
 	readonly width: number;
 	readonly height: number;
 	readonly cells: ChromeCell[];

@@ -4,14 +4,6 @@ function normalizeWidth(width: number): number {
 	return toNonNegativeInt(width, 0);
 }
 
-export function splitLines(value: string | ReadonlyArray<string>): string[] {
-	if (typeof value !== "string") {
-		return value.map((line) => String(line));
-	}
-
-	return value.split("\n");
-}
-
 export function padRight(text: string, width: number): string {
 	const safeWidth = normalizeWidth(width);
 	if (safeWidth <= 0) {
@@ -63,7 +55,7 @@ function chunkWord(word: string, width: number): string[] {
 	return chunks;
 }
 
-export function wrapText(text: string, width: number): string[] {
+function wrapText(text: string, width: number): string[] {
 	const safeWidth = normalizeWidth(width);
 	if (safeWidth <= 0) {
 		return [text];

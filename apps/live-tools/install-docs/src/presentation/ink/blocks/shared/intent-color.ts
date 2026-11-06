@@ -5,11 +5,9 @@ const INHERIT_TERMINAL_BACKGROUND_INTENTS = new Set<ColorIntent>([
 	"sidebarBackground",
 	"contentBackground",
 	"headerBackground",
-	"headerAccentBackground",
 	"footerBackground",
 	"sidebarItemActiveBackground",
 	"commandBarBackground",
-	"warningBackground",
 	"cardBackground",
 ]);
 

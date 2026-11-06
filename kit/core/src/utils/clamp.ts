@@ -1,4 +1,4 @@
-export function toFiniteNumber(value: unknown, fallback: number): number {
+function toFiniteNumber(value: unknown, fallback: number): number {
 	if (typeof value !== "number" || !Number.isFinite(value)) {
 		return fallback;
 	}

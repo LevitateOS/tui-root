@@ -33,7 +33,6 @@ export function startInstallDocsApp(options: StartInstallDocsOptions = {}): Rend
 	}
 
 	const app = createTuiApp({
-		title: "install-docs",
 		theme: createInstallDocsTheme(),
 	});
 	const renderers = createInstallDocsRendererRegistry();

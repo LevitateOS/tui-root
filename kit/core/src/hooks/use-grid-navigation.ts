@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { clampIndex, toPositiveInt } from "../utils/clamp";
 
-export type GridDirection = "left" | "right" | "up" | "down";
+type GridDirection = "left" | "right" | "up" | "down";
 
-export type GridNavigationOptions = {
+type GridNavigationOptions = {
 	count: number;
 	columns: number;
 	initialIndex?: number;
 	disabled?: boolean;
 };
 
-export type GridNavigationState = {
+type GridNavigationState = {
 	currentIndex: number;
 	safeIndex: number;
 	row: number;
@@ -30,7 +30,7 @@ function safeCount(count: number): number {
 	return Math.floor(count);
 }
 
-export function transitionGridIndex(
+function transitionGridIndex(
 	currentIndex: number,
 	count: number,
 	columns: number,

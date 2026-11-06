@@ -1,17 +1,17 @@
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from "react";
 import { useStdout } from "ink";
 import { readScreenSize, type TerminalSize } from "../runtime/terminal/screen-size";
-import type { ColorRuntime, TuiTheme } from "../theme";
+import type { ColorRuntime } from "../theme/colors";
+import type { TuiTheme } from "../theme/tokens";
 
 export type TuiAppContextValue = {
-	title: string;
 	theme: TuiTheme;
 	colors: ColorRuntime;
 };
 
 const AppContext = createContext<TuiAppContextValue | null>(null);
 
-export type AppProviderProps = PropsWithChildren<{
+type AppProviderProps = PropsWithChildren<{
 	app: TuiAppContextValue;
 }>;
 
@@ -19,7 +19,7 @@ export function AppProvider({ app, children }: AppProviderProps) {
 	return <AppContext.Provider value={app}>{children}</AppContext.Provider>;
 }
 
-export function useTuiApp(): TuiAppContextValue {
+function useTuiApp(): TuiAppContextValue {
 	const value = useContext(AppContext);
 	if (!value) {
 		throw new Error("useTuiApp must be used inside <AppProvider>.");

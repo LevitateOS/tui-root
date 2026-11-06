@@ -1,15 +1,15 @@
 import { Text } from "ink";
 
-export type KeyValueEntry = {
+type KeyValueEntry = {
 	key: string;
 	value: string;
 };
 
-export type KeyValueProps = {
+type KeyValueProps = {
 	entries: ReadonlyArray<KeyValueEntry>;
 };
 
-export function renderKeyValue(entries: ReadonlyArray<KeyValueEntry>): string {
+function renderKeyValue(entries: ReadonlyArray<KeyValueEntry>): string {
 	if (entries.length === 0) {
 		return "";
 	}

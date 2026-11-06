@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { useTuiViewport } from "../../app/app-provider";
 import { toPositiveInt } from "../../utils/clamp";
 
-export type GridColumnBreakpoint = {
+type GridColumnBreakpoint = {
 	minWidth: number;
 	columns: number;
 };
@@ -15,7 +15,7 @@ export type GridColumnSpec =
 			breakpoints?: ReadonlyArray<GridColumnBreakpoint>;
 	  };
 
-export type GridProps = {
+type GridProps = {
 	items: ReadonlyArray<ReactNode>;
 	columns?: GridColumnSpec;
 	gap?: number;
@@ -26,7 +26,7 @@ export type GridProps = {
 	fillRow?: boolean;
 };
 
-export type GridItemProps = {
+type GridItemProps = {
 	children: ReactNode;
 	width?: number | string;
 	marginRight?: number;
@@ -64,7 +64,7 @@ export function resolveGridColumns(
 	return toPositiveInt(resolved, safeFallback);
 }
 
-export function groupGridRows<T>(
+function groupGridRows<T>(
 	items: ReadonlyArray<T>,
 	columns: number,
 ): ReadonlyArray<ReadonlyArray<T>> {
@@ -79,7 +79,7 @@ export function groupGridRows<T>(
 	return rows;
 }
 
-export function GridItem({ children, width, marginRight = 0, flexGrow, flexBasis }: GridItemProps) {
+function GridItem({ children, width, marginRight = 0, flexGrow, flexBasis }: GridItemProps) {
 	return (
 		<Box width={width} marginRight={marginRight} flexGrow={flexGrow} flexBasis={flexBasis}>
 			{children}
