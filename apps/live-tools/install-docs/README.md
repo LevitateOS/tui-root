@@ -11,7 +11,7 @@ bun src/main.tsx
 bun src/main.tsx --slug installation --title "LevitateOS install guide"
 ```
 
-On the live ISO the builder bundles it and launches it as `levitate-install-docs` in the install screen's right pane.
+On the live ISO the builder bundles it as `install-docs`, which the install screen (`install-ux`) runs in its right pane.
 
 Legacy non-interactive flags (`--list`, `--page`, `--all`) were removed.
 
