@@ -1,33 +1,29 @@
 {
-  "name": "@levitate/tui-kit",
-  "version": "0.3.0",
-  "private": true,
-  "description": "Reusable terminal UI primitives for LevitateOS",
-  "license": "(MIT OR Apache-2.0)",
-  "type": "module",
-  "exports": {
-    ".": "./src/index.ts",
-    "./theme": "./src/theme.ts"
-  },
-  "scripts": {
-    "clean": "rm -rf dist",
-    "build": "bun run clean && bunx tsc -p tsconfig.json",
-    "typecheck": "bunx tsc --noEmit -p tsconfig.json",
-    "lint": "bunx oxlint --config ../../../.oxlintrc.json src --deny-warnings",
-    "lint:fix": "bunx oxlint --config ../../../.oxlintrc.json src --fix",
-    "format": "bunx oxfmt --config ../../../.oxfmtrc.json --write src package.json tsconfig.json",
-    "format:check": "bunx oxfmt --config ../../../.oxfmtrc.json --check src package.json tsconfig.json",
-    "check": "bun run typecheck && bun run lint && bun run format:check",
-    "precommit": "git diff --cached --check"
-  },
-  "dependencies": {
-    "ink": "^6.8.0",
-    "react": "^19.2.0"
-  },
-  "devDependencies": {
-    "@types/react": "^19.2.0",
-    "oxfmt": "0.34.0",
-    "oxlint": "1.39.0",
-    "typescript": "^5.9.2"
-  }
+	"name": "@levitate/tui-kit",
+	"version": "0.3.0",
+	"private": true,
+	"description": "Reusable terminal UI primitives for LevitateOS",
+	"license": "(MIT OR Apache-2.0)",
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts",
+		"./theme": "./src/theme.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"lint": "oxlint --config ../../../.oxlintrc.json src --deny-warnings",
+		"format": "oxfmt --config ../../../.oxfmtrc.json --write src package.json tsconfig.json",
+		"format:check": "oxfmt --config ../../../.oxfmtrc.json --check src package.json tsconfig.json"
+	},
+	"devDependencies": {
+		"@types/bun": "^1.2.17",
+		"@types/react": "^19.2.0",
+		"ink": "^6.8.0",
+		"react": "^19.2.0",
+		"typescript": "^5.9.2"
+	},
+	"peerDependencies": {
+		"ink": "^6.8.0",
+		"react": "^19.2.0"
+	}
 }

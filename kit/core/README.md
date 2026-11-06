@@ -39,10 +39,8 @@ await mounted.waitUntilExit();
 
 ## Scripts
 
-- `bun run clean`
-- `bun run build`
 - `bun run typecheck`
-- Unit tests are prohibited; use typechecking and a terminal smoke check.
 - `bun run lint`
 - `bun run format:check`
-- `bun run precommit`
+
+The kit emits nothing: apps import its TypeScript sources directly.

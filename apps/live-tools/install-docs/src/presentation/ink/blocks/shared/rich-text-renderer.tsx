@@ -1,11 +1,6 @@
 import { Box } from "ink";
 import type { InlineNode, RichText } from "@levitate/docs-content";
-import {
-	RichTextLine,
-	linkRuns,
-	type ColorIntent,
-	type RichTextRun,
-} from "@levitate/tui-kit";
+import { RichTextLine, linkRuns, type ColorIntent, type RichTextRun } from "@levitate/tui-kit";
 import type { ReactNode } from "react";
 
 type RichTextRendererProps = {
@@ -323,13 +318,7 @@ export function RichTextRenderer({
 	selectedLinkHref,
 }: RichTextRendererProps): ReactNode {
 	if (typeof width === "number" && Number.isFinite(width)) {
-		const lines = wrapRichTextRuns(
-			content,
-			width,
-			defaultIntent,
-			minimumWidth,
-			selectedLinkHref,
-		);
+		const lines = wrapRichTextRuns(content, width, defaultIntent, minimumWidth, selectedLinkHref);
 		return (
 			<Box flexDirection="column">
 				{lines.map((line, index) => (

@@ -59,11 +59,7 @@ export function UiLink({
 	void onActivate;
 	const theme = useTuiTheme();
 	const colors = useTuiColors();
-	const textColor = resolveIntentColor(
-		theme,
-		isSelected ? "linkActiveText" : "linkText",
-		colors,
-	);
+	const textColor = resolveIntentColor(theme, isSelected ? "linkActiveText" : "linkText", colors);
 	const backgroundColor = isSelected
 		? resolveIntentColor(theme, "linkActiveBackground", colors)
 		: undefined;

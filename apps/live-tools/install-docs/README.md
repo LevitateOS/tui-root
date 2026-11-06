@@ -27,9 +27,10 @@ Legacy non-interactive flags (`--list`, `--page`, `--all`) were removed.
 ## Development
 
 ```bash
-bun install
+bun install            # at the repo root: one workspace, one lockfile
 bun run typecheck
+bun run lint
+bun run format:check
 bun run test:e2e
 bun run inspect:check
-bun run check
 ```

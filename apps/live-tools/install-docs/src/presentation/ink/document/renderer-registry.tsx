@@ -53,7 +53,9 @@ const DEFAULT_INSTALL_DOC_NODE_PLUGINS: DocNodePluginMap = Object.freeze({
 			<IntroItem
 				content={item.content}
 				contentWidth={context.contentWidth}
-				selectedLinkHref={context.selectedItemKey === item.key ? context.selectedLinkHref : undefined}
+				selectedLinkHref={
+					context.selectedItemKey === item.key ? context.selectedLinkHref : undefined
+				}
 			/>
 		),
 	},

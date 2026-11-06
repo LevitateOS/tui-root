@@ -2,61 +2,140 @@
 
 export type InstallMode = "ab" | "mutable";
 
-export type DiskTarget = { path: string, size_bytes: number, logical_sector_bytes: number, physical_sector_bytes: number, };
+export type DiskTarget = {
+	path: string;
+	size_bytes: number;
+	logical_sector_bytes: number;
+	physical_sector_bytes: number;
+};
 
-export type DiskInventory = { model: string, vendor: string, serial: string, transport: string, 
-/**
- * Spinning disk; `false` for SSDs and virtual disks.
- */
-rotational: boolean, removable: boolean, read_only: boolean, path: string, size_bytes: number, logical_sector_bytes: number, physical_sector_bytes: number, };
+export type DiskInventory = {
+	model: string;
+	vendor: string;
+	serial: string;
+	transport: string;
+	/**
+	 * Spinning disk; `false` for SSDs and virtual disks.
+	 */
+	rotational: boolean;
+	removable: boolean;
+	read_only: boolean;
+	path: string;
+	size_bytes: number;
+	logical_sector_bytes: number;
+	physical_sector_bytes: number;
+};
 
-export type DiskListResult = { schema_version: number, disks: Array<DiskInventory>, };
+export type DiskListResult = { schema_version: number; disks: Array<DiskInventory> };
 
-export type LayoutRequest = { 
-/**
- * EFI partition size in MB
- */
-efi_size_mb: number | null, 
-/**
- * Mutable root partition size in MB (mutable mode only)
- */
-root_size_mb: number | null, 
-/**
- * A/B slot A partition size in MB (ab mode only)
- */
-root_a_size_mb: number | null, 
-/**
- * A/B slot B partition size in MB (ab mode only)
- */
-root_b_size_mb: number | null, 
-/**
- * A/B state partition size in MB (ab mode only). Omit to use remaining space.
- */
-state_size_mb: number | null, };
+export type LayoutRequest = {
+	/**
+	 * EFI partition size in MB
+	 */
+	efi_size_mb: number | null;
+	/**
+	 * Mutable root partition size in MB (mutable mode only)
+	 */
+	root_size_mb: number | null;
+	/**
+	 * A/B slot A partition size in MB (ab mode only)
+	 */
+	root_a_size_mb: number | null;
+	/**
+	 * A/B slot B partition size in MB (ab mode only)
+	 */
+	root_b_size_mb: number | null;
+	/**
+	 * A/B state partition size in MB (ab mode only). Omit to use remaining space.
+	 */
+	state_size_mb: number | null;
+};
 
-export type ResolvedLayout = { mode: InstallMode, efi_size_mb: number, root_size_mb: number | null, root_a_size_mb: number | null, root_b_size_mb: number | null, state_size_mb: number | null, };
+export type ResolvedLayout = {
+	mode: InstallMode;
+	efi_size_mb: number;
+	root_size_mb: number | null;
+	root_a_size_mb: number | null;
+	root_b_size_mb: number | null;
+	state_size_mb: number | null;
+};
 
 export type Filesystem = "vfat" | "ext4";
 
-export type PartitionTemplate = { index: number, name: string, filesystem: Filesystem, label: string, gpt_type: string, 
-/**
- * The legacy-BIOS bootable flag (set on the ESP).
- */
-bootable: boolean, size_mb: number | null, mountpoint: string, };
+export type PartitionTemplate = {
+	index: number;
+	name: string;
+	filesystem: Filesystem;
+	label: string;
+	gpt_type: string;
+	/**
+	 * The legacy-BIOS bootable flag (set on the ESP).
+	 */
+	bootable: boolean;
+	size_mb: number | null;
+	mountpoint: string;
+};
 
-export type PartitionPlan = { schema_version: number, mode: InstallMode, layout_request: LayoutRequest, resolved_layout: ResolvedLayout, disk: DiskTarget, partitions: Array<PartitionTemplate>, sfdisk_script: string, };
+export type PartitionPlan = {
+	schema_version: number;
+	mode: InstallMode;
+	layout_request: LayoutRequest;
+	resolved_layout: ResolvedLayout;
+	disk: DiskTarget;
+	partitions: Array<PartitionTemplate>;
+	sfdisk_script: string;
+};
 
-export type MountMapping = { path: string, device: string, };
+export type MountMapping = { path: string; device: string };
 
-export type ModeContext = { install_target_slot: string | null, inactive_slot_hint: string | null, slot_a_device: string | null, slot_b_device: string | null, };
+export type ModeContext = {
+	install_target_slot: string | null;
+	inactive_slot_hint: string | null;
+	slot_a_device: string | null;
+	slot_b_device: string | null;
+};
 
-export type HandoffPayload = { schema_version: number, mode: InstallMode, install_target: string, mount_map: Array<MountMapping>, mode_context: ModeContext, };
+export type HandoffPayload = {
+	schema_version: number;
+	mode: InstallMode;
+	install_target: string;
+	mount_map: Array<MountMapping>;
+	mode_context: ModeContext;
+};
 
-export type CommandRecord = { phase: string, command: string, program: string, args: Array<string>, status: number | null, stdout: string | null, stderr: string | null, dry_run: boolean, };
+export type CommandRecord = {
+	phase: string;
+	command: string;
+	program: string;
+	args: Array<string>;
+	status: number | null;
+	stdout: string | null;
+	stderr: string | null;
+	dry_run: boolean;
+};
 
-export type ApplyResult = { schema_version: number, mode: InstallMode, layout_request: LayoutRequest, resolved_layout: ResolvedLayout, disk: DiskTarget, dry_run: boolean, steps: Array<CommandRecord>, partition_map: Array<PartitionTemplate>, formatted_devices: Array<string>, handoff: HandoffPayload, warnings: Array<string>, };
+export type ApplyResult = {
+	schema_version: number;
+	mode: InstallMode;
+	layout_request: LayoutRequest;
+	resolved_layout: ResolvedLayout;
+	disk: DiskTarget;
+	dry_run: boolean;
+	steps: Array<CommandRecord>;
+	partition_map: Array<PartitionTemplate>;
+	formatted_devices: Array<string>;
+	handoff: HandoffPayload;
+	warnings: Array<string>;
+};
 
-export type ErrorPayload = { schema_version: number, code: string, component: string, expectation: string, observed: string, remediation: string, };
+export type ErrorPayload = {
+	schema_version: number;
+	code: string;
+	component: string;
+	expectation: string;
+	observed: string;
+	remediation: string;
+};
 
 export const PLAN_SCHEMA_VERSION = 1 as const;
 
@@ -70,4 +149,4 @@ export const DISK_LIST_SCHEMA_VERSION = 1 as const;
 
 export const CONFIRM_TOKEN = "DESTROY" as const;
 
-export const INSTALL_MODES = ["ab","mutable"] as const;
+export const INSTALL_MODES = ["ab", "mutable"] as const;

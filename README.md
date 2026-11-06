@@ -11,8 +11,11 @@ Terminal apps for the LevitateOS live ISO and installer, built on a shared kit.
 ## Kit
 
 - `kit/core`: runtime, primitives, components, chrome and theme.
-- `kit/presets-install`: install UX compositions shared by the apps.
-- `kit/testing`: test harness and snapshot helpers.
+
+Every package is a member of the root JavaScript workspace (root `package.json`
+and `bun.lock`): the kit lists `ink` and `react` as peer dependencies so every
+app and the kit share one copy. Lint and format use the root `.oxlintrc.json`
+and `.oxfmtrc.json`.
 
 Run an app with `cargo xtask tui <app>`, render one headlessly with
 `cargo xtask inspect tui <app>`, and typecheck everything with `cargo xtask check`.

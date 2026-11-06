@@ -31,13 +31,9 @@ export function PrefixedRichListItem({
 	const safeWidth = Math.max(1, width);
 	const prefix = `${marker} `;
 	const textWidth = Math.max(1, safeWidth - prefix.length);
-	const wrappedLines = wrapRichTextRuns(
-		content,
-		textWidth,
-		contentIntent,
-		1,
-		selectedLinkHref,
-	).map((lineRuns) => (backgroundIntent ? withBackgroundIntent(lineRuns, backgroundIntent) : lineRuns));
+	const wrappedLines = wrapRichTextRuns(content, textWidth, contentIntent, 1, selectedLinkHref).map(
+		(lineRuns) => (backgroundIntent ? withBackgroundIntent(lineRuns, backgroundIntent) : lineRuns),
+	);
 
 	return (
 		<Box flexDirection="row" width={safeWidth}>

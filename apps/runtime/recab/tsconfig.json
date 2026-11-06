@@ -1,26 +1,14 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "jsx": "react-jsx",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "declaration": true,
-    "outDir": "dist",
-    "types": ["bun", "node"]
-  },
-  "include": [
-    "app/**/*.ts",
-    "app/**/*.tsx",
-    "cli/**/*.ts",
-    "domain/**/*.ts",
-    "flows/**/*.ts",
-    "presentation/**/*.ts",
-    "presentation/**/*.tsx",
-    "index.ts",
-    "main.ts"
-  ]
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"jsx": "react-jsx",
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"noEmit": true,
+		"types": ["bun"]
+	},
+	"include": ["src"]
 }

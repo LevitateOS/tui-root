@@ -3,14 +3,14 @@ import type { DiskMode } from "../cli/parse-args";
 import { DiskPlanScreen } from "../presentation/disk-plan-screen";
 
 type StartDiskPlanOptions = {
-  disk?: string;
-  mode: DiskMode;
+	disk?: string;
+	mode: DiskMode;
 };
 
 export function startDiskPlanApp(options: StartDiskPlanOptions): RenderedTuiApp {
-  const app = createTuiApp({ title: "levitate-install-disk-plan" });
-  return renderApp(<DiskPlanScreen disk={options.disk ?? ""} mode={options.mode} />, {
-    app,
-    exitOnCtrlC: false,
-  });
+	const app = createTuiApp({ title: "levitate-install-disk-plan" });
+	return renderApp(<DiskPlanScreen disk={options.disk ?? ""} mode={options.mode} />, {
+		app,
+		exitOnCtrlC: false,
+	});
 }

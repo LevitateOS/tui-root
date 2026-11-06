@@ -1,10 +1,5 @@
 import { useApp } from "ink";
-import type {
-	CommandBlock,
-	ContentBlock,
-	InlineNode,
-	RichText,
-} from "@levitate/docs-content";
+import type { CommandBlock, ContentBlock, InlineNode, RichText } from "@levitate/docs-content";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	SurfaceFrame,
@@ -60,7 +55,9 @@ function commandBlockText(block: CommandBlock): string {
 	return Array.isArray(block.command) ? block.command.join("\n") : block.command;
 }
 
-function extractInlineLinks(content: string | RichText | undefined): Array<{ href: string; label: string }> {
+function extractInlineLinks(
+	content: string | RichText | undefined,
+): Array<{ href: string; label: string }> {
 	if (!Array.isArray(content)) {
 		return [];
 	}
@@ -409,35 +406,71 @@ export function InstallViewerScreen({
 	useHotkeys(["m"], () => {
 		setSidebarMode((previous) => (previous === "focus-section" ? "all-sections" : "focus-section"));
 	});
-	useHotkeys(["left", "h"], () => {
-		movePage(-1);
-		setRuntimeNote(undefined);
-	}, { isActive: focus.isNavigation });
-	useHotkeys(["right", "l"], () => {
-		movePage(1);
-		setRuntimeNote(undefined);
-	}, { isActive: focus.isNavigation });
-	useHotkeys(["[", "{"], () => {
-		moveSection(-1);
-	}, { isActive: focus.isNavigation });
-	useHotkeys(["]", "}"], () => {
-		moveSection(1);
-	}, { isActive: focus.isNavigation });
-	useHotkeys(["up", "k"], () => {
-		moveActionable(-1);
-	}, { isActive: focus.isContent });
-	useHotkeys(["up", "k"], () => {
-		scrollBy(-1);
-	}, { isActive: focus.isNavigation });
-	useHotkeys(["down", "j"], () => {
-		moveActionable(1);
-	}, { isActive: focus.isContent });
-	useHotkeys(["down", "j"], () => {
-		scrollBy(1);
-	}, { isActive: focus.isNavigation });
-	useHotkeys(["enter"], () => {
-		activateSelectedActionable();
-	}, { isActive: focus.isContent });
+	useHotkeys(
+		["left", "h"],
+		() => {
+			movePage(-1);
+			setRuntimeNote(undefined);
+		},
+		{ isActive: focus.isNavigation },
+	);
+	useHotkeys(
+		["right", "l"],
+		() => {
+			movePage(1);
+			setRuntimeNote(undefined);
+		},
+		{ isActive: focus.isNavigation },
+	);
+	useHotkeys(
+		["[", "{"],
+		() => {
+			moveSection(-1);
+		},
+		{ isActive: focus.isNavigation },
+	);
+	useHotkeys(
+		["]", "}"],
+		() => {
+			moveSection(1);
+		},
+		{ isActive: focus.isNavigation },
+	);
+	useHotkeys(
+		["up", "k"],
+		() => {
+			moveActionable(-1);
+		},
+		{ isActive: focus.isContent },
+	);
+	useHotkeys(
+		["up", "k"],
+		() => {
+			scrollBy(-1);
+		},
+		{ isActive: focus.isNavigation },
+	);
+	useHotkeys(
+		["down", "j"],
+		() => {
+			moveActionable(1);
+		},
+		{ isActive: focus.isContent },
+	);
+	useHotkeys(
+		["down", "j"],
+		() => {
+			scrollBy(1);
+		},
+		{ isActive: focus.isNavigation },
+	);
+	useHotkeys(
+		["enter"],
+		() => {
+			activateSelectedActionable();
+		},
+		{ isActive: focus.isContent },
+	);
 	useHotkeys(["pageup", "b"], () => {
 		if (!focus.isContent) {
 			return;
@@ -464,9 +497,13 @@ export function InstallViewerScreen({
 		scroll.scrollToBottom(docsViewport.maxScroll);
 		setRuntimeNote(undefined);
 	});
-	useHotkeys(["c", "y"], () => {
-		copySelectedActionable();
-	}, { isActive: focus.isContent });
+	useHotkeys(
+		["c", "y"],
+		() => {
+			copySelectedActionable();
+		},
+		{ isActive: focus.isContent },
+	);
 
 	const sidebar = (
 		<InstallSidebar
