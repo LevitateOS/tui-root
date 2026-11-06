@@ -956,6 +956,17 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
               [{step.phase}] {step.command}
             </UiText>
           ))}
+          {applySummary.warnings.length > 0 ? (
+            <>
+              <UiText> </UiText>
+              <Text bold color="yellow">
+                Apply would refuse this disk
+              </Text>
+              {applySummary.warnings.map((warning, index) => (
+                <UiText key={`warning-${index}`}>{warning}</UiText>
+              ))}
+            </>
+          ) : null}
         </Box>
       );
     } else if (applyDryRunState.kind === "failure") {
