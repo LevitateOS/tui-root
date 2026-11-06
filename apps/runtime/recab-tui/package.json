@@ -27,10 +27,61 @@
 			"recab"
 		],
 		"inspect": {
-			"refuse": [
-				"recab commit",
-				"recab rollback",
-				"recab set-next"
+			"path": [
+				"fixtures"
+			],
+			"stories": [
+				{
+					"name": "status",
+					"steps": [
+						{
+							"expect": "active        : A"
+						}
+					]
+				},
+				{
+					"name": "trial pending",
+					"env": {
+						"RECAB_FIXTURE": "trial"
+					},
+					"steps": [
+						{
+							"expect": "trial_pending : yes"
+						}
+					]
+				},
+				{
+					"name": "status unreadable",
+					"env": {
+						"RECAB_FIXTURE": "no-status"
+					},
+					"steps": [
+						{
+							"expect": "no A/B layout found"
+						}
+					]
+				},
+				{
+					"name": "set next boot",
+					"steps": [
+						{
+							"keys": "b",
+							"expect": "recab set-next B (exit 0"
+						}
+					]
+				},
+				{
+					"name": "change fails",
+					"env": {
+						"RECAB_FIXTURE": "fail"
+					},
+					"steps": [
+						{
+							"keys": "c",
+							"expect": "Permission denied"
+						}
+					]
+				}
 			]
 		}
 	}

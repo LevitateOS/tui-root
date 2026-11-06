@@ -1,0 +1,51 @@
+#!/bin/sh
+# Stand-in for recab in headless runs (cargo xtask inspect, check tui, stories): it
+# never touches firmware or boot entries. `status --json` prints recab's Status for a
+# machine running slot A; RECAB_FIXTURE selects another state:
+#   trial      slot B is set for a one-shot trial boot
+#   no-status  status fails as on a system recab doesn't manage
+#   fail       every change (set-next, commit, rollback) fails
+# Keep the JSON in the shape of recab's `Status` (tui/apps/runtime/recab-tui/src/generated/recab.ts).
+state=${RECAB_FIXTURE:-}
+case "$1" in
+status)
+	if [ "$state" = no-status ]; then
+		echo "recab: no A/B layout found (no slot entries under /boot/loader/entries)" >&2
+		exit 1
+	fi
+	if [ "$state" = trial ]; then
+		trial=true next=B
+	else
+		trial=false next=A
+	fi
+	cat <<JSON
+{
+  "active_slot": "A",
+  "inactive_slot": "B",
+  "trial_pending": $trial,
+  "next_boot": "$next",
+  "default_slot": "A",
+  "known_good_slot": "A",
+  "committed": true,
+  "rollback_slot": "B",
+  "last_trial": {
+    "slot": "B",
+    "committed": false,
+    "detail": "multi-user.target reached; sshd.service failed",
+    "unix_time": 1793900000
+  },
+  "entry_prefix": "levitate"
+}
+JSON
+	;;
+set-next | commit | rollback)
+	if [ "$state" = fail ]; then
+		echo "recab: cannot write EFI variable LoaderEntryOneShot: Permission denied" >&2
+		exit 1
+	fi
+	;;
+*)
+	echo "fixture recab: unsupported: $*" >&2
+	exit 2
+	;;
+esac

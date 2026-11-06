@@ -30,7 +30,7 @@
 			"path": [
 				"fixtures"
 			],
-			"walks": [
+			"stories": [
 				{
 					"name": "apply succeeds",
 					"steps": [

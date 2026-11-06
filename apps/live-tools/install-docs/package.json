@@ -33,6 +33,16 @@
 			},
 			"mask": [
 				"page \\d+/\\d+"
+			],
+			"stories": [
+				{
+					"name": "content focused",
+					"steps": [
+						{
+							"keys": "\\t"
+						}
+					]
+				}
 			]
 		}
 	}
