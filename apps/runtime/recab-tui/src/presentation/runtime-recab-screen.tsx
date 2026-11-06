@@ -93,7 +93,6 @@ export function RuntimeRecabScreen() {
 				: null;
 	const isBusy = running !== null;
 
-	/** Runs an action, logs its result, then re-reads the status panel. */
 	const runAction = async (action: RuntimeRecabAction) => {
 		if (isBusy) {
 			return;

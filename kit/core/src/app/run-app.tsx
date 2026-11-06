@@ -11,7 +11,6 @@ export type Flag = {
 	alias?: string;
 	/** Placeholder for the argument, e.g. "SLUG"; absent for a switch. */
 	value?: string;
-	/** Allowed arguments. */
 	choices?: readonly string[];
 	help: string;
 };

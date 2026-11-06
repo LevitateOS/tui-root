@@ -105,7 +105,6 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 		columns,
 		disabled: pageId !== "target-disk",
 	});
-	// Once the list is in, start on the disk that was asked for.
 	useEffect(() => {
 		if (listing.kind === "done" && wanted) {
 			const resolved = resolveDiskPath(wanted);

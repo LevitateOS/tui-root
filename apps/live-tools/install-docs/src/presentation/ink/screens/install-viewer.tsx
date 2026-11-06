@@ -61,7 +61,6 @@ export function InstallViewerScreen({ title, initialIndex }: InstallViewerScreen
 		scroll.toTop();
 		setRuntimeNote(undefined);
 	};
-	/** Scrolls just enough to bring action `index` into view. */
 	const reveal = (index: number) => {
 		const line = actions[index]?.line ?? 0;
 		if (line < scroll.offset) scroll.scrollTo(line);

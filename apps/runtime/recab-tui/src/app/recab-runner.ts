@@ -5,7 +5,6 @@ import { parseRecabStatusJson } from "../domain/recab";
 /** `recab status --json`, the read the status panel shows. */
 export const STATUS_ARGS: ReadonlyArray<string> = ["status", "--json"];
 
-/** Runs `recab` from PATH. */
 export function runRecabCommand(args: ReadonlyArray<string>): Promise<CommandResult> {
 	return runCommand(["recab", ...args]);
 }
