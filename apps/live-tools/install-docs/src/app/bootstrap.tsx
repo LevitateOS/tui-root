@@ -27,7 +27,7 @@ export function startInstallDocsApp(options: StartInstallDocsOptions = {}): Rend
 	}
 
 	const app = createTuiApp({
-		title: "levitate-install-docs",
+		title: "install-docs",
 		theme: createInstallDocsTheme(),
 	});
 	const renderers = createInstallDocsRendererRegistry();

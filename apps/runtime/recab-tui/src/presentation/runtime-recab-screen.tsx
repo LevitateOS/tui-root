@@ -172,7 +172,7 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
 
 	const footer = useMemo(() => {
 		const segments = [
-			scopeStatusSegment("runtime-recab"),
+			scopeStatusSegment("recab-tui"),
 			textStatusSegment("recab-bin", `bin=${recabBin}`, "dimText"),
 			textStatusSegment(
 				"busy",

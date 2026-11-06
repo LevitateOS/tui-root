@@ -1,4 +1,4 @@
-# @levitate/docs-tui
+# install-docs
 
 Interactive terminal docs viewer for LevitateOS, built on `@levitate/tui-kit`.
 
@@ -9,10 +9,9 @@ Style change map: `style-map.md`
 ```bash
 bun src/main.ts
 bun src/main.ts --slug installation
-bun run split
 ```
 
-CLI binary name: `levitate-install-docs`
+On the live ISO the builder bundles it and launches it as `levitate-install-docs` in the install screen's right pane.
 
 Legacy non-interactive flags (`--list`, `--page`, `--all`) were removed.
 

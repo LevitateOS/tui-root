@@ -8,7 +8,7 @@ type StartDiskPlanOptions = {
 };
 
 export function startDiskPlanApp(options: StartDiskPlanOptions): RenderedTuiApp {
-	const app = createTuiApp({ title: "levitate-install-disk-plan" });
+	const app = createTuiApp({ title: "disk-plan" });
 	return renderApp(<DiskPlanScreen disk={options.disk ?? ""} mode={options.mode} />, {
 		app,
 		exitOnCtrlC: false,

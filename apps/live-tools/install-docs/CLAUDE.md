@@ -1,6 +1,6 @@
-# CLAUDE.md - docs-tui
+# CLAUDE.md - install-docs
 
-## What is docs-tui?
+## What is install-docs?
 
 Terminal documentation viewer for LevitateOS.
 

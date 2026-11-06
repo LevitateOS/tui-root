@@ -645,7 +645,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 		const nextKeys = isNavFocus ? "j/k/h/l" : "enter/n";
 		const backKeys = isNavFocus ? "tab" : "p";
 		const segments = [
-			scopeStatusSegment("install-disk-plan"),
+			scopeStatusSegment("disk-plan"),
 			textStatusSegment("focus", activePane, isNavFocus ? "warning" : "accent"),
 			textStatusSegment(
 				"page",
