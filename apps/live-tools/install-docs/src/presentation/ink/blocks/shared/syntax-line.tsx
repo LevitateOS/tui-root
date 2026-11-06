@@ -1,83 +1,34 @@
-import { Text } from "ink";
-import { resolveColor, useTuiColors, type ThemeColor } from "@levitate/tui-kit";
-import { parseSyntaxTokenLine } from "./syntax-markup";
+import { RichTextLine, textWidth, type RichTextRun, type ThemeColor } from "@levitate/tui-kit";
 import type { ReactNode } from "react";
+import { parseSyntaxTokenLine } from "./syntax-markup";
 
 type SyntaxLineProps = {
 	line: string;
 	/** Text without its own markup colour. */
 	color: ThemeColor;
 	background: ThemeColor;
+	/** Pad the row to this many columns so the background fills it. */
 	width?: number;
 	bold?: boolean;
-	italic?: boolean;
-	underline?: boolean;
 };
 
+/** One line of `[[fg=…]]` markup, drawn as styled runs. */
 export function SyntaxLine({
 	line,
 	color,
 	background,
 	width,
 	bold = false,
-	italic = false,
-	underline = false,
 }: SyntaxLineProps): ReactNode {
-	const colors = useTuiColors();
-	const fallbackColor = resolveColor(color, colors);
-	const resolvedBackgroundColor = resolveColor(background, colors);
-	const tokens = parseSyntaxTokenLine(line);
-	const safeWidth =
-		typeof width === "number" && Number.isFinite(width)
-			? Math.max(1, Math.trunc(width))
-			: undefined;
-
-	let paddedTokens = tokens;
-	if (typeof safeWidth === "number" && tokens.length > 0) {
-		const tokenLength = tokens.reduce((total, token) => total + token.text.length, 0);
-		const padLength = safeWidth - tokenLength;
-		if (padLength > 0) {
-			paddedTokens = [
-				...tokens,
-				{
-					text: " ".repeat(padLength),
-					color: undefined,
-				},
-			];
-		}
+	const runs: RichTextRun[] = parseSyntaxTokenLine(line).map((token) => ({
+		text: token.text,
+		color: token.color ?? color,
+		background,
+		bold,
+	}));
+	const used = runs.reduce((total, run) => total + textWidth(run.text), 0);
+	if (width !== undefined && width > used) {
+		runs.push({ text: " ".repeat(Math.floor(width) - used), color, background });
 	}
-
-	if (tokens.length === 0) {
-		const blankLine = typeof safeWidth === "number" && safeWidth > 1 ? " ".repeat(safeWidth) : " ";
-		return (
-			<Text
-				color={fallbackColor}
-				backgroundColor={resolvedBackgroundColor}
-				bold={bold}
-				italic={italic}
-				underline={underline}
-			>
-				{blankLine}
-			</Text>
-		);
-	}
-
-	return (
-		<Text
-			backgroundColor={resolvedBackgroundColor}
-			bold={bold}
-			italic={italic}
-			underline={underline}
-		>
-			{paddedTokens.map((token, index) => (
-				<Text
-					key={`${index}-${token.text}`}
-					color={token.color ? resolveColor(token.color, colors) : fallbackColor}
-					backgroundColor={resolvedBackgroundColor}
-				>
-					{token.text.length > 0 ? token.text : " "}
-				</Text>
-			))}
-		</Text>
-	);
+	return <RichTextLine runs={runs} />;
 }

@@ -1,3 +1,4 @@
+import { padRight, textWidth } from "../../utils/strings";
 import { Text } from "ink";
 
 type KeyValueEntry = {
@@ -14,8 +15,8 @@ function renderKeyValue(entries: ReadonlyArray<KeyValueEntry>): string {
 		return "";
 	}
 
-	const maxKey = entries.reduce((size, entry) => Math.max(size, entry.key.length), 1);
-	return entries.map((entry) => `${entry.key.padEnd(maxKey, " ")} : ${entry.value}`).join("\n");
+	const keyWidth = Math.max(...entries.map((entry) => textWidth(entry.key)));
+	return entries.map((entry) => `${padRight(entry.key, keyWidth)} : ${entry.value}`).join("\n");
 }
 
 export function KeyValue({ entries }: KeyValueProps) {

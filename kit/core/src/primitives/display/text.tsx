@@ -15,14 +15,6 @@ export function UiText({ children, intent = "text", bold = false }: UiTextProps)
 	const colors = useTuiColors();
 	const color = resolveIntentColor(theme, intent, colors);
 
-	if (typeof children === "string") {
-		return (
-			<Text color={color} bold={bold}>
-				{children}
-			</Text>
-		);
-	}
-
 	return (
 		<Text color={color} bold={bold}>
 			{children}

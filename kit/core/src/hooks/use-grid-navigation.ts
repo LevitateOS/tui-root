@@ -23,20 +23,13 @@ type GridNavigationState = {
 	moveDown: () => void;
 };
 
-function safeCount(count: number): number {
-	if (!Number.isFinite(count) || count <= 0) {
-		return 0;
-	}
-	return Math.floor(count);
-}
-
 function transitionGridIndex(
 	currentIndex: number,
 	count: number,
 	columns: number,
 	direction: GridDirection,
 ): number {
-	const safeTotal = safeCount(count);
+	const safeTotal = Math.max(0, Math.floor(count));
 	if (safeTotal <= 0) {
 		return 0;
 	}
@@ -64,7 +57,7 @@ export function useGridNavigation({
 	initialIndex = 0,
 	disabled = false,
 }: GridNavigationOptions): GridNavigationState {
-	const safeTotal = safeCount(count);
+	const safeTotal = Math.max(0, Math.floor(count));
 	const safeColumns = toPositiveInt(columns, 1);
 	const [currentIndex, setCurrentIndex] = useState(() => clampIndex(initialIndex, safeTotal));
 

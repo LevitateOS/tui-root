@@ -11,7 +11,7 @@ import {
 	useFocusPlane,
 	useScrollState,
 	useShellLayout,
-	type TreeNavMode,
+	type NavListMode,
 } from "@levitate/tui-kit";
 import { BACKWARD_KEYS, CONTENT_KEYS, NAV_KEYS, VIEWER_KEYS } from "../keymap";
 
@@ -213,7 +213,7 @@ export function InstallViewerScreen({
 	const { exit } = useApp();
 	const navigation = useInstallNavigation(navItems, initialSlug);
 	const scroll = useScrollState(0);
-	const [sidebarMode, setSidebarMode] = useState<TreeNavMode>("focus-section");
+	const [sidebarMode, setSidebarMode] = useState<NavListMode>("focus-section");
 	const [actionableIndex, setActionableIndex] = useState(0);
 	const [runtimeNote, setRuntimeNote] = useState<string | undefined>(undefined);
 	const layout = useShellLayout();
@@ -382,7 +382,6 @@ export function InstallViewerScreen({
 			items={navItems}
 			selectedIndex={navigation.safeIndex}
 			maxWidth={sidebarMaxWidth}
-			currentSection={currentItem.sectionTitle}
 			mode={sidebarMode}
 		/>
 	);

@@ -11,19 +11,17 @@ export {
 	textStatusSegment,
 } from "./components/feedback/status-line";
 export type { StatusSegment } from "./components/feedback/status-line";
-export { SectionList } from "./components/navigation/section-list";
 export { SelectableGrid } from "./components/navigation/selectable-grid";
-export { TreeNav } from "./components/navigation/tree-nav";
-export type { TreeNavMode } from "./components/navigation/tree-nav";
+export type { GridItemContext } from "./components/navigation/selectable-grid";
 export { useFocusPlane } from "./hooks/use-focus-plane";
 export type { FocusPlane } from "./hooks/use-focus-plane";
 export { useGridNavigation } from "./hooks/use-grid-navigation";
 export { useListNavigation } from "./hooks/use-list-navigation";
 export { useScrollState } from "./hooks/use-scroll-state";
 export { RichTextLine } from "./primitives/display/rich-text";
-export type { RichTextRun } from "./primitives/display/rich-text";
+export { NavList } from "./components/navigation/nav-list";
+export type { NavListItem, NavListMode } from "./components/navigation/nav-list";
 export { UiText } from "./primitives/display/text";
-export { resolveGridColumns } from "./primitives/layout/grid";
 export { AppShell, useShellLayout } from "./surfaces/shell";
 export type { PaneLayout, ShellLayout } from "./surfaces/shell";
 export { parseHexColor, resolveColor, resolveIntentColor } from "./theme/colors";
@@ -31,14 +29,16 @@ export type { ColorRuntime } from "./theme/colors";
 export { createTheme } from "./theme/create-theme";
 export type { ColorIntent, ThemeColor, TuiTheme } from "./theme/tokens";
 export { clampNumber } from "./utils/clamp";
+export { horizontalRule, padRight, textWidth, truncateLine } from "./utils/strings";
 export {
-	horizontalRule,
-	padRight,
+	appendRun,
 	prefixWrappedText,
-	textWidth,
-	truncateLine,
+	runsText,
+	truncateLines,
+	wrapRuns,
 	wrapText,
-} from "./utils/strings";
+} from "./utils/runs";
+export type { RichTextRun } from "./utils/runs";
 export { keyHint, keymapHelp, useKeymap } from "./runtime/keymap";
 export type { KeyBinding, KeyHandlers, KeyName, Keymap } from "./runtime/keymap";
 export { errorMessage, runApp, UsageError } from "./app/run-app";

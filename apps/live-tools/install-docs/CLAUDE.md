@@ -29,4 +29,4 @@ Built with a layered architecture:
 1. This app renders the full docs navigation tree from `@levitate/docs-content`.
 2. Requested slugs must fail fast with explicit error when not in docs navigation.
 3. No hidden fallbacks that bypass canonical docs navigation.
-4. Keep generic runtime/UI primitives in `tui/kit/core`.
+4. Keep generic, vocabulary-free UI code in `tui/kit/core` (styled runs and their wrapping, nav lists, the frame, keys); keep docs-specific code (markup parsing, link rendering, command rows, block layout) here.

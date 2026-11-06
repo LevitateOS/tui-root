@@ -2,7 +2,8 @@ import { Box, Text, useApp } from "ink";
 import { useEffect, useMemo, useState } from "react";
 import {
 	KeyValue,
-	SectionList,
+	NavList,
+	truncateLines,
 	SegmentedStatusLine,
 	AppShell,
 	UiText,
@@ -32,11 +33,7 @@ function compactOutput(result: CommandResult, maxLines = 10): string {
 	if (combined.length === 0) {
 		return "(no command output)";
 	}
-	const lines = combined.split(/\r?\n/);
-	if (lines.length <= maxLines) {
-		return combined;
-	}
-	return `${lines.slice(0, maxLines).join("\n")}\n... (${lines.length - maxLines} more lines)`;
+	return truncateLines(combined, maxLines);
 }
 
 const STATUS_ROWS: ReadonlyArray<[string, (status: Status) => string]> = [
@@ -165,6 +162,7 @@ export function RuntimeRecabScreen() {
 	const sidebarItems = useMemo(
 		() =>
 			RUNTIME_RECAB_ACTIONS.map((action) => ({
+				key: action.id,
 				section: action.section,
 				label: `${action.label} (${action.hotkey})`,
 			})),
@@ -192,11 +190,10 @@ export function RuntimeRecabScreen() {
 	const layout = useShellLayout({ navWidth: 40 });
 	const sidebar = (
 		<Box flexDirection="column">
-			<SectionList
+			<NavList
 				items={sidebarItems}
 				selectedIndex={nav.safeIndex}
-				maxWidth={(layout.nav ?? layout.content).textColumns}
-				sectionPrefix="::"
+				width={(layout.nav ?? layout.content).textColumns}
 			/>
 			<UiText> </UiText>
 			<UiText intent="dimText">Mutating actions require root.</UiText>

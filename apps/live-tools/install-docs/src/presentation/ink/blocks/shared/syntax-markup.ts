@@ -5,7 +5,7 @@ const ESCAPED_OPEN = "\u0000TUI_ESCAPED_OPEN\u0000";
 /** A run of text in one colour, from docs-content's `[[fg=#hex]]…[[/]]` markup. */
 export type SyntaxToken = {
 	text: string;
-	color?: string;
+	color?: `#${string}`;
 };
 
 function restoreEscapes(value: string): string {
@@ -28,7 +28,7 @@ export function parseSyntaxTokenLine(line: string): SyntaxToken[] {
 	const source = line.replaceAll("\\[[", ESCAPED_OPEN);
 	const tokens: SyntaxToken[] = [];
 	let offset = 0;
-	let activeColor: string | undefined;
+	let activeColor: `#${string}` | undefined;
 
 	while (offset < source.length) {
 		const open = source.indexOf("[[", offset);

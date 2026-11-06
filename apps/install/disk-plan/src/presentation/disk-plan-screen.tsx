@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 
 import {
 	SelectableGrid,
+	truncateLines,
 	SegmentedStatusLine,
 	AppShell,
 	inkBorderStyle,
@@ -85,14 +86,6 @@ type DiskPlanScreenProps = {
 	disk: string;
 	mode: InstallMode;
 };
-
-function limitLines(input: string, maxLines = 16): string {
-	const lines = input.split(/\r?\n/);
-	if (lines.length <= maxLines) {
-		return input.trimEnd();
-	}
-	return `${lines.slice(0, maxLines).join("\n")}\n... (${lines.length - maxLines} more lines)`;
-}
 
 function isPlanReady(plan: AsyncState<PartitionPlan>): boolean {
 	return plan.kind === "success";
@@ -663,6 +656,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 						items={diskCandidates}
 						selectedIndex={diskNav.safeIndex}
 						columns={diskGridColumns}
+						width={layout.content.textColumns}
 						gapX={1}
 						gapY={0}
 						renderItem={(item, context) => {
@@ -799,7 +793,9 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 						Plan Failed
 					</UiText>
 					<UiText>Exit: {planState.raw.exitCode}</UiText>
-					<UiText>{limitLines(planState.raw.stderr || planState.raw.stdout)}</UiText>
+					<UiText>
+						{truncateLines((planState.raw.stderr || planState.raw.stdout).trimEnd(), 16)}
+					</UiText>
 				</Box>
 			);
 		} else {
@@ -850,7 +846,12 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 						Dry-run Failed
 					</UiText>
 					<UiText>Exit: {applyDryRunState.raw.exitCode}</UiText>
-					<UiText>{limitLines(applyDryRunState.raw.stderr || applyDryRunState.raw.stdout)}</UiText>
+					<UiText>
+						{truncateLines(
+							(applyDryRunState.raw.stderr || applyDryRunState.raw.stdout).trimEnd(),
+							16,
+						)}
+					</UiText>
 				</Box>
 			);
 		} else {
@@ -903,7 +904,9 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 					<UiText bold intent="error">
 						Preflight Failure
 					</UiText>
-					<UiText>{limitLines(preflightState.raw.stderr || preflightState.raw.stdout)}</UiText>
+					<UiText>
+						{truncateLines((preflightState.raw.stderr || preflightState.raw.stdout).trimEnd(), 16)}
+					</UiText>
 				</Box>
 			);
 		}
@@ -985,7 +988,9 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 						Apply Failed
 					</UiText>
 					<UiText>Exit: {applyState.raw.exitCode}</UiText>
-					<UiText>{limitLines(applyState.raw.stderr || applyState.raw.stdout)}</UiText>
+					<UiText>
+						{truncateLines((applyState.raw.stderr || applyState.raw.stdout).trimEnd(), 16)}
+					</UiText>
 					<UiText>Next: failure-diagnostics page</UiText>
 				</Box>
 			);

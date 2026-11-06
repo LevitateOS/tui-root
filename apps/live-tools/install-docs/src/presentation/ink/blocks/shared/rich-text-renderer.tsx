@@ -1,6 +1,12 @@
 import { Box } from "ink";
 import type { InlineNode, RichText } from "@levitate/docs-content";
-import { RichTextLine, type ColorIntent, type RichTextRun } from "@levitate/tui-kit";
+import {
+	appendRun,
+	RichTextLine,
+	wrapRuns,
+	type ColorIntent,
+	type RichTextRun,
+} from "@levitate/tui-kit";
 import type { ReactNode } from "react";
 
 type RichTextRendererProps = {
@@ -9,11 +15,6 @@ type RichTextRendererProps = {
 	width?: number;
 	minimumWidth?: number;
 	selectedLinkHref?: string;
-};
-
-type RichTextWord = {
-	runs: RichTextRun[];
-	length: number;
 };
 
 type LinkRunOptions = {
@@ -50,45 +51,6 @@ function linkRuns(label: string, options: LinkRunOptions = {}): RichTextRun[] {
 	}
 
 	return runs;
-}
-
-function isWhitespace(char: string): boolean {
-	return /\s/.test(char);
-}
-
-function sameRunStyle(a: RichTextRun, b: RichTextRun): boolean {
-	return (
-		a.intent === b.intent &&
-		a.backgroundIntent === b.backgroundIntent &&
-		a.literalColor === b.literalColor &&
-		a.bold === b.bold &&
-		a.italic === b.italic &&
-		a.underline === b.underline
-	);
-}
-
-function cloneRun(run: RichTextRun): RichTextRun {
-	return {
-		text: run.text,
-		intent: run.intent,
-		backgroundIntent: run.backgroundIntent,
-		literalColor: run.literalColor,
-		bold: run.bold,
-		italic: run.italic,
-		underline: run.underline,
-	};
-}
-
-function appendRun(target: RichTextRun[], run: RichTextRun): void {
-	if (run.text.length === 0) {
-		return;
-	}
-	const last = target[target.length - 1];
-	if (last && sameRunStyle(last, run)) {
-		last.text += run.text;
-		return;
-	}
-	target.push(cloneRun(run));
 }
 
 function plainTextForInlineNode(node: InlineNode): string {
@@ -156,151 +118,6 @@ function inlineContentToRuns(
 	return runs;
 }
 
-function splitRunsByNewline(runs: ReadonlyArray<RichTextRun>): RichTextRun[][] {
-	const lines: RichTextRun[][] = [[]];
-	for (const run of runs) {
-		const parts = run.text.split("\n");
-		for (let index = 0; index < parts.length; index += 1) {
-			const text = parts[index] ?? "";
-			if (text.length > 0) {
-				appendRun(lines[lines.length - 1]!, { ...run, text });
-			}
-			if (index < parts.length - 1) {
-				lines.push([]);
-			}
-		}
-	}
-	return lines;
-}
-
-function extractWords(runs: ReadonlyArray<RichTextRun>): RichTextWord[] {
-	const words: RichTextWord[] = [];
-	let currentRuns: RichTextRun[] = [];
-	let currentLength = 0;
-
-	const flushWord = () => {
-		if (currentLength === 0) {
-			return;
-		}
-		words.push({
-			runs: currentRuns.map(cloneRun),
-			length: currentLength,
-		});
-		currentRuns = [];
-		currentLength = 0;
-	};
-
-	for (const run of runs) {
-		for (const char of run.text) {
-			if (isWhitespace(char)) {
-				flushWord();
-				continue;
-			}
-			appendRun(currentRuns, { ...run, text: char });
-			currentLength += 1;
-		}
-	}
-
-	flushWord();
-	return words;
-}
-
-function chunkWord(word: RichTextWord, width: number): RichTextWord[] {
-	if (word.length <= width) {
-		return [
-			{
-				runs: word.runs.map(cloneRun),
-				length: word.length,
-			},
-		];
-	}
-
-	const chunks: RichTextWord[] = [];
-	let chunkRuns: RichTextRun[] = [];
-	let chunkLength = 0;
-
-	const flushChunk = () => {
-		if (chunkLength === 0) {
-			return;
-		}
-		chunks.push({
-			runs: chunkRuns.map(cloneRun),
-			length: chunkLength,
-		});
-		chunkRuns = [];
-		chunkLength = 0;
-	};
-
-	for (const run of word.runs) {
-		for (const char of run.text) {
-			if (chunkLength >= width) {
-				flushChunk();
-			}
-			appendRun(chunkRuns, { ...run, text: char });
-			chunkLength += 1;
-		}
-	}
-
-	flushChunk();
-	return chunks;
-}
-
-function wrapParagraph(words: ReadonlyArray<RichTextWord>, width: number): RichTextRun[][] {
-	if (words.length === 0) {
-		return [[]];
-	}
-
-	const lines: RichTextRun[][] = [];
-	let currentRuns: RichTextRun[] = [];
-	let currentLength = 0;
-
-	const flushLine = () => {
-		lines.push(currentRuns.map(cloneRun));
-		currentRuns = [];
-		currentLength = 0;
-	};
-
-	for (const word of words) {
-		for (const chunk of chunkWord(word, width)) {
-			if (currentLength === 0) {
-				for (const run of chunk.runs) {
-					appendRun(currentRuns, run);
-				}
-				currentLength = chunk.length;
-				continue;
-			}
-
-			if (currentLength + 1 + chunk.length <= width) {
-				appendRun(currentRuns, { text: " " });
-				for (const run of chunk.runs) {
-					appendRun(currentRuns, run);
-				}
-				currentLength += 1 + chunk.length;
-				continue;
-			}
-
-			flushLine();
-			for (const run of chunk.runs) {
-				appendRun(currentRuns, run);
-			}
-			currentLength = chunk.length;
-		}
-	}
-
-	if (currentRuns.length > 0 || lines.length === 0) {
-		flushLine();
-	}
-
-	return lines;
-}
-
-function safeWrapWidth(width: number | undefined, minimumWidth: number): number {
-	const safeMinimum = Math.max(1, Math.trunc(minimumWidth));
-	const requested =
-		typeof width === "number" && Number.isFinite(width) ? Math.trunc(width) : safeMinimum;
-	return Math.max(safeMinimum, requested);
-}
-
 export function inlineContentToPlainText(content: string | RichText | undefined): string {
 	if (typeof content === "string") {
 		return content;
@@ -318,13 +135,10 @@ export function wrapRichTextRuns(
 	minimumWidth = 1,
 	selectedLinkHref?: string,
 ): RichTextRun[][] {
-	const runs = inlineContentToRuns(content, defaultIntent, selectedLinkHref);
-	const safeWidth = safeWrapWidth(width, minimumWidth);
-	const paragraphs = splitRunsByNewline(runs);
-	const wrapped = paragraphs.flatMap((paragraphRuns) =>
-		wrapParagraph(extractWords(paragraphRuns), safeWidth),
+	return wrapRuns(
+		inlineContentToRuns(content, defaultIntent, selectedLinkHref),
+		Math.max(minimumWidth, width),
 	);
-	return wrapped.length > 0 ? wrapped : [[]];
 }
 
 export function wrapRichTextPlainLines(

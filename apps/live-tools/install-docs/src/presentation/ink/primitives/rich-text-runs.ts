@@ -4,7 +4,7 @@ export function runsLength(runs: ReadonlyArray<RichTextRun>): number {
 	return runs.reduce((total, run) => total + run.text.length, 0);
 }
 
-export function cloneRuns(runs: ReadonlyArray<RichTextRun>): RichTextRun[] {
+function cloneRuns(runs: ReadonlyArray<RichTextRun>): RichTextRun[] {
 	return runs.map((run) => ({ ...run }));
 }
 

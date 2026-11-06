@@ -1,66 +1,41 @@
 import { Text } from "ink";
 import type { ColorIntent } from "../../theme/tokens";
+import type { RichTextRun } from "../../utils/runs";
 import { useTuiColors, useTuiTheme } from "../../app/app-provider";
 import { resolveColor, resolveIntentColor } from "../../theme/colors";
-
-export type RichTextRun = {
-	text: string;
-	intent?: ColorIntent;
-	backgroundIntent?: ColorIntent;
-	literalColor?: string;
-	bold?: boolean;
-	italic?: boolean;
-	underline?: boolean;
-};
 
 type RichTextLineProps = {
 	runs: ReadonlyArray<RichTextRun>;
 	fallbackIntent?: ColorIntent;
 };
 
-function resolveRunColor(
-	run: RichTextRun,
-	theme: ReturnType<typeof useTuiTheme>,
-	colors: ReturnType<typeof useTuiColors>,
-	fallbackIntent: ColorIntent,
-) {
-	if (run.literalColor) {
-		return resolveColor(run.literalColor, colors);
-	}
-	return resolveIntentColor(theme, run.intent ?? fallbackIntent, colors);
-}
-
-function resolveRunBackground(
-	run: RichTextRun,
-	theme: ReturnType<typeof useTuiTheme>,
-	colors: ReturnType<typeof useTuiColors>,
-) {
-	if (!run.backgroundIntent) {
-		return undefined;
-	}
-	return resolveIntentColor(theme, run.backgroundIntent, colors);
-}
-
+/** One line of styled runs. An empty line still takes its row. */
 export function RichTextLine({ runs, fallbackIntent = "text" }: RichTextLineProps) {
+	const theme = useTuiTheme();
+	const colors = useTuiColors();
 	if (runs.length === 0) {
 		return <Text> </Text>;
 	}
-
-	const theme = useTuiTheme();
-	const colors = useTuiColors();
-
 	return (
 		<Text>
 			{runs.map((run, index) => (
 				<Text
 					key={`${index}-${run.text}`}
-					color={resolveRunColor(run, theme, colors, fallbackIntent)}
-					backgroundColor={resolveRunBackground(run, theme, colors)}
+					color={
+						run.color
+							? resolveColor(run.color, colors)
+							: resolveIntentColor(theme, run.intent ?? fallbackIntent, colors)
+					}
+					backgroundColor={
+						run.background
+							? resolveColor(run.background, colors)
+							: run.backgroundIntent && resolveIntentColor(theme, run.backgroundIntent, colors)
+					}
 					bold={run.bold}
 					italic={run.italic}
 					underline={run.underline}
 				>
-					{run.text.length > 0 ? run.text : " "}
+					{run.text}
 				</Text>
 			))}
 		</Text>

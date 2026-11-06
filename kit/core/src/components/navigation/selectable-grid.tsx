@@ -1,9 +1,8 @@
+import { Box } from "ink";
 import type { ReactNode } from "react";
-import { clampIndex, toPositiveInt } from "../../utils/clamp";
-import { Grid, resolveGridColumns, type GridColumnSpec } from "../../primitives/layout/grid";
-import { useTuiViewport } from "../../app/app-provider";
+import { clampIndex } from "../../utils/clamp";
 
-type RenderItemContext = {
+export type GridItemContext = {
 	index: number;
 	selected: boolean;
 };
@@ -11,57 +10,43 @@ type RenderItemContext = {
 type SelectableGridProps<T> = {
 	items: ReadonlyArray<T>;
 	selectedIndex: number;
-	columns?: GridColumnSpec;
+	columns: number;
+	/** Columns available to the whole grid; each cell gets an equal share after the gaps. */
+	width: number;
 	gapX?: number;
 	gapY?: number;
-	viewportColumns?: number;
-	equalWidth?: boolean;
-	fillRow?: boolean;
-	renderItem: (item: T, context: RenderItemContext) => ReactNode;
+	renderItem: (item: T, context: GridItemContext) => ReactNode;
 };
 
-function mapSelectableGridItems<T>(
-	items: ReadonlyArray<T>,
-	selectedIndex: number,
-	renderItem: (item: T, context: RenderItemContext) => ReactNode,
-): ReadonlyArray<ReactNode> {
-	const safeSelected = clampIndex(selectedIndex, items.length);
-	return items.map((item, index) => renderItem(item, { index, selected: index === safeSelected }));
-}
-
-function widthForColumns(columns: number): string | undefined {
-	const safeColumns = toPositiveInt(columns, 1);
-	if (safeColumns <= 1) {
-		return undefined;
-	}
-	return `${Math.floor(100 / safeColumns)}%`;
-}
-
+/** Items in rows of `columns` equal cells, one of them selected. */
 export function SelectableGrid<T>({
 	items,
 	selectedIndex,
-	columns = 2,
+	columns,
+	width,
 	gapX = 1,
-	gapY = 1,
-	viewportColumns,
-	equalWidth = true,
-	fillRow = false,
+	gapY = 0,
 	renderItem,
 }: SelectableGridProps<T>) {
-	const viewport = useTuiViewport();
-	const resolvedColumns = resolveGridColumns(columns, viewportColumns ?? viewport.columns, 1);
-	const itemWidth = !fillRow && equalWidth ? widthForColumns(resolvedColumns) : undefined;
-	const renderedItems = mapSelectableGridItems(items, selectedIndex, renderItem);
-
+	const perRow = Math.max(1, Math.floor(columns));
+	const cellWidth = Math.max(1, Math.floor((width - gapX * (perRow - 1)) / perRow));
+	const selected = clampIndex(selectedIndex, items.length);
+	const rows: T[][] = [];
+	for (let i = 0; i < items.length; i += perRow) rows.push(items.slice(i, i + perRow));
 	return (
-		<Grid
-			items={renderedItems}
-			columns={resolvedColumns}
-			gapX={gapX}
-			gapY={gapY}
-			viewportColumns={viewportColumns}
-			itemWidth={itemWidth}
-			fillRow={fillRow}
-		/>
+		<Box flexDirection="column">
+			{rows.map((row, r) => (
+				<Box key={`row-${r}`} flexDirection="row" marginBottom={r < rows.length - 1 ? gapY : 0}>
+					{row.map((item, c) => {
+						const index = r * perRow + c;
+						return (
+							<Box key={`cell-${index}`} width={cellWidth} marginRight={c < perRow - 1 ? gapX : 0}>
+								{renderItem(item, { index, selected: index === selected })}
+							</Box>
+						);
+					})}
+				</Box>
+			))}
+		</Box>
 	);
 }

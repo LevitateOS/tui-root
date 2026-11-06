@@ -1,23 +1,12 @@
+import { RichTextLine } from "../../primitives/display/rich-text";
+import type { RichTextRun } from "../../utils/runs";
 import { keyHint, type Keymap } from "../../runtime/keymap";
-import { Text } from "ink";
 
 import type { ColorIntent } from "../../theme/tokens";
 
-import { useTuiColors, useTuiTheme } from "../../app/app-provider";
-
-import { resolveIntentColor } from "../../theme/colors";
-
-type StatusAtom = {
-	text: string;
-	intent?: ColorIntent;
-	bold?: boolean;
-	italic?: boolean;
-	underline?: boolean;
-};
-
 export type StatusSegment = {
 	id: string;
-	atoms: ReadonlyArray<StatusAtom>;
+	atoms: ReadonlyArray<RichTextRun>;
 };
 
 type FlattenStatusSegmentsOptions = {
@@ -28,10 +17,10 @@ type FlattenStatusSegmentsOptions = {
 function flattenStatusSegments(
 	segments: ReadonlyArray<StatusSegment>,
 	options: FlattenStatusSegmentsOptions = {},
-): StatusAtom[] {
+): RichTextRun[] {
 	const separator = options.separator ?? " | ";
 	const separatorIntent = options.separatorIntent ?? "dimText";
-	const atoms: StatusAtom[] = [];
+	const atoms: RichTextRun[] = [];
 
 	for (const [index, segment] of segments.entries()) {
 		if (index > 0 && separator.length > 0) {
@@ -62,28 +51,8 @@ export function SegmentedStatusLine({
 	separator,
 	separatorIntent,
 }: SegmentedStatusLineProps) {
-	const theme = useTuiTheme();
-	const colors = useTuiColors();
-	const atoms = flattenStatusSegments(segments, {
-		separator,
-		separatorIntent,
-	});
-
-	return (
-		<Text>
-			{atoms.map((atom, index) => (
-				<Text
-					key={`${index}-${atom.text}`}
-					color={resolveIntentColor(theme, atom.intent ?? "dimText", colors)}
-					bold={atom.bold}
-					italic={atom.italic}
-					underline={atom.underline}
-				>
-					{atom.text}
-				</Text>
-			))}
-		</Text>
-	);
+	const runs = flattenStatusSegments(segments, { separator, separatorIntent });
+	return <RichTextLine runs={runs} fallbackIntent="dimText" />;
 }
 
 export function scopeStatusSegment(scope: string, intent: ColorIntent = "accent"): StatusSegment {

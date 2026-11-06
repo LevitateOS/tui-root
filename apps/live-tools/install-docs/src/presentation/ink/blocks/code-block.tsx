@@ -57,7 +57,7 @@ function syntaxRowToRuns(tokens: ReadonlyArray<SyntaxToken>, width: number): Ric
 	const visibleTokens = tokens.filter((token) => token.text.length > 0);
 	const runs: RichTextRun[] = visibleTokens.map((token) => ({
 		text: token.text,
-		literalColor: token.color,
+		color: token.color,
 		intent: "text" as const,
 	}));
 	const missing = Math.max(0, width - syntaxRowWidth(visibleTokens));
