@@ -21,7 +21,7 @@ Implemented thin shell pages:
 
 - UI app (`tui/apps/install/disk-plan`) owns flow, page transitions, and evidence presentation.
 - Backend tool (`tools/recpart`) owns partition/apply semantics, safety checks, and JSON contracts.
-- Contract violations fail fast; schema version must match expected value (`schema_version = 1`).
+- recpart documents are read with the generated `readRecpartOutput` (`src/generated/recpart.ts`), which checks each document against its own generated schema version.
 
 ## Run
 

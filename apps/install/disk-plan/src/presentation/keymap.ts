@@ -1,5 +1,5 @@
 import type { Keymap } from "@levitate/tui-kit";
-import { CONFIRM_TOKEN } from "../contract/recpart";
+import { CONFIRM_TOKEN } from "../generated/recpart";
 
 /** Keys on every page. */
 export const GLOBAL_KEYS = [

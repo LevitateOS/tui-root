@@ -6,8 +6,8 @@ import {
 	type DiskInventory,
 	type DiskListResult,
 	type InstallMode,
-} from "../contract/recpart";
-import { parseRecpartJson } from "../domain/recpart";
+	readRecpartOutput,
+} from "../generated/recpart";
 
 export type RecpartRunResult = {
 	command: string[];
@@ -15,8 +15,6 @@ export type RecpartRunResult = {
 	exitCode: number | null;
 	stdout: string;
 	stderr: string;
-	/** recpart's JSON document: stdout on success, the error payload on stderr on failure. */
-	json: string;
 };
 
 /** A running recpart process: await `result`, or `kill()` it. */
@@ -43,7 +41,7 @@ export function buildApplyCommand(
 	return command;
 }
 
-/** Runs recpart (from PATH) and keeps its JSON document: stdout on success, stderr on failure. */
+/** Runs recpart (from PATH); read its documents with the generated `readRecpartOutput`. */
 export function startRecpart(command: string[]): RecpartRun {
 	const running = startCommand(command);
 	const result = running.result.then((run) => ({
@@ -51,7 +49,6 @@ export function startRecpart(command: string[]): RecpartRun {
 		exitCode: run.exitCode,
 		stdout: run.stdout,
 		stderr: run.stderr,
-		json: run.exitCode === 0 ? run.stdout : run.stderr,
 	}));
 	return { result, kill: running.kill };
 }
@@ -71,13 +68,15 @@ export function resolveDiskPath(path: string): string {
 
 /** The install-target candidates, as `recpart list-disks` reports them. */
 export async function listDisks(): Promise<DiskInventory[]> {
-	const run = await runRecpart(["recpart", "list-disks", "--json"]);
-	if (run.exitCode !== 0) {
-		throw new Error(`recpart list-disks failed: ${run.stderr.trim()}`);
+	const output = readRecpartOutput<DiskListResult>(
+		await runRecpart(["recpart", "list-disks", "--json"]),
+		DISK_LIST_SCHEMA_VERSION,
+	);
+	if (output.kind === "error") {
+		throw new Error(`${output.error.observed} (${output.error.remediation})`);
 	}
-	const listed = parseRecpartJson<DiskListResult>(run.json, DISK_LIST_SCHEMA_VERSION);
-	if (!listed) {
-		throw new Error(`recpart list-disks did not print schema ${DISK_LIST_SCHEMA_VERSION} JSON`);
+	if (output.kind === "unreadable") {
+		throw new Error(output.reason);
 	}
-	return listed.disks;
+	return output.value.disks;
 }

@@ -1,4 +1,4 @@
-import type { InstallMode } from "../contract/recpart";
+import type { InstallMode } from "../generated/recpart";
 
 export const DISK_PLAN_PAGES = [
 	"welcome",

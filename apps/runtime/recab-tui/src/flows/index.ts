@@ -1,5 +1,5 @@
 import type { Keymap } from "@levitate/tui-kit";
-import { SLOTS, type Slot } from "../domain/contract";
+import { SLOTS, type Slot } from "../generated/recab";
 
 export type RuntimeRecabActionId =
 	| "status-refresh"

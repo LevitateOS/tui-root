@@ -28,3 +28,5 @@ export type Status = {
 };
 
 export const SLOTS = ["A", "B"] as const;
+
+export const SLOT_HELP = { A: "", B: "" } as const;

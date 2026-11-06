@@ -1,4 +1,4 @@
-import { SLOTS, type Slot, type Status } from "./contract";
+import { SLOTS, type Slot, type Status } from "../generated/recab";
 
 /**
  * Read `recab status --json`. recab prints it from the Rust type the

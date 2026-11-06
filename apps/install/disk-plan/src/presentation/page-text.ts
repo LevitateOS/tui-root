@@ -1,4 +1,4 @@
-import { CONFIRM_TOKEN, type ErrorPayload } from "../contract/recpart";
+import { CONFIRM_TOKEN, type ErrorPayload } from "../generated/recpart";
 
 export function confirmStatusLine(token: string): string {
 	return token === CONFIRM_TOKEN ? "Status: unlocked" : "Status: locked";

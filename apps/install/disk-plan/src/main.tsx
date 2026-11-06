@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { runApp } from "@levitate/tui-kit";
-import { INSTALL_MODES, type InstallMode } from "./contract/recpart";
+import { DEFAULT_INSTALL_MODE, INSTALL_MODES, type InstallMode } from "./generated/recpart";
 import { DiskPlanScreen } from "./presentation/disk-plan-screen";
 import {
 	CONFIRM_KEYS,
@@ -20,7 +20,7 @@ runApp({
 			name: "mode",
 			value: "MODE",
 			choices: INSTALL_MODES,
-			help: `install mode (default ab): ${INSTALL_MODES.join(", ")}`,
+			help: `install mode (default ${DEFAULT_INSTALL_MODE}): ${INSTALL_MODES.join(", ")}`,
 		},
 	],
 	keys: [
@@ -35,7 +35,7 @@ runApp({
 	run: (args) => (
 		<DiskPlanScreen
 			disk={typeof args.disk === "string" ? args.disk : ""}
-			mode={(args.mode as InstallMode | undefined) ?? "ab"}
+			mode={(args.mode as InstallMode | undefined) ?? DEFAULT_INSTALL_MODE}
 		/>
 	),
 });

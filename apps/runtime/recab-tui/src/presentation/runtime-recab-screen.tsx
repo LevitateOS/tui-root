@@ -23,7 +23,7 @@ import {
 	type RuntimeRecabAction,
 	type RuntimeRecabActionId,
 } from "../flows";
-import type { Status } from "../domain/contract";
+import type { Status } from "../generated/recab";
 import { formatSlot } from "../domain/recab";
 
 function compactOutput(result: CommandResult, maxLines = 10): string {

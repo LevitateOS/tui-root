@@ -1,28 +1,4 @@
-import type { DiskInventory } from "../contract/recpart";
-
-/**
- * Read a recpart JSON document of the expected schema version. recpart
- * produces these documents from the same Rust types the contract is
- * generated from, so the version is the only thing left to check.
- */
-export function parseRecpartJson<T extends { schema_version: number }>(
-	json: string,
-	schemaVersion: number,
-): T | null {
-	try {
-		const value = JSON.parse(json) as unknown;
-		if (
-			typeof value === "object" &&
-			value !== null &&
-			(value as { schema_version?: unknown }).schema_version === schemaVersion
-		) {
-			return value as T;
-		}
-	} catch {
-		// not JSON
-	}
-	return null;
-}
+import type { DiskInventory } from "../generated/recpart";
 
 export function formatBytes(value: number): string {
 	if (!Number.isFinite(value) || value <= 0) {

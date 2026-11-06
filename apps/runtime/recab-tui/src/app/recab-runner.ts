@@ -1,5 +1,5 @@
 import { runCommand, type CommandResult } from "@levitate/tui-kit";
-import type { Status } from "../domain/contract";
+import type { Status } from "../generated/recab";
 import { parseRecabStatusJson } from "../domain/recab";
 import { STATUS_ARGS } from "../flows";
 

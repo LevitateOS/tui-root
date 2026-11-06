@@ -1,4 +1,4 @@
-import type { InstallMode } from "../contract/recpart";
+import type { InstallMode } from "../generated/recpart";
 import { CONFIRM_KEYS, CONTENT_KEYS, DISK_KEYS, GLOBAL_KEYS, MODE_KEYS, NAV_KEYS } from "./keymap";
 
 import { Box, Text, useApp } from "ink";
@@ -47,7 +47,8 @@ import {
 	type DiskInventory,
 	type ErrorPayload,
 	type PartitionPlan,
-} from "../contract/recpart";
+	readRecpartOutput,
+} from "../generated/recpart";
 
 import {
 	currentPage,
@@ -61,7 +62,7 @@ import {
 
 import { canAdvancePage } from "../domain/guards";
 
-import { formatBytes, known, parseRecpartJson, unlistedDisk } from "../domain/recpart";
+import { formatBytes, known, unlistedDisk } from "../domain/recpart";
 
 import { confirmStatusLine, failureDiagnosticLines, progressStepLine } from "./page-text";
 
@@ -71,7 +72,8 @@ type AsyncState<T> =
 	| { kind: "success"; value: T }
 	| {
 			kind: "failure";
-			raw: { stdout: string; stderr: string; json: string | null; exitCode: number | null };
+			raw: { stdout: string; stderr: string; exitCode: number | null };
+			detail: ErrorPayload | null;
 	  }
 	| { kind: "error"; message: string };
 
@@ -121,25 +123,18 @@ function runState<T extends { schema_version: number }>(
 	result: RecpartRunResult,
 	schemaVersion: number,
 ): AsyncState<T> {
+	const output = readRecpartOutput<T>(result, schemaVersion);
+	if (output.kind === "ok") {
+		return { kind: "success", value: output.value };
+	}
 	if (result.exitCode !== 0) {
-		return {
-			kind: "failure",
-			raw: {
-				stdout: result.stdout,
-				stderr: result.stderr,
-				json: result.json,
-				exitCode: result.exitCode,
-			},
-		};
+		const raw = { stdout: result.stdout, stderr: result.stderr, exitCode: result.exitCode };
+		return { kind: "failure", raw, detail: output.kind === "error" ? output.error : null };
 	}
-	const value = parseRecpartJson<T>(result.json, schemaVersion);
-	if (!value) {
-		return {
-			kind: "error",
-			message: `${result.command.join(" ")} did not print schema ${schemaVersion} JSON`,
-		};
-	}
-	return { kind: "success", value };
+	return {
+		kind: "error",
+		message: output.kind === "unreadable" ? output.reason : "unexpected error document",
+	};
 }
 
 /** What the user runs after the disk is ready: this installer's guidance. */
@@ -209,11 +204,9 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 		}
 	};
 
-	const setFailureFromRun = (
-		source: FailureDiagnostic["source"],
-		run: { stderr: string; stdout: string; json: string | null },
-	) => {
-		const detail = run.json ? parseRecpartJson<ErrorPayload>(run.json, ERROR_SCHEMA_VERSION) : null;
+	const setFailureFromRun = (source: FailureDiagnostic["source"], run: RecpartRunResult) => {
+		const output = readRecpartOutput<{ schema_version: number }>(run, ERROR_SCHEMA_VERSION);
+		const detail = output.kind === "error" ? output.error : null;
 		setFailure({
 			source,
 			detail,
