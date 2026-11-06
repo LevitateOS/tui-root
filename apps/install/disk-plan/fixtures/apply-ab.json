@@ -1,0 +1,250 @@
+{
+  "schema_version": 2,
+  "mode": "ab",
+  "layout_request": {
+    "efi_size_mb": null,
+    "root_size_mb": null,
+    "root_a_size_mb": null,
+    "root_b_size_mb": null,
+    "state_size_mb": null
+  },
+  "resolved_layout": {
+    "mode": "ab",
+    "efi_size_mb": 1024,
+    "root_size_mb": null,
+    "root_a_size_mb": 20480,
+    "root_b_size_mb": 20480,
+    "state_size_mb": null
+  },
+  "disk": {
+    "path": "/dev/vdz",
+    "size_bytes": 68719476736,
+    "logical_sector_bytes": 512,
+    "physical_sector_bytes": 512
+  },
+  "dry_run": false,
+  "steps": [
+    {
+      "phase": "partition",
+      "command": "wipefs -a /dev/vdz",
+      "program": "wipefs",
+      "args": [
+        "-a",
+        "/dev/vdz"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "partition",
+      "command": "sfdisk /dev/vdz",
+      "program": "sfdisk",
+      "args": [
+        "/dev/vdz"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "partition",
+      "command": "udevadm settle --timeout=10",
+      "program": "udevadm",
+      "args": [
+        "settle",
+        "--timeout=10"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "partition",
+      "command": "verify-partitions",
+      "program": "verify-partitions",
+      "args": [],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "format",
+      "command": "mkfs.vfat -F 32 -n EFI /dev/vdzp1",
+      "program": "mkfs.vfat",
+      "args": [
+        "-F",
+        "32",
+        "-n",
+        "EFI",
+        "/dev/vdzp1"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "format",
+      "command": "mkfs.ext4 -F -L ROOT_A /dev/vdzp2",
+      "program": "mkfs.ext4",
+      "args": [
+        "-F",
+        "-L",
+        "ROOT_A",
+        "/dev/vdzp2"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "format",
+      "command": "mkfs.ext4 -F -L ROOT_B /dev/vdzp3",
+      "program": "mkfs.ext4",
+      "args": [
+        "-F",
+        "-L",
+        "ROOT_B",
+        "/dev/vdzp3"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "format",
+      "command": "mkfs.ext4 -F -L STATE /dev/vdzp4",
+      "program": "mkfs.ext4",
+      "args": [
+        "-F",
+        "-L",
+        "STATE",
+        "/dev/vdzp4"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "mount",
+      "command": "mount /dev/vdzp2 /mnt/sysroot",
+      "program": "mount",
+      "args": [
+        "/dev/vdzp2",
+        "/mnt/sysroot"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "mount",
+      "command": "mount /dev/vdzp1 /mnt/sysroot/boot",
+      "program": "mount",
+      "args": [
+        "/dev/vdzp1",
+        "/mnt/sysroot/boot"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "mount",
+      "command": "mount /dev/vdzp4 /mnt/sysroot/state",
+      "program": "mount",
+      "args": [
+        "/dev/vdzp4",
+        "/mnt/sysroot/state"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    }
+  ],
+  "partition_map": [
+    {
+      "index": 1,
+      "name": "efi",
+      "filesystem": "vfat",
+      "label": "EFI",
+      "gpt_type": "U",
+      "bootable": true,
+      "size_mb": 1024,
+      "mountpoint": "/boot"
+    },
+    {
+      "index": 2,
+      "name": "root_a",
+      "filesystem": "ext4",
+      "label": "ROOT_A",
+      "gpt_type": "L",
+      "bootable": false,
+      "size_mb": 20480,
+      "mountpoint": "/"
+    },
+    {
+      "index": 3,
+      "name": "root_b",
+      "filesystem": "ext4",
+      "label": "ROOT_B",
+      "gpt_type": "L",
+      "bootable": false,
+      "size_mb": 20480,
+      "mountpoint": "none"
+    },
+    {
+      "index": 4,
+      "name": "state",
+      "filesystem": "ext4",
+      "label": "STATE",
+      "gpt_type": "L",
+      "bootable": false,
+      "size_mb": null,
+      "mountpoint": "/state"
+    }
+  ],
+  "formatted_devices": [
+    "/dev/vdzp1",
+    "/dev/vdzp2",
+    "/dev/vdzp3",
+    "/dev/vdzp4"
+  ],
+  "handoff": {
+    "schema_version": 2,
+    "mode": "ab",
+    "install_target": "/mnt/sysroot",
+    "mount_map": [
+      {
+        "path": "/mnt/sysroot",
+        "device": "/dev/vdzp2"
+      },
+      {
+        "path": "/mnt/sysroot/boot",
+        "device": "/dev/vdzp1"
+      },
+      {
+        "path": "/mnt/sysroot/state",
+        "device": "/dev/vdzp4"
+      }
+    ],
+    "mode_context": {
+      "install_target_slot": "A",
+      "inactive_slot_hint": "B",
+      "slot_a_device": "/dev/vdzp2",
+      "slot_b_device": "/dev/vdzp3"
+    }
+  },
+  "warnings": []
+}

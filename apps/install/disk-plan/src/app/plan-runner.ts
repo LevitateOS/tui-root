@@ -1,63 +1,56 @@
-import { startCommand } from "@levitate/tui-kit";
 import { realpathSync } from "node:fs";
+import { runCommand, type CommandResult } from "@levitate/tui-kit";
 import {
 	CONFIRM_TOKEN,
 	DISK_LIST_SCHEMA_VERSION,
+	readRecpartOutput,
 	type DiskInventory,
 	type DiskListResult,
 	type InstallMode,
-	readRecpartOutput,
 } from "../generated/recpart";
+import type { Run } from "../flow";
 
-export type RecpartRunResult = {
-	command: string[];
-	/** null when recpart could not be started. */
-	exitCode: number | null;
-	stdout: string;
-	stderr: string;
-};
+export const LIST_DISKS = ["recpart", "list-disks", "--json"] as const;
 
-/** A running recpart process: await `result`, or `kill()` it. */
-export type RecpartRun = {
-	result: Promise<RecpartRunResult>;
-	kill: () => void;
-};
-
-export function buildPlanCommand(disk: string, mode: InstallMode): string[] {
+export function planCommand(disk: string, mode: InstallMode): string[] {
 	return ["recpart", "plan", "--disk", disk, "--mode", mode, "--json"];
 }
 
-export function buildApplyCommand(
-	disk: string,
-	mode: InstallMode,
-	options: { dryRun: boolean; confirmDestroy?: boolean },
-): string[] {
-	const command = ["recpart", "apply", "--disk", disk, "--mode", mode, "--json"];
-	if (options.dryRun) {
-		command.push("--dry-run");
-	} else if (options.confirmDestroy) {
-		command.push("--confirm", CONFIRM_TOKEN);
+export function applyCommand(disk: string, mode: InstallMode, dryRun: boolean): string[] {
+	return [
+		"recpart",
+		"apply",
+		"--disk",
+		disk,
+		"--mode",
+		mode,
+		"--json",
+		...(dryRun ? ["--dry-run"] : ["--confirm", CONFIRM_TOKEN]),
+	];
+}
+
+/** A finished recpart run as the flow's `Run`: its document, or what went wrong. */
+export function toRun<T extends { schema_version: number }>(
+	result: CommandResult,
+	schemaVersion: number,
+): Run<T> {
+	const output = readRecpartOutput<T>(result, schemaVersion);
+	if (output.kind === "ok") {
+		return { kind: "ok", argv: result.argv, value: output.value };
 	}
-	return command;
+	return {
+		kind: "failed",
+		argv: result.argv,
+		exitCode: result.exitCode,
+		output:
+			output.kind === "unreadable"
+				? `${output.reason}\n${(result.stderr || result.stdout).trim()}`
+				: (result.stderr || result.stdout).trim(),
+		error: output.kind === "error" ? output.error : null,
+	};
 }
 
-/** Runs recpart (from PATH); read its documents with the generated `readRecpartOutput`. */
-export function startRecpart(command: string[]): RecpartRun {
-	const running = startCommand(command);
-	const result = running.result.then((run) => ({
-		command,
-		exitCode: run.exitCode,
-		stdout: run.stdout,
-		stderr: run.stderr,
-	}));
-	return { result, kill: running.kill };
-}
-
-export function runRecpart(command: string[]): Promise<RecpartRunResult> {
-	return startRecpart(command).result;
-}
-
-/** Canonical device path (resolves /dev/disk/by-id/... links); input if unresolvable. */
+/** Canonical device path (resolves /dev/disk/by-id/... links); the input if unresolvable. */
 export function resolveDiskPath(path: string): string {
 	try {
 		return realpathSync(path);
@@ -68,15 +61,13 @@ export function resolveDiskPath(path: string): string {
 
 /** The install-target candidates, as `recpart list-disks` reports them. */
 export async function listDisks(): Promise<DiskInventory[]> {
-	const output = readRecpartOutput<DiskListResult>(
-		await runRecpart(["recpart", "list-disks", "--json"]),
-		DISK_LIST_SCHEMA_VERSION,
-	);
-	if (output.kind === "error") {
-		throw new Error(`${output.error.observed} (${output.error.remediation})`);
+	const run = toRun<DiskListResult>(await runCommand(LIST_DISKS), DISK_LIST_SCHEMA_VERSION);
+	if (run.kind !== "ok") {
+		throw new Error(
+			run.kind === "failed" && run.error
+				? `${run.error.observed} (${run.error.remediation})`
+				: "recpart list-disks failed",
+		);
 	}
-	if (output.kind === "unreadable") {
-		throw new Error(output.reason);
-	}
-	return output.value.disks;
+	return run.value.disks;
 }

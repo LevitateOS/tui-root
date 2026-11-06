@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "mode": "ab",
+  "layout_request": {
+    "efi_size_mb": null,
+    "root_size_mb": null,
+    "root_a_size_mb": null,
+    "root_b_size_mb": null,
+    "state_size_mb": null
+  },
+  "resolved_layout": {
+    "mode": "ab",
+    "efi_size_mb": 1024,
+    "root_size_mb": null,
+    "root_a_size_mb": 20480,
+    "root_b_size_mb": 20480,
+    "state_size_mb": null
+  },
+  "disk": {
+    "path": "/dev/vdz",
+    "size_bytes": 68719476736,
+    "logical_sector_bytes": 512,
+    "physical_sector_bytes": 512
+  },
+  "partitions": [
+    {
+      "index": 1,
+      "name": "efi",
+      "filesystem": "vfat",
+      "label": "EFI",
+      "gpt_type": "U",
+      "bootable": true,
+      "size_mb": 1024,
+      "mountpoint": "/boot"
+    },
+    {
+      "index": 2,
+      "name": "root_a",
+      "filesystem": "ext4",
+      "label": "ROOT_A",
+      "gpt_type": "L",
+      "bootable": false,
+      "size_mb": 20480,
+      "mountpoint": "/"
+    },
+    {
+      "index": 3,
+      "name": "root_b",
+      "filesystem": "ext4",
+      "label": "ROOT_B",
+      "gpt_type": "L",
+      "bootable": false,
+      "size_mb": 20480,
+      "mountpoint": "none"
+    },
+    {
+      "index": 4,
+      "name": "state",
+      "filesystem": "ext4",
+      "label": "STATE",
+      "gpt_type": "L",
+      "bootable": false,
+      "size_mb": null,
+      "mountpoint": "/state"
+    }
+  ],
+  "sfdisk_script": "label: gpt\n,1024M,U,*\n,20480M,L\n,20480M,L\n,,L\n"
+}

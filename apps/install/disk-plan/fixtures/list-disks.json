@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "disks": [
+    {
+      "path": "/dev/vdz",
+      "size_bytes": 68719476736,
+      "logical_sector_bytes": 512,
+      "physical_sector_bytes": 512,
+      "model": "Fixture Disk 64G",
+      "vendor": "unknown",
+      "serial": "FIXTURE0001",
+      "transport": "virtio",
+      "rotational": false,
+      "removable": false,
+      "read_only": false
+    }
+  ]
+}

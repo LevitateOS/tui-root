@@ -18,6 +18,8 @@ export type { FocusPlane } from "./hooks/use-focus-plane";
 export { useGridNavigation } from "./hooks/use-grid-navigation";
 export { useListNavigation } from "./hooks/use-list-navigation";
 export { useScrollState } from "./hooks/use-scroll-state";
+export { useAsyncTask } from "./hooks/use-async-task";
+export type { AsyncTask } from "./hooks/use-async-task";
 export { RichTextLine } from "./primitives/display/rich-text";
 export { NavList } from "./components/navigation/nav-list";
 export type { NavListItem, NavListMode } from "./components/navigation/nav-list";

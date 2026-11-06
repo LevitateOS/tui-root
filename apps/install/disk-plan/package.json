@@ -27,33 +27,150 @@
 			"recpart"
 		],
 		"inspect": {
-			"refuse": [
-				"recpart apply --confirm"
+			"path": [
+				"fixtures"
 			],
-			"walk": [
+			"walks": [
 				{
-					"keys": "",
-					"expect": "│welcome"
+					"name": "apply succeeds",
+					"steps": [
+						{
+							"keys": "",
+							"expect": "│welcome"
+						},
+						{
+							"keys": "j",
+							"expect": "│target-disk"
+						},
+						{
+							"keys": "j",
+							"expect": "│mode-selection"
+						},
+						{
+							"keys": "j",
+							"expect": "│plan-preview"
+						},
+						{
+							"keys": "",
+							"expect": "sfdisk script"
+						},
+						{
+							"keys": "j",
+							"expect": "│command-preview"
+						},
+						{
+							"keys": "",
+							"expect": "What apply would do"
+						},
+						{
+							"keys": "j",
+							"expect": "[OK] recpart would apply"
+						},
+						{
+							"keys": "j",
+							"expect": "│destructive-confirm"
+						},
+						{
+							"keys": "q",
+							"expect": "Type DESTROY to unlock: q"
+						},
+						{
+							"keys": "\\x7f",
+							"expect": "Type DESTROY to unlock: (empty)"
+						},
+						{
+							"keys": "DESTROY",
+							"expect": "Unlocked: Enter starts the apply."
+						},
+						{
+							"keys": "\\r",
+							"expect": "Apply completed"
+						},
+						{
+							"keys": "j",
+							"expect": "│result-handoff"
+						},
+						{
+							"keys": "j",
+							"expect": "│result-handoff"
+						},
+						{
+							"keys": "",
+							"expect": "recstrap /mnt"
+						}
+					]
 				},
 				{
-					"keys": "j",
-					"expect": "│target-disk"
-				},
-				{
-					"keys": "j",
-					"expect": "│mode-selection"
-				},
-				{
-					"keys": "j",
-					"expect": "│plan-preview"
-				},
-				{
-					"keys": "j",
-					"expect": "│command-preview"
-				},
-				{
-					"keys": "j",
-					"expect": "│preflight-checks"
+					"name": "apply fails",
+					"env": {
+						"RECPART_FIXTURE_APPLY": "fail"
+					},
+					"steps": [
+						{
+							"keys": "",
+							"expect": "│welcome"
+						},
+						{
+							"keys": "j",
+							"expect": "│target-disk"
+						},
+						{
+							"keys": "j",
+							"expect": "│mode-selection"
+						},
+						{
+							"keys": "j",
+							"expect": "│plan-preview"
+						},
+						{
+							"keys": "",
+							"expect": "sfdisk script"
+						},
+						{
+							"keys": "j",
+							"expect": "│command-preview"
+						},
+						{
+							"keys": "",
+							"expect": "What apply would do"
+						},
+						{
+							"keys": "j",
+							"expect": "[OK] recpart would apply"
+						},
+						{
+							"keys": "j",
+							"expect": "│destructive-confirm"
+						},
+						{
+							"keys": "q",
+							"expect": "Type DESTROY to unlock: q"
+						},
+						{
+							"keys": "\\x7f",
+							"expect": "Type DESTROY to unlock: (empty)"
+						},
+						{
+							"keys": "DESTROY",
+							"expect": "Unlocked: Enter starts the apply."
+						},
+						{
+							"keys": "\\r",
+							"expect": "Apply failed"
+						},
+						{
+							"keys": "j",
+							"expect": "│failure-diagnostics"
+						},
+						{
+							"keys": "",
+							"expect": "Failure in apply"
+						},
+						{
+							"keys": "k",
+							"expect": "│apply-progress"
+						}
+					]
 				}
 			]
 		}

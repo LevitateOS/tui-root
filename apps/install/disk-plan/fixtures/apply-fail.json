@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "code": "E001",
+  "component": "preflight",
+  "expectation": "target disk path can be canonicalized",
+  "observed": "failed to canonicalize '/dev/vdz-fixture-missing': No such file or directory (os error 2)",
+  "remediation": "Use a valid disk path (for example /dev/sda or /dev/nvme0n1)."
+}
