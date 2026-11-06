@@ -1,9 +1,10 @@
 import { spawn } from "node:child_process";
 import { parseRecabStatusJson, type RecabCommandResult, type Status } from "../domain";
+import { STATUS_ARGS } from "../flows";
 
 export async function runRecabCommand(spec: {
   recabBin: string;
-  args: string[];
+  args: ReadonlyArray<string>;
 }): Promise<RecabCommandResult> {
   const startedAt = Date.now();
 
@@ -36,7 +37,7 @@ export async function runRecabCommand(spec: {
 
       resolve({
         command: spec.recabBin,
-        args: spec.args,
+        args: [...spec.args],
         exitCode,
         stdout,
         stderr: stderrText,
@@ -51,7 +52,7 @@ export async function runRecabStatus(spec: {
 }): Promise<{ result: RecabCommandResult; status: Status | null; parseError: string | null }> {
   const result = await runRecabCommand({
     recabBin: spec.recabBin,
-    args: ["status", "--json"],
+    args: STATUS_ARGS,
   });
   if (result.exitCode !== 0) {
     return {

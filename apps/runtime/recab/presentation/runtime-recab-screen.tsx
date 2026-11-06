@@ -38,27 +38,18 @@ function compactOutput(result: RecabCommandResult, maxLines = 10): string {
   return `${lines.slice(0, maxLines).join("\n")}\n... (${lines.length - maxLines} more lines)`;
 }
 
+const STATUS_ROWS: ReadonlyArray<[string, (status: Status) => string]> = [
+  ["active", (s) => s.active_slot],
+  ["inactive", (s) => s.inactive_slot],
+  ["trial_pending", (s) => (s.trial_pending ? "yes" : "no")],
+  ["next_boot", (s) => formatSlot(s.next_boot)],
+  ["default", (s) => formatSlot(s.default_slot)],
+  ["known_good", (s) => formatSlot(s.known_good_slot)],
+  ["entry_prefix", (s) => s.entry_prefix],
+];
+
 function statusEntries(status: Status | null): Array<{ key: string; value: string }> {
-  if (!status) {
-    return [
-      { key: "active", value: "(unknown)" },
-      { key: "inactive", value: "(unknown)" },
-      { key: "trial_pending", value: "(unknown)" },
-      { key: "next_boot", value: "(unknown)" },
-      { key: "default", value: "(unknown)" },
-      { key: "known_good", value: "(unknown)" },
-      { key: "entry_prefix", value: "(unknown)" },
-    ];
-  }
-  return [
-    { key: "active", value: status.active_slot },
-    { key: "inactive", value: status.inactive_slot },
-    { key: "trial_pending", value: status.trial_pending ? "yes" : "no" },
-    { key: "next_boot", value: formatSlot(status.next_boot) },
-    { key: "default", value: formatSlot(status.default_slot) },
-    { key: "known_good", value: formatSlot(status.known_good_slot) },
-    { key: "entry_prefix", value: status.entry_prefix },
-  ];
+  return STATUS_ROWS.map(([key, value]) => ({ key, value: status ? value(status) : "(unknown)" }));
 }
 
 function exitText(result: RecabCommandResult): string {

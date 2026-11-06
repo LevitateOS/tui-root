@@ -1,9 +1,13 @@
+import { SLOTS, type Slot } from "../domain/contract";
+
 export type RuntimeRecabActionId =
   | "status-refresh"
-  | "set-next-a"
-  | "set-next-b"
+  | `set-next-${Lowercase<Slot>}`
   | "commit"
   | "rollback";
+
+/** `recab status --json`, the read the screen refreshes from. */
+export const STATUS_ARGS: ReadonlyArray<string> = ["status", "--json"];
 
 export type RuntimeRecabAction = {
   id: RuntimeRecabActionId;
@@ -11,7 +15,7 @@ export type RuntimeRecabAction = {
   label: string;
   description: string;
   /** recab arguments. */
-  args: string[];
+  args: ReadonlyArray<string>;
   hotkey: string;
 };
 
@@ -21,25 +25,17 @@ export const RUNTIME_RECAB_ACTIONS: ReadonlyArray<RuntimeRecabAction> = [
     section: "Read",
     label: "Refresh status",
     description: "Run recab status --json and refresh slot view",
-    args: ["status", "--json"],
+    args: STATUS_ARGS,
     hotkey: "r",
   },
-  {
-    id: "set-next-a",
-    section: "Mutating",
-    label: "Set next boot -> A",
-    description: "Stage one-shot trial boot to slot A",
-    args: ["set-next", "A"],
-    hotkey: "a",
-  },
-  {
-    id: "set-next-b",
-    section: "Mutating",
-    label: "Set next boot -> B",
-    description: "Stage one-shot trial boot to slot B",
-    args: ["set-next", "B"],
-    hotkey: "b",
-  },
+  ...SLOTS.map((slot) => ({
+    id: `set-next-${slot.toLowerCase() as Lowercase<Slot>}` as const,
+    section: "Mutating" as const,
+    label: `Set next boot -> ${slot}`,
+    description: `Stage one-shot trial boot to slot ${slot}`,
+    args: ["set-next", slot],
+    hotkey: slot.toLowerCase(),
+  })),
   {
     id: "commit",
     section: "Mutating",
