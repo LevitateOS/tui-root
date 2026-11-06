@@ -26,7 +26,7 @@ Implemented thin shell pages:
 ## Run
 
 ```bash
-just tui-install-disk-plan -- --disk /dev/sdX --mode ab
+cargo xtask tui install-disk-plan --disk /dev/sdX --mode ab
 ```
 
 ## Keybinds

@@ -24,7 +24,7 @@ fi
 
 mkdir -p "$OUT_BASE"
 
-cargo run -p levitate-xtask -- docs inspect \
+cargo run -p levitate-xtask -- inspect docs \
   --columns "$COLUMNS" \
   --rows "$ROWS" \
   --seconds "$SECONDS" \
