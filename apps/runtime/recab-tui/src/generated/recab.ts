@@ -2,6 +2,19 @@
 
 export type Slot = "A" | "B";
 
+export type TrialRecord = {
+	slot: Slot;
+	/**
+	 * The trial was healthy and committed; otherwise it was abandoned.
+	 */
+	committed: boolean;
+	/**
+	 * How startup ended, and the failed units if any.
+	 */
+	detail: string;
+	unix_time: number;
+};
+
 export type Status = {
 	active_slot: Slot;
 	inactive_slot: Slot;
@@ -24,6 +37,10 @@ export type Status = {
 	 * The slot `recab rollback` would select, if any.
 	 */
 	rollback_slot: Slot | null;
+	/**
+	 * How the last judged trial boot ended.
+	 */
+	last_trial: TrialRecord | null;
 	entry_prefix: string;
 };
 
