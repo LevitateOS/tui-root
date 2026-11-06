@@ -129,7 +129,7 @@ export function useKeymap<A extends string>(
 ): void {
 	const scopes = useContext(KeyboardContext);
 	if (!scopes) {
-		throw new Error("useKeymap must be used inside <KeyboardProvider> (renderApp mounts it).");
+		throw new Error("useKeymap must be used inside <KeyboardProvider> (runApp mounts it).");
 	}
 	const scope = useRef<Scope>({ keymap, handlers, active: true }).current;
 	scope.keymap = keymap;

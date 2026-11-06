@@ -7,8 +7,8 @@ Style change map: `style-map.md`
 ## Usage
 
 ```bash
-bun src/main.ts
-bun src/main.ts --slug installation
+bun src/main.tsx
+bun src/main.tsx --slug installation
 ```
 
 On the live ISO the builder bundles it and launches it as `levitate-install-docs` in the install screen's right pane.
@@ -17,7 +17,7 @@ Legacy non-interactive flags (`--list`, `--page`, `--all`) were removed.
 
 ## Keys
 
-`bun src/main.ts --help` lists every key; the status bar shows the ones that work in
+`bun src/main.tsx --help` lists every key; the status bar shows the ones that work in
 the focused pane. Both come from `src/presentation/ink/keymap.ts`.
 
 ## Development

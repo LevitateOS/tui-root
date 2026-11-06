@@ -12,6 +12,8 @@ import {
 	useKeymap,
 	useShellLayout,
 	useListNavigation,
+	type CommandResult,
+	useAppName,
 } from "@levitate/tui-kit";
 import { runRecabCommand, runRecabStatus } from "../app/recab-runner";
 import {
@@ -21,13 +23,9 @@ import {
 	type RuntimeRecabActionId,
 } from "../flows";
 import type { Status } from "../domain/contract";
-import { formatSlot, type RecabCommandResult } from "../domain/recab";
+import { formatSlot } from "../domain/recab";
 
-type RuntimeRecabScreenProps = {
-	recabBin: string;
-};
-
-function compactOutput(result: RecabCommandResult, maxLines = 10): string {
+function compactOutput(result: CommandResult, maxLines = 10): string {
 	const combined = [result.stderr.trim(), result.stdout.trim()]
 		.filter((value) => value.length > 0)
 		.join("\n");
@@ -57,26 +55,26 @@ function statusEntries(status: Status | null): Array<{ key: string; value: strin
 	return STATUS_ROWS.map(([key, value]) => ({ key, value: status ? value(status) : "(unknown)" }));
 }
 
-function exitText(result: RecabCommandResult): string {
+function exitText(result: CommandResult): string {
 	return result.exitCode === null ? "did not run to completion" : `exit ${result.exitCode}`;
 }
 
-function formatResultSummary(result: RecabCommandResult | null): string {
+function formatResultSummary(result: CommandResult | null): string {
 	if (!result) {
 		return "No command executed in this session.";
 	}
-	const args = result.args.join(" ");
-	return `${result.command} ${args} (${exitText(result)}, ${result.durationMs}ms)`;
+	return `${result.argv.join(" ")} (${exitText(result)}, ${result.durationMs}ms)`;
 }
 
-export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
+export function RuntimeRecabScreen() {
 	const { exit } = useApp();
+	const appName = useAppName();
 	const nav = useListNavigation(RUNTIME_RECAB_ACTIONS.length, 0);
 	const [status, setStatus] = useState<Status | null>(null);
 	const [statusLoading, setStatusLoading] = useState(true);
 	const [statusError, setStatusError] = useState<string | null>(null);
 	const [runningActionId, setRunningActionId] = useState<RuntimeRecabActionId | null>(null);
-	const [lastResult, setLastResult] = useState<RecabCommandResult | null>(null);
+	const [lastResult, setLastResult] = useState<CommandResult | null>(null);
 	const [notice, setNotice] = useState<string>("Loading recab status...");
 
 	const activeAction = RUNTIME_RECAB_ACTIONS[nav.safeIndex] ?? RUNTIME_RECAB_ACTIONS[0];
@@ -84,7 +82,7 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
 
 	const refreshStatus = async () => {
 		setStatusLoading(true);
-		const { result, status: parsed, parseError } = await runRecabStatus({ recabBin });
+		const { result, status: parsed, parseError } = await runRecabStatus();
 		setLastResult(result);
 
 		if (result.exitCode !== 0) {
@@ -117,10 +115,7 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
 		setRunningActionId(action.id);
 		setNotice(`running recab ${action.args.join(" ")}`);
 
-		const result = await runRecabCommand({
-			recabBin,
-			args: action.args,
-		});
+		const result = await runRecabCommand(action.args);
 		setLastResult(result);
 		if (result.exitCode === 0) {
 			setNotice(`recab ${action.args[0]} succeeded`);
@@ -141,7 +136,7 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
 
 	useEffect(() => {
 		void refreshStatus();
-	}, [recabBin]);
+	}, []);
 
 	const runningMutation = runningActionId !== null && runningActionId !== "status-refresh";
 	useKeymap(RECAB_KEYMAP, {
@@ -178,8 +173,7 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
 
 	const footer = useMemo(() => {
 		const segments = [
-			scopeStatusSegment("recab-tui"),
-			textStatusSegment("recab-bin", `bin=${recabBin}`, "dimText"),
+			scopeStatusSegment(appName),
 			textStatusSegment(
 				"busy",
 				runningActionId ? `running=${runningActionId}` : statusLoading ? "refreshing" : "idle",
@@ -193,7 +187,7 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
 			segments.push(textStatusSegment("status-error", "status-error", "error", true));
 		}
 		return <SegmentedStatusLine segments={segments} />;
-	}, [recabBin, runningActionId, statusError, statusLoading]);
+	}, [appName, runningActionId, statusError, statusLoading]);
 
 	const layout = useShellLayout({ navWidth: 40 });
 	const sidebar = (
@@ -222,7 +216,7 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
 			<Text bold>Selected Action</Text>
 			<UiText>{activeAction.label}</UiText>
 			<UiText intent="dimText">{activeAction.description}</UiText>
-			<UiText intent="dimText">Command: {`${recabBin} ${activeAction.args.join(" ")}`}</UiText>
+			<UiText intent="dimText">Command: {`recab ${activeAction.args.join(" ")}`}</UiText>
 			<UiText> </UiText>
 			<Text bold>Last Command</Text>
 			<UiText>{formatResultSummary(lastResult)}</UiText>

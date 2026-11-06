@@ -33,4 +33,4 @@
 │                              ││                                                                                      │
 │                              ││ Run a command and return its stdout. Throws if the command fails.                    │
 └──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
- [docs] | navigation | <masked> | h/l prev/next page | [/] prev/next section | j/k scroll content | q quit | Tab
+ [install-docs] | navigation | <masked> | h/l prev/next page | [/] prev/next section | j/k scroll content | q quit |

@@ -3,7 +3,7 @@
 	"version": "0.1.0",
 	"private": true,
 	"bin": {
-		"recab-tui": "./src/main.ts"
+		"recab-tui": "./src/main.tsx"
 	},
 	"type": "module",
 	"scripts": {

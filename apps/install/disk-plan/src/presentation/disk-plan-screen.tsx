@@ -1,3 +1,4 @@
+import type { InstallMode } from "../contract/recpart";
 import { CONFIRM_KEYS, CONTENT_KEYS, DISK_KEYS, GLOBAL_KEYS, MODE_KEYS, NAV_KEYS } from "./keymap";
 
 import { Box, Text, useApp } from "ink";
@@ -20,18 +21,17 @@ import {
 	textStatusSegment,
 	useGridNavigation,
 	useKeymap,
+	errorMessage,
+	useAppName,
 } from "@levitate/tui-kit";
-
-import type { DiskMode } from "../cli/parse-args";
 
 import {
 	buildApplyCommand,
 	buildPlanCommand,
 	listDisks,
 	resolveDiskPath,
-	runRecpartDryRun,
-	runRecpartPlan,
-	startRecpartApply,
+	runRecpart,
+	startRecpart,
 	type RecpartRun,
 	type RecpartRunResult,
 } from "../app/plan-runner";
@@ -70,7 +70,7 @@ type AsyncState<T> =
 	| { kind: "success"; value: T }
 	| {
 			kind: "failure";
-			raw: { stdout: string; stderr: string; json: string | null; exitCode: number };
+			raw: { stdout: string; stderr: string; json: string | null; exitCode: number | null };
 	  }
 	| { kind: "error"; message: string };
 
@@ -83,7 +83,7 @@ type FailureDiagnostic = {
 
 type DiskPlanScreenProps = {
 	disk: string;
-	mode: DiskMode;
+	mode: InstallMode;
 };
 
 function limitLines(input: string, maxLines = 16): string {
@@ -189,6 +189,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 	const applyRunRef = useRef<RecpartRun | null>(null);
 	const initialDiskRef = useRef(disk);
 	const theme = useTuiTheme();
+	const appName = useAppName();
 	const colors = useTuiColors();
 
 	const page = currentPage(flow);
@@ -241,7 +242,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 		const explicit = initialDiskRef.current.trim();
 		void listDisks()
 			.catch((error: unknown) => {
-				setDiskListError(error instanceof Error ? error.message : String(error));
+				setDiskListError(errorMessage(error));
 				return [] as DiskInventory[];
 			})
 			.then((listed) => {
@@ -304,7 +305,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 		}
 		let cancelled = false;
 		setPlanState({ kind: "running" });
-		void runRecpartPlan(flow.disk, flow.mode)
+		void runRecpart(buildPlanCommand(flow.disk, flow.mode))
 			.then((result) => {
 				if (cancelled) {
 					return;
@@ -319,7 +320,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 				if (cancelled) {
 					return;
 				}
-				const message = error instanceof Error ? error.message : String(error);
+				const message = errorMessage(error);
 				setPlanState({ kind: "error", message });
 			});
 		return () => {
@@ -333,7 +334,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 		}
 		let cancelled = false;
 		setApplyDryRunState({ kind: "running" });
-		void runRecpartDryRun(flow.disk, flow.mode)
+		void runRecpart(buildApplyCommand(flow.disk, flow.mode, { dryRun: true }))
 			.then((result) => {
 				if (cancelled) {
 					return;
@@ -348,7 +349,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 				if (cancelled) {
 					return;
 				}
-				const message = error instanceof Error ? error.message : String(error);
+				const message = errorMessage(error);
 				setApplyDryRunState({ kind: "error", message });
 			});
 		return () => {
@@ -362,7 +363,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 		}
 		let cancelled = false;
 		setPreflightState({ kind: "running" });
-		void runRecpartDryRun(flow.disk, flow.mode)
+		void runRecpart(buildApplyCommand(flow.disk, flow.mode, { dryRun: true }))
 			.then((result) => {
 				if (cancelled) {
 					return;
@@ -384,7 +385,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 				if (cancelled) {
 					return;
 				}
-				const message = error instanceof Error ? error.message : String(error);
+				const message = errorMessage(error);
 				setPreflightState({ kind: "error", message });
 			});
 		return () => {
@@ -413,7 +414,9 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 			return;
 		}
 
-		const run = startRecpartApply(flow.disk, flow.mode);
+		const run = startRecpart(
+			buildApplyCommand(flow.disk, flow.mode, { dryRun: false, confirmDestroy: true }),
+		);
 		applyRunRef.current = run;
 		setConfirmToken("");
 		setApplyState({ kind: "running" });
@@ -428,7 +431,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 				}
 			})
 			.catch((error: unknown) => {
-				const message = error instanceof Error ? error.message : String(error);
+				const message = errorMessage(error);
 				setApplyState({ kind: "error", message });
 			})
 			.finally(() => {
@@ -571,7 +574,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 	const footer = (
 		<SegmentedStatusLine
 			segments={[
-				scopeStatusSegment("disk-plan"),
+				scopeStatusSegment(appName),
 				textStatusSegment("focus", activePane, isNavFocus ? "warning" : "accent"),
 				textStatusSegment(
 					"page",

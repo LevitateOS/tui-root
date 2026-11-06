@@ -31,5 +31,5 @@ cargo xtask tui disk-plan --disk /dev/sdX --mode ab
 
 ## Keys
 
-`bun src/main.ts --help` lists every key; the footer shows the ones that work on the
+`bun src/main.tsx --help` lists every key; the footer shows the ones that work on the
 current page and pane. Both come from `src/presentation/keymap.ts`.

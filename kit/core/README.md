@@ -13,7 +13,7 @@ too (`navItem`, `heading`, `panelBorder`); an app's own colours sit in its theme
 ## Layout
 
 - `src/index.ts`: the public surface, exactly what the apps import (one entry, no subpaths).
-- `app/`: create and mount an app (`createTuiApp`, `renderApp`, the app provider and its hooks).
+- `app/`: `runApp` (flags and `--help`, TTY check, providers, exit status), `startCommand`/`runCommand` (the one way to run a backend tool), the app provider and its hooks.
 - `runtime/`: key input and terminal size.
 - `hooks/`: hotkeys, focus between panes, list/grid navigation, scroll state.
 - `primitives/`: text, rich text, grid layout.
@@ -37,7 +37,7 @@ measured in terminal cells with `string-width`, as Ink does.
 ## Quick Start
 
 ```tsx
-import { AppShell, createTuiApp, renderApp, UiText, useShellLayout } from "@levitate/tui-kit";
+import { AppShell, runApp, UiText, useShellLayout } from "@levitate/tui-kit";
 
 function Demo() {
 	const layout = useShellLayout();
@@ -54,7 +54,7 @@ function Demo() {
 	);
 }
 
-await renderApp(<Demo />, { app: createTuiApp() }).waitUntilExit();
+runApp({ name: "demo", summary: "kit demo", run: () => <Demo /> });
 ```
 
 ## Scripts

@@ -19,4 +19,4 @@
 │ │ WARNING                        │ │
 │ │ Default update model: A/B      │ │
 └────────────────────────────────────┘
- [docs] | content | <masked> | 1/5 |
+ [install-docs] | content | <masked>

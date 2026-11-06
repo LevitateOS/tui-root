@@ -1,14 +1,21 @@
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from "react";
 import { useStdout } from "ink";
 import type { ColorRuntime } from "../theme/colors";
-import type { TuiTheme } from "../theme/tokens";
+import { defaultTuiTheme, type TuiTheme } from "../theme/tokens";
 
 export type TuiAppContextValue = {
+	/** The command name given to runApp. */
+	name: string;
 	theme: TuiTheme;
 	colors: ColorRuntime;
 };
 
-const AppContext = createContext<TuiAppContextValue | null>(null);
+/** Without a provider (outside runApp) atoms render with the default theme and colour on. */
+const AppContext = createContext<TuiAppContextValue>({
+	name: "tui",
+	theme: defaultTuiTheme,
+	colors: { enabled: true },
+});
 
 type AppProviderProps = PropsWithChildren<{
 	app: TuiAppContextValue;
@@ -19,11 +26,11 @@ export function AppProvider({ app, children }: AppProviderProps) {
 }
 
 function useTuiApp(): TuiAppContextValue {
-	const value = useContext(AppContext);
-	if (!value) {
-		throw new Error("useTuiApp must be used inside <AppProvider>.");
-	}
-	return value;
+	return useContext(AppContext);
+}
+
+export function useAppName(): string {
+	return useTuiApp().name;
 }
 
 export function useTuiTheme(): TuiTheme {

@@ -1,4 +1,4 @@
-import type { DiskMode } from "../cli/parse-args";
+import type { InstallMode } from "../contract/recpart";
 
 export const DISK_PLAN_PAGES = [
 	"welcome",
@@ -17,7 +17,7 @@ export type DiskPlanPageId = (typeof DISK_PLAN_PAGES)[number];
 
 export type DiskPlanFlowState = {
 	pageIndex: number;
-	mode: DiskMode;
+	mode: InstallMode;
 	disk: string;
 };
 
@@ -52,7 +52,7 @@ export function prevPage(state: DiskPlanFlowState): DiskPlanFlowState {
 	};
 }
 
-export function setMode(state: DiskPlanFlowState, mode: DiskMode): DiskPlanFlowState {
+export function setMode(state: DiskPlanFlowState, mode: InstallMode): DiskPlanFlowState {
 	return {
 		...state,
 		mode,

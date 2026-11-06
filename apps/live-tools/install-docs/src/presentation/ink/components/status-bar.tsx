@@ -5,6 +5,7 @@ import {
 	textStatusSegment,
 	type FocusPlane,
 	type StatusSegment,
+	useAppName,
 } from "@levitate/tui-kit";
 import type { ReactNode } from "react";
 import { CONTENT_KEYS, NAV_KEYS, VIEWER_KEYS } from "../keymap";
@@ -26,7 +27,7 @@ export function InstallStatusBar({
 	note,
 }: InstallStatusBarProps): ReactNode {
 	const segments: StatusSegment[] = [
-		scopeStatusSegment("docs"),
+		scopeStatusSegment(useAppName()),
 		textStatusSegment("focus", focus, focus === "navigation" ? "warning" : "accent"),
 		textStatusSegment("page", `page ${page}/${pageCount}`),
 		...(focus === "content"

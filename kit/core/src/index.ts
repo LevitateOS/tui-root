@@ -1,8 +1,5 @@
 // The kit's public surface: exactly what the apps import.
-export { useTuiColors, useTuiTheme, useTuiViewport } from "./app/app-provider";
-export { createTuiApp } from "./app/create-app";
-export { renderApp } from "./app/render-app";
-export type { RenderedTuiApp } from "./app/render-app";
+export { useAppName, useTuiColors, useTuiTheme, useTuiViewport } from "./app/app-provider";
 export { glyphs, inkBorderStyle } from "./chrome/glyphs";
 export type { BorderStyle, Glyphs } from "./chrome/glyphs";
 export { KeyValue } from "./components/data/key-value";
@@ -44,3 +41,7 @@ export {
 } from "./utils/strings";
 export { keyHint, keymapHelp, useKeymap } from "./runtime/keymap";
 export type { KeyBinding, KeyHandlers, KeyName, Keymap } from "./runtime/keymap";
+export { errorMessage, runApp, UsageError } from "./app/run-app";
+export type { AppSpec, Args, Flag } from "./app/run-app";
+export { runCommand, startCommand } from "./app/command";
+export type { CommandResult, RunningCommand } from "./app/command";

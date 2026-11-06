@@ -7,10 +7,6 @@ export function guardRequestedSlug(
 	}
 
 	const normalized = requestedSlug.trim();
-	if (normalized.length === 0) {
-		throw new Error("Flag '--slug' requires a non-empty page slug.");
-	}
-
 	if (allowedSlugs.includes(normalized)) {
 		return normalized;
 	}

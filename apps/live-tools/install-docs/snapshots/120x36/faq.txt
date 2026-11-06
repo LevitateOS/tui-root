@@ -33,4 +33,4 @@
 │                              ││                                                                                      │
 │                              ││ Q >                                                                                  │
 └──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
- [docs] | navigation | <masked> | h/l prev/next page | [/] prev/next section | j/k scroll content | q quit | Tab
+ [install-docs] | navigation | <masked> | h/l prev/next page | [/] prev/next section | j/k scroll content | q quit |

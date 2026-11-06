@@ -1,3 +1,4 @@
+import { startCommand } from "@levitate/tui-kit";
 import { realpathSync } from "node:fs";
 import {
 	CONFIRM_TOKEN,
@@ -10,7 +11,8 @@ import { parseRecpartJson } from "../domain/recpart";
 
 export type RecpartRunResult = {
 	command: string[];
-	exitCode: number;
+	/** null when recpart could not be started. */
+	exitCode: number | null;
 	stdout: string;
 	stderr: string;
 	/** recpart's JSON document: stdout on success, the error payload on stderr on failure. */
@@ -41,33 +43,21 @@ export function buildApplyCommand(
 	return command;
 }
 
-function spawnRecpart(command: string[]): RecpartRun {
-	const proc = Bun.spawn(command, { stdout: "pipe", stderr: "pipe" });
-	const result = Promise.all([
-		new Response(proc.stdout).text(),
-		new Response(proc.stderr).text(),
-		proc.exited,
-	]).then(([stdout, stderr, exitCode]) => ({
+/** Runs recpart (from PATH) and keeps its JSON document: stdout on success, stderr on failure. */
+export function startRecpart(command: string[]): RecpartRun {
+	const running = startCommand(command);
+	const result = running.result.then((run) => ({
 		command,
-		exitCode,
-		stdout,
-		stderr,
-		json: exitCode === 0 ? stdout : stderr,
+		exitCode: run.exitCode,
+		stdout: run.stdout,
+		stderr: run.stderr,
+		json: run.exitCode === 0 ? run.stdout : run.stderr,
 	}));
-	return { result, kill: () => proc.kill() };
+	return { result, kill: running.kill };
 }
 
-export function runRecpartPlan(disk: string, mode: InstallMode): Promise<RecpartRunResult> {
-	return spawnRecpart(buildPlanCommand(disk, mode)).result;
-}
-
-export function runRecpartDryRun(disk: string, mode: InstallMode): Promise<RecpartRunResult> {
-	return spawnRecpart(buildApplyCommand(disk, mode, { dryRun: true })).result;
-}
-
-/** Start the destructive apply. Callers must hold the handle and start it once. */
-export function startRecpartApply(disk: string, mode: InstallMode): RecpartRun {
-	return spawnRecpart(buildApplyCommand(disk, mode, { dryRun: false, confirmDestroy: true }));
+export function runRecpart(command: string[]): Promise<RecpartRunResult> {
+	return startRecpart(command).result;
 }
 
 /** Canonical device path (resolves /dev/disk/by-id/... links); input if unresolvable. */
@@ -81,7 +71,7 @@ export function resolveDiskPath(path: string): string {
 
 /** The install-target candidates, as `recpart list-disks` reports them. */
 export async function listDisks(): Promise<DiskInventory[]> {
-	const run = await spawnRecpart(["recpart", "list-disks", "--json"]).result;
+	const run = await runRecpart(["recpart", "list-disks", "--json"]);
 	if (run.exitCode !== 0) {
 		throw new Error(`recpart list-disks failed: ${run.stderr.trim()}`);
 	}

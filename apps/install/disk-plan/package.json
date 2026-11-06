@@ -3,7 +3,7 @@
 	"version": "0.1.0",
 	"private": true,
 	"bin": {
-		"disk-plan": "./src/main.ts"
+		"disk-plan": "./src/main.tsx"
 	},
 	"type": "module",
 	"scripts": {
