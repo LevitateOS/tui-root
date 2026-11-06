@@ -1,14 +1,12 @@
 import type { Keymap } from "@levitate/tui-kit";
 import { SLOTS, type Slot } from "../generated/recab";
+import { STATUS_ARGS } from "../app/recab-runner";
 
 export type RuntimeRecabActionId =
 	| "status-refresh"
 	| `set-next-${Lowercase<Slot>}`
 	| "commit"
 	| "rollback";
-
-/** `recab status --json`, the read the screen refreshes from. */
-export const STATUS_ARGS: ReadonlyArray<string> = ["status", "--json"];
 
 export type RuntimeRecabAction = {
 	id: RuntimeRecabActionId;

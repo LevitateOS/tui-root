@@ -1,5 +1,6 @@
 import { Box, Text, useApp } from "ink";
-import { useEffect, useMemo, useState } from "react";
+
+import { useMemo, useState } from "react";
 import {
 	KeyValue,
 	NavList,
@@ -15,16 +16,24 @@ import {
 	useListNavigation,
 	type CommandResult,
 	useAppName,
+	useAsyncTask,
 } from "@levitate/tui-kit";
-import { runRecabCommand, runRecabStatus } from "../app/recab-runner";
+
+import { readRecabStatus, runRecabCommand } from "../app/recab-runner";
+
 import {
 	RECAB_KEYMAP,
 	RUNTIME_RECAB_ACTIONS,
 	type RuntimeRecabAction,
 	type RuntimeRecabActionId,
 } from "../flows";
+
 import type { Status } from "../generated/recab";
+
 import { formatSlot } from "../domain/recab";
+
+/** Results kept in the log. */
+const LOG_ENTRIES = 5;
 
 function compactOutput(result: CommandResult, maxLines = 10): string {
 	const combined = [result.stderr.trim(), result.stdout.trim()]
@@ -56,86 +65,54 @@ function exitText(result: CommandResult): string {
 	return result.exitCode === null ? "did not run to completion" : `exit ${result.exitCode}`;
 }
 
-function formatResultSummary(result: CommandResult | null): string {
-	if (!result) {
-		return "No command executed in this session.";
-	}
+function formatResultSummary(result: CommandResult): string {
 	return `${result.argv.join(" ")} (${exitText(result)}, ${result.durationMs}ms)`;
 }
+
+/** One finished recab run, newest first in the log. */
+type LogEntry = { label: string; result: CommandResult };
 
 export function RuntimeRecabScreen() {
 	const { exit } = useApp();
 	const appName = useAppName();
 	const nav = useListNavigation(RUNTIME_RECAB_ACTIONS.length, 0);
-	const [status, setStatus] = useState<Status | null>(null);
-	const [statusLoading, setStatusLoading] = useState(true);
-	const [statusError, setStatusError] = useState<string | null>(null);
-	const [runningActionId, setRunningActionId] = useState<RuntimeRecabActionId | null>(null);
-	const [lastResult, setLastResult] = useState<CommandResult | null>(null);
-	const [notice, setNotice] = useState<string>("Loading recab status...");
+	const [refreshes, setRefreshes] = useState(0);
+	const statusTask = useAsyncTask(String(refreshes), readRecabStatus);
+	const [running, setRunning] = useState<RuntimeRecabAction | null>(null);
+	const [log, setLog] = useState<readonly LogEntry[]>([]);
+	const [notice, setNotice] = useState<string | null>(null);
 
 	const activeAction = RUNTIME_RECAB_ACTIONS[nav.safeIndex] ?? RUNTIME_RECAB_ACTIONS[0];
-	const isBusy = statusLoading || runningActionId !== null;
+	const statusRead = statusTask.kind === "done" ? statusTask.value : null;
+	const status = statusRead?.kind === "ok" ? statusRead.status : null;
+	const statusError =
+		statusTask.kind === "error"
+			? statusTask.message
+			: statusRead?.kind === "failed"
+				? statusRead.reason
+				: null;
+	const isBusy = running !== null;
 
-	const refreshStatus = async () => {
-		setStatusLoading(true);
-		const { result, status: parsed, parseError } = await runRecabStatus();
-		setLastResult(result);
-
-		if (result.exitCode !== 0) {
-			setStatusError(`status failed (${exitText(result)})`);
-			setNotice(`status failed (${exitText(result)})`);
-			setStatusLoading(false);
-			return;
-		}
-		if (parseError || !parsed) {
-			setStatusError(parseError ?? "status JSON parse failed");
-			setNotice("status parse failed");
-			setStatusLoading(false);
-			return;
-		}
-
-		setStatus(parsed);
-		setStatusError(null);
-		setNotice("status refreshed");
-		setStatusLoading(false);
-	};
-
+	/** Runs an action, logs its result, then re-reads the status panel. */
 	const runAction = async (action: RuntimeRecabAction) => {
 		if (isBusy) {
 			return;
 		}
-		if (action.id === "status-refresh") {
-			await refreshStatus();
-			return;
-		}
-		setRunningActionId(action.id);
-		setNotice(`running recab ${action.args.join(" ")}`);
-
+		setRunning(action);
 		const result = await runRecabCommand(action.args);
-		setLastResult(result);
-		if (result.exitCode === 0) {
-			setNotice(`recab ${action.args[0]} succeeded`);
-			await refreshStatus();
-		} else {
-			setNotice(`recab ${action.args[0]} failed (${exitText(result)})`);
-		}
-		setRunningActionId(null);
+		setLog((entries) => [{ label: action.label, result }, ...entries].slice(0, LOG_ENTRIES));
+		setRunning(null);
+		setRefreshes((n) => n + 1);
 	};
 
 	const runActionById = (id: RuntimeRecabActionId) => {
 		const action = RUNTIME_RECAB_ACTIONS.find((item) => item.id === id);
-		if (!action) {
-			return;
+		if (action) {
+			void runAction(action);
 		}
-		void runAction(action);
 	};
 
-	useEffect(() => {
-		void refreshStatus();
-	}, []);
-
-	const runningMutation = runningActionId !== null && runningActionId !== "status-refresh";
+	const runningMutation = running?.section === "Mutating";
 	useKeymap(RECAB_KEYMAP, {
 		move: (key) => {
 			if (!isBusy) {
@@ -152,7 +129,7 @@ export function RuntimeRecabScreen() {
 		),
 		quit: () => {
 			if (runningMutation) {
-				setNotice(`can't quit while recab ${runningActionId} is running`);
+				setNotice(`can't quit while "${running?.label}" is running`);
 				return;
 			}
 			exit();
@@ -169,23 +146,25 @@ export function RuntimeRecabScreen() {
 		[],
 	);
 
-	const footer = useMemo(() => {
-		const segments = [
-			scopeStatusSegment(appName),
-			textStatusSegment(
-				"busy",
-				runningActionId ? `running=${runningActionId}` : statusLoading ? "refreshing" : "idle",
-				runningActionId || statusLoading ? "warning" : "accent",
-			),
-			...keymapStatusSegments(
-				RECAB_KEYMAP.filter((b) => ["move", "run", "quit"].includes(b.action)),
-			),
-		];
-		if (statusError) {
-			segments.push(textStatusSegment("status-error", "status-error", "error", true));
-		}
-		return <SegmentedStatusLine segments={segments} />;
-	}, [appName, runningActionId, statusError, statusLoading]);
+	const footer = (
+		<SegmentedStatusLine
+			segments={[
+				scopeStatusSegment(appName),
+				running
+					? textStatusSegment("busy", `running: ${running.label}`, "warning")
+					: textStatusSegment(
+							"busy",
+							statusTask.kind === "running" ? "reading status" : "idle",
+							"accent",
+						),
+				...keymapStatusSegments(
+					RECAB_KEYMAP.filter((b) => ["move", "run", "quit"].includes(b.action)),
+				),
+				...(statusError ? [textStatusSegment("status", statusError, "error", true)] : []),
+				...(notice ? [textStatusSegment("notice", notice, "warning")] : []),
+			]}
+		/>
+	);
 
 	const layout = useShellLayout({ navWidth: 40 });
 	const sidebar = (
@@ -207,7 +186,7 @@ export function RuntimeRecabScreen() {
 			<UiText> </UiText>
 			<Text bold>Slot State</Text>
 			<KeyValue entries={statusEntries(status)} />
-			{statusLoading ? <UiText intent="warning">Refreshing status ...</UiText> : null}
+			{statusTask.kind === "running" ? <UiText intent="warning">Reading status ...</UiText> : null}
 			{statusError ? <UiText intent="error">Status error: {statusError}</UiText> : null}
 			<UiText> </UiText>
 			<Text bold>Selected Action</Text>
@@ -215,10 +194,16 @@ export function RuntimeRecabScreen() {
 			<UiText intent="dimText">{activeAction.description}</UiText>
 			<UiText intent="dimText">Command: {`recab ${activeAction.args.join(" ")}`}</UiText>
 			<UiText> </UiText>
-			<Text bold>Last Command</Text>
-			<UiText>{formatResultSummary(lastResult)}</UiText>
-			<UiText intent="dimText">{notice}</UiText>
-			<UiText>{lastResult ? compactOutput(lastResult) : "(no command output)"}</UiText>
+			<Text bold>Results (newest first)</Text>
+			{log.length === 0 ? <UiText intent="dimText">Nothing run yet in this session.</UiText> : null}
+			{log.map((entry, i) => (
+				<Box key={log.length - i} flexDirection="column">
+					<UiText bold={i === 0}>
+						{entry.label}: {formatResultSummary(entry.result)}
+					</UiText>
+					{i === 0 ? <UiText>{compactOutput(entry.result)}</UiText> : null}
+				</Box>
+			))}
 		</Box>
 	);
 
