@@ -2,7 +2,8 @@
 
 Interactive disk planning on top of `recpart`: choose a disk and mode, review the plan
 and the exact commands, pass the preflight, type the confirmation token, apply, and get
-the handoff. It ships on no ISO yet (the variant decides; see the builder's TUI-app action).
+the handoff. It ships on no ISO yet; the
+live ISO's install guide uses `recpart` directly.
 
 ## Layout
 

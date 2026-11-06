@@ -1,6 +1,7 @@
 # TUI workspace
 
-Terminal apps for the LevitateOS live ISO and installer, built on a shared kit.
+Terminal apps built on a shared kit. Only install-docs ships today: the live ISO's install
+screen shows it. disk-plan and recab-tui run from a checkout (`cargo xtask tui <name>`).
 
 ## Apps
 
