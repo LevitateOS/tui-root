@@ -6,7 +6,6 @@ import { getDistroProfile } from "../domain/distro/registry";
 import type { DistroId } from "../domain/distro/profile";
 import { createInstallSession } from "./session";
 import { InstallViewerScreen } from "../presentation/ink/screens/install-viewer";
-import { createInstallDocsRendererRegistry } from "../presentation/ink/document/renderer-registry";
 
 type StartInstallDocsOptions = {
 	slug?: string;
@@ -33,7 +32,6 @@ export function installDocsScreen(options: StartInstallDocsOptions = {}): ReactE
 			navItems={session.navItems}
 			getContent={(slug, title) => contentForSlug(session.source, slug, title)}
 			initialSlug={session.initialSlug}
-			renderers={createInstallDocsRendererRegistry()}
 		/>
 	);
 }

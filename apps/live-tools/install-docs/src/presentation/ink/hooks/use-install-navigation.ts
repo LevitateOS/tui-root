@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { useListNavigation } from "@levitate/tui-kit";
 import type { FlatDocsNavItem } from "../../../domain/content/contracts";
 import { buildNavSectionSpans, jumpToSectionStart } from "../../../domain/navigation/nav-model";
-import { resolveInitialDocSelection } from "../../../rendering/pipeline/viewport";
 
 type InstallNavigationState = {
 	safeIndex: number;
@@ -11,6 +10,23 @@ type InstallNavigationState = {
 	moveSection: (delta: number) => void;
 	setPage: (index: number) => void;
 };
+
+type InitialDocSelection = {
+	index: number;
+	unknownSlug?: string;
+};
+
+function resolveInitialDocSelection(
+	navItems: ReadonlyArray<FlatDocsNavItem>,
+	slug?: string,
+): InitialDocSelection {
+	const normalized = slug?.trim() ?? "";
+	if (normalized.length === 0) {
+		return { index: 0 };
+	}
+	const index = navItems.findIndex((item) => item.slug === normalized);
+	return index >= 0 ? { index } : { index: 0, unknownSlug: normalized };
+}
 
 export function useInstallNavigation(
 	navItems: ReadonlyArray<FlatDocsNavItem>,

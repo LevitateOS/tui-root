@@ -1,28 +1,26 @@
 import { useState } from "react";
-import { clampNumber, toNonNegativeInt } from "../utils/clamp";
+import { clampNumber } from "../utils/clamp";
 
 type ScrollState = {
-	scrollOffset: number;
-	scrollBy: (delta: number, maxScroll: number) => void;
-	scrollToTop: () => void;
-	scrollToBottom: (maxScroll?: number) => void;
-	reset: () => void;
+	/** The first visible line, always within 0..maxScroll. */
+	offset: number;
+	scrollBy: (delta: number) => void;
+	scrollTo: (offset: number) => void;
+	toTop: () => void;
+	toBottom: () => void;
 };
 
-export function useScrollState(initialOffset = 0): ScrollState {
-	const [scrollOffset, setScrollOffset] = useState(() => toNonNegativeInt(initialOffset, 0));
-
-	const scrollBy = (delta: number, maxScroll: number) => {
-		const safeMaxScroll = toNonNegativeInt(maxScroll, 0);
-		setScrollOffset((value) => clampNumber(value + delta, 0, safeMaxScroll));
-	};
-
+/** A scroll position that can never pass `maxScroll` (content lines minus visible rows). */
+export function useScrollState(maxScroll: number): ScrollState {
+	const max = Math.max(0, Math.floor(maxScroll));
+	const [raw, setRaw] = useState(0);
+	const offset = Math.min(raw, max);
+	const scrollTo = (next: number) => setRaw(clampNumber(Math.floor(next), 0, max));
 	return {
-		scrollOffset,
-		scrollBy,
-		scrollToTop: () => setScrollOffset(0),
-		scrollToBottom: (maxScroll = Number.MAX_SAFE_INTEGER) =>
-			setScrollOffset(toNonNegativeInt(maxScroll, Number.MAX_SAFE_INTEGER)),
-		reset: () => setScrollOffset(0),
+		offset,
+		scrollBy: (delta) => scrollTo(offset + delta),
+		scrollTo,
+		toTop: () => setRaw(0),
+		toBottom: () => setRaw(max),
 	};
 }

@@ -1,5 +1,5 @@
 import type { DocsContent } from "@levitate/docs-content";
-import type { DocsContentLike, DocsSource } from "./contracts";
+import type { DocsSource } from "./contracts";
 
 function missingPage(slug: string, title: string): DocsContent {
 	return {
@@ -9,6 +9,6 @@ function missingPage(slug: string, title: string): DocsContent {
 	};
 }
 
-export function contentForSlug(source: DocsSource, slug: string, title: string): DocsContentLike {
+export function contentForSlug(source: DocsSource, slug: string, title: string): DocsContent {
 	return source.contentBySlug[slug] ?? missingPage(slug, title);
 }

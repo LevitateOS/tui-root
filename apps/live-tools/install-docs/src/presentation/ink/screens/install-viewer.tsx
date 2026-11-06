@@ -1,197 +1,30 @@
-import { useApp } from "ink";
-
-import type { CommandBlock, ContentBlock, InlineNode, RichText } from "@levitate/docs-content";
-
+import { Box, useApp } from "ink";
 import { useEffect, useMemo, useState } from "react";
-
+import type { DocsContent } from "@levitate/docs-content";
 import {
 	AppShell,
+	RichTextLine,
 	truncateLine,
-	useKeymap,
 	useFocusPlane,
+	useKeymap,
 	useScrollState,
 	useShellLayout,
 	type NavListMode,
+	type RichTextRun,
 } from "@levitate/tui-kit";
 import { BACKWARD_KEYS, CONTENT_KEYS, NAV_KEYS, VIEWER_KEYS } from "../keymap";
-
-import type { DocsContentLike, FlatDocsNavItem } from "../../../domain/content/contracts";
-
+import type { FlatDocsNavItem } from "../../../domain/content/contracts";
 import { resolveDocsLinkTarget } from "../../../domain/navigation/link-target";
-
-import type { DocRenderItem } from "../../../domain/render/types";
-
-import { computeDocsViewport } from "../../../rendering/pipeline/viewport";
-
-import { measureDocItemLines } from "../../../rendering/plan/line-metrics";
-
-import { InstallContentPane } from "../components/content-pane";
-
+import { layoutPage, type Line } from "../../../layout/page";
 import { InstallSidebar } from "../components/sidebar";
-
 import { InstallStatusBar } from "../components/status-bar";
-
-import type { DocsRendererRegistry } from "../document/renderer-registry";
-
 import { useInstallNavigation } from "../hooks/use-install-navigation";
 
 type InstallViewerScreenProps = {
 	navItems: ReadonlyArray<FlatDocsNavItem>;
-	getContent: (slug: string, title: string) => DocsContentLike;
+	getContent: (slug: string, title: string) => DocsContent;
 	initialSlug?: string;
-	renderers: DocsRendererRegistry;
-	onExit?: () => void;
 };
-
-type ActionableCommand = {
-	kind: "command";
-	itemKey: string;
-	commandText: string;
-	startLine: number;
-	endLine: number;
-};
-
-type ActionableLink = {
-	kind: "link";
-	itemKey: string;
-	href: string;
-	label: string;
-	startLine: number;
-	endLine: number;
-};
-
-type ActionableTarget = ActionableCommand | ActionableLink;
-
-function commandBlockText(block: CommandBlock): string {
-	return Array.isArray(block.command) ? block.command.join("\n") : block.command;
-}
-
-function extractInlineLinks(
-	content: string | RichText | undefined,
-): Array<{ href: string; label: string }> {
-	if (!Array.isArray(content)) {
-		return [];
-	}
-	const links: Array<{ href: string; label: string }> = [];
-	for (const node of content as InlineNode[]) {
-		if (typeof node !== "string" && node.type === "link") {
-			const href = node.href.trim();
-			if (href.length === 0) {
-				continue;
-			}
-			links.push({ href, label: node.text.trim() || href });
-		}
-	}
-	return links;
-}
-
-function extractBlockLinks(block: ContentBlock): Array<{ href: string; label: string }> {
-	switch (block.type) {
-		case "text":
-			return extractInlineLinks(block.content);
-		case "table": {
-			const links: Array<{ href: string; label: string }> = [];
-			for (const header of block.headers) {
-				links.push(...extractInlineLinks(header));
-			}
-			for (const row of block.rows) {
-				for (const cell of row) {
-					links.push(...extractInlineLinks(cell));
-				}
-			}
-			return links;
-		}
-		case "list": {
-			const links: Array<{ href: string; label: string }> = [];
-			for (const item of block.items) {
-				if (typeof item === "string" || Array.isArray(item)) {
-					links.push(...extractInlineLinks(item));
-					continue;
-				}
-				links.push(...extractInlineLinks(item.text));
-				for (const child of item.children ?? []) {
-					links.push(...extractInlineLinks(child));
-				}
-			}
-			return links;
-		}
-		case "conversation": {
-			const links: Array<{ href: string; label: string }> = [];
-			for (const message of block.messages) {
-				links.push(...extractInlineLinks(message.text));
-				for (const listItem of message.list ?? []) {
-					links.push(...extractInlineLinks(listItem));
-				}
-			}
-			return links;
-		}
-		case "interactive": {
-			const links: Array<{ href: string; label: string }> = [];
-			links.push(...extractInlineLinks(block.intro));
-			for (const step of block.steps) {
-				links.push(...extractInlineLinks(step.description));
-			}
-			return links;
-		}
-		case "qa": {
-			const links: Array<{ href: string; label: string }> = [];
-			for (const item of block.items) {
-				links.push(...extractInlineLinks(item.question));
-				for (const answerBlock of item.answer) {
-					links.push(...extractBlockLinks(answerBlock));
-				}
-			}
-			return links;
-		}
-		case "note":
-			return extractInlineLinks(block.content);
-		default:
-			return [];
-	}
-}
-
-function deriveActionableTargets(
-	items: ReadonlyArray<DocRenderItem>,
-	contentWidth: number,
-): ActionableTarget[] {
-	const targets: ActionableTarget[] = [];
-	let cursor = 0;
-	for (const [index, item] of items.entries()) {
-		const lines = measureDocItemLines(item, contentWidth);
-		const startLine = cursor;
-		const endLine = Math.max(cursor, cursor + lines - 1);
-		if (item.kind === "block" && item.block.type === "command") {
-			targets.push({
-				kind: "command",
-				itemKey: item.key,
-				commandText: commandBlockText(item.block),
-				startLine,
-				endLine,
-			});
-		}
-		const links =
-			item.kind === "intro"
-				? extractInlineLinks(item.content)
-				: item.kind === "block"
-					? extractBlockLinks(item.block)
-					: [];
-		for (const link of links) {
-			targets.push({
-				kind: "link",
-				itemKey: item.key,
-				href: link.href,
-				label: link.label,
-				startLine,
-				endLine,
-			});
-		}
-		cursor += lines;
-		if (index < items.length - 1) {
-			cursor += 1;
-		}
-	}
-	return targets;
-}
 
 function copyToClipboardOsc52(text: string): boolean {
 	try {
@@ -203,220 +36,155 @@ function copyToClipboardOsc52(text: string): boolean {
 	}
 }
 
+/** The line as drawn: runs of the selected action take their `selected` style. */
+function drawn(line: Line, selected: number | undefined): RichTextRun[] {
+	return line.map(({ anchor, selected: style, ...run }) =>
+		anchor !== undefined && anchor === selected ? { ...run, ...style } : run,
+	);
+}
+
 export function InstallViewerScreen({
 	navItems,
 	getContent,
 	initialSlug,
-	renderers,
-	onExit,
 }: InstallViewerScreenProps) {
 	const { exit } = useApp();
-	const navigation = useInstallNavigation(navItems, initialSlug);
-	const scroll = useScrollState(0);
-	const [sidebarMode, setSidebarMode] = useState<NavListMode>("focus-section");
-	const [actionableIndex, setActionableIndex] = useState(0);
-	const [runtimeNote, setRuntimeNote] = useState<string | undefined>(undefined);
 	const layout = useShellLayout();
+	const navigation = useInstallNavigation(navItems, initialSlug);
 	// When only one pane fits (the install screen's docs pane), start on the page itself.
 	const focus = useFocusPlane({ initial: layout.narrow ? "content" : "navigation" });
+	const [sidebarMode, setSidebarMode] = useState<NavListMode>("focus-section");
+	const [actionIndex, setActionIndex] = useState(0);
+	const [runtimeNote, setRuntimeNote] = useState<string | undefined>(undefined);
 
-	const quit = () => {
-		onExit?.();
-		exit();
+	const currentItem = navItems[navigation.safeIndex]!;
+	const rows = layout.content.textRows;
+	const columns = layout.content.textColumns;
+	const content = getContent(currentItem.slug, currentItem.title);
+	const page = useMemo(() => layoutPage(content, columns), [content, columns]);
+	const scroll = useScrollState(page.lines.length - rows);
+	const actions = page.anchors;
+	const selectedAnchor = focus.isContent && actions.length > 0 ? actionIndex : undefined;
+
+	useEffect(() => {
+		setActionIndex(0);
+		setRuntimeNote(undefined);
+	}, [currentItem.slug]);
+
+	const showPage = (move: () => void) => {
+		move();
+		scroll.toTop();
+		setRuntimeNote(undefined);
 	};
+	/** Scrolls just enough to bring action `index` into view. */
+	const reveal = (index: number) => {
+		const line = actions[index]?.line ?? 0;
+		if (line < scroll.offset) scroll.scrollTo(line);
+		else if (line >= scroll.offset + rows) scroll.scrollTo(line - rows + 1);
+	};
+	const moveAction = (delta: number) => {
+		if (actions.length === 0) {
+			scroll.scrollBy(delta);
+			return;
+		}
+		const next = (actionIndex + delta + actions.length) % actions.length;
+		setActionIndex(next);
+		reveal(next);
+		setRuntimeNote(undefined);
+	};
+	const copyAction = () => {
+		const action = actions[actionIndex];
+		if (!action) {
+			setRuntimeNote("no actions on this page");
+			return;
+		}
+		const copied = copyToClipboardOsc52(action.kind === "command" ? action.command : action.href);
+		const what = action.kind === "command" ? "command" : `link (${action.label})`;
+		setRuntimeNote(copied ? `copied ${what}` : "copy failed (terminal clipboard unsupported)");
+	};
+	const activateAction = () => {
+		const action = actions[actionIndex];
+		if (!action || action.kind === "command") {
+			copyAction();
+			return;
+		}
+		const target = resolveDocsLinkTarget(action.href, currentItem.slug, navItems);
+		if (!target.ok) {
+			setRuntimeNote(`invalid docs link target: '${action.href}' (${target.reason})`);
+			return;
+		}
+		showPage(() => navigation.setPage(target.index));
+		setActionIndex(0);
+		setRuntimeNote(`opened docs page '${target.slug}'`);
+	};
+	const pageJump = Math.max(1, rows - 1);
 
 	useKeymap(VIEWER_KEYS, {
-		quit,
+		quit: () => exit(),
 		focus: () => focus.togglePlane(),
 		sidebarMode: () =>
 			setSidebarMode((previous) =>
 				previous === "focus-section" ? "all-sections" : "focus-section",
 			),
 	});
-
-	const currentItem = navItems[navigation.safeIndex]!;
-	const contentRows = layout.content.textRows;
-	const contentColumns = layout.content.textColumns;
-	const sidebarMaxWidth = (layout.nav ?? layout.content).textColumns;
-
-	const content = getContent(currentItem.slug, currentItem.title);
-	const docsViewport = computeDocsViewport(
-		content,
-		currentItem.slug,
-		scroll.scrollOffset,
-		contentRows,
-		contentColumns,
-	);
-	const actionableTargets = useMemo(
-		() => deriveActionableTargets(docsViewport.visibleItems, docsViewport.contentWidth),
-		[docsViewport.contentWidth, docsViewport.visibleItems],
-	);
-	const selectedActionable = actionableTargets[actionableIndex];
-	const selectedItemKey = focus.isContent ? selectedActionable?.itemKey : undefined;
-	const selectedLinkHref =
-		focus.isContent && selectedActionable?.kind === "link" ? selectedActionable.href : undefined;
-
-	useEffect(() => {
-		setActionableIndex(0);
-		setRuntimeNote(undefined);
-	}, [currentItem.slug]);
-
-	useEffect(() => {
-		if (actionableTargets.length === 0) {
-			if (actionableIndex !== 0) {
-				setActionableIndex(0);
-			}
-			return;
-		}
-		if (actionableIndex >= actionableTargets.length) {
-			setActionableIndex(actionableTargets.length - 1);
-		}
-	}, [actionableTargets.length, actionableIndex]);
-
-	const movePage = (delta: number) => {
-		navigation.movePage(delta);
-		scroll.reset();
-	};
-
-	const moveSection = (delta: number) => {
-		navigation.moveSection(delta);
-		scroll.reset();
-	};
-
-	const scrollBy = (delta: number) => {
-		scroll.scrollBy(delta, docsViewport.maxScroll);
-	};
-	const focusActionable = (index: number) => {
-		const selected = actionableTargets[index];
-		if (!selected) {
-			return;
-		}
-		const visibleStart = scroll.scrollOffset;
-		const visibleEnd = scroll.scrollOffset + contentRows - 1;
-		let targetOffset = scroll.scrollOffset;
-		if (selected.startLine < visibleStart) {
-			targetOffset = selected.startLine;
-		} else if (selected.endLine > visibleEnd) {
-			targetOffset = selected.endLine - contentRows + 1;
-		}
-		scroll.scrollBy(targetOffset - scroll.scrollOffset, docsViewport.maxScroll);
-	};
-	const moveActionable = (delta: number) => {
-		if (actionableTargets.length === 0) {
-			scrollBy(delta);
-			return;
-		}
-		const next = (actionableIndex + delta + actionableTargets.length) % actionableTargets.length;
-		setActionableIndex(next);
-		focusActionable(next);
-		setRuntimeNote(undefined);
-	};
-	const copySelectedActionable = () => {
-		const selected = actionableTargets[actionableIndex];
-		if (!selected) {
-			setRuntimeNote("no actionable target on this page");
-			return;
-		}
-		const payload = selected.kind === "command" ? selected.commandText : selected.href;
-		const copied = copyToClipboardOsc52(payload);
-		const actionLabel = selected.kind === "command" ? "command" : `link (${selected.label})`;
-		setRuntimeNote(
-			copied ? `copied ${actionLabel}` : "copy failed (terminal clipboard unsupported)",
-		);
-	};
-	const activateSelectedActionable = () => {
-		const selected = actionableTargets[actionableIndex];
-		if (!selected) {
-			setRuntimeNote("no actionable target on this page");
-			return;
-		}
-		if (selected.kind === "command") {
-			copySelectedActionable();
-			return;
-		}
-		const resolution = resolveDocsLinkTarget(selected.href, currentItem.slug, navItems);
-		if (!resolution.ok) {
-			setRuntimeNote(`invalid docs link target: '${selected.href}' (${resolution.reason})`);
-			return;
-		}
-		navigation.setPage(resolution.index);
-		scroll.reset();
-		setActionableIndex(0);
-		setRuntimeNote(`opened docs page '${resolution.slug}'`);
-	};
-	const pageJump = Math.max(1, contentRows - 1);
-
 	useKeymap(
 		NAV_KEYS,
 		{
-			page: (key) => {
-				movePage(BACKWARD_KEYS.has(key) ? -1 : 1);
-				setRuntimeNote(undefined);
-			},
-			section: (key) => moveSection(BACKWARD_KEYS.has(key) ? -1 : 1),
-			scroll: (key) => scrollBy(BACKWARD_KEYS.has(key) ? -1 : 1),
+			page: (key) => showPage(() => navigation.movePage(BACKWARD_KEYS.has(key) ? -1 : 1)),
+			section: (key) => showPage(() => navigation.moveSection(BACKWARD_KEYS.has(key) ? -1 : 1)),
+			scroll: (key) => scroll.scrollBy(BACKWARD_KEYS.has(key) ? -1 : 1),
 		},
 		{ active: focus.isNavigation },
 	);
 	useKeymap(
 		CONTENT_KEYS,
 		{
-			action: (key) => moveActionable(BACKWARD_KEYS.has(key) ? -1 : 1),
-			activate: () => activateSelectedActionable(),
-			copy: () => copySelectedActionable(),
-			pageScroll: (key) => scrollBy(BACKWARD_KEYS.has(key) ? -pageJump : pageJump),
-			top: () => {
-				scroll.scrollToTop();
-				setRuntimeNote(undefined);
-			},
-			bottom: () => {
-				scroll.scrollToBottom(docsViewport.maxScroll);
-				setRuntimeNote(undefined);
-			},
+			action: (key) => moveAction(BACKWARD_KEYS.has(key) ? -1 : 1),
+			activate: activateAction,
+			copy: copyAction,
+			pageScroll: (key) => scroll.scrollBy(BACKWARD_KEYS.has(key) ? -pageJump : pageJump),
+			top: () => scroll.toTop(),
+			bottom: () => scroll.toBottom(),
 		},
 		{ active: focus.isContent },
 	);
 
-	const sidebar = (
-		<InstallSidebar
-			items={navItems}
-			selectedIndex={navigation.safeIndex}
-			maxWidth={sidebarMaxWidth}
-			mode={sidebarMode}
-		/>
-	);
-	const footer = (
-		<InstallStatusBar
-			page={navigation.safeIndex + 1}
-			pageCount={navItems.length}
-			focus={focus.plane}
-			action={
-				actionableTargets.length > 0
-					? `${actionableIndex + 1}/${actionableTargets.length}`
-					: undefined
-			}
-			note={runtimeNote ?? navigation.startupNote}
-		/>
-	);
-	const contentPaneMeta = `lines ${docsViewport.startItem}-${docsViewport.endItem}/${Math.max(docsViewport.totalItems, 1)}`;
-	const contentPaneTitle = truncateLine(`${currentItem.title}  ${contentPaneMeta}`, contentColumns);
-
+	const visible = page.lines.slice(scroll.offset, scroll.offset + rows);
+	const shown =
+		page.lines.length === 0 ? "0-0" : `${scroll.offset + 1}-${scroll.offset + visible.length}`;
 	return (
 		<AppShell
 			layout={layout}
 			focus={focus.plane}
 			navTitle="Installation Docs"
-			nav={sidebar}
-			contentTitle={contentPaneTitle}
-			content={
-				<InstallContentPane
-					viewport={docsViewport}
-					renderers={renderers}
-					selectedItemKey={selectedItemKey}
-					selectedLinkHref={selectedLinkHref}
+			nav={
+				<InstallSidebar
+					items={navItems}
+					selectedIndex={navigation.safeIndex}
+					maxWidth={(layout.nav ?? layout.content).textColumns}
+					mode={sidebarMode}
 				/>
 			}
-			footer={footer}
+			contentTitle={truncateLine(
+				`${currentItem.title}  lines ${shown}/${Math.max(page.lines.length, 1)}`,
+				columns,
+			)}
+			content={
+				<Box flexDirection="column" height={rows} overflowY="hidden">
+					{visible.map((line, i) => (
+						<RichTextLine key={scroll.offset + i} runs={drawn(line, selectedAnchor)} />
+					))}
+				</Box>
+			}
+			footer={
+				<InstallStatusBar
+					page={navigation.safeIndex + 1}
+					pageCount={navItems.length}
+					focus={focus.plane}
+					action={actions.length > 0 ? `${actionIndex + 1}/${actions.length}` : undefined}
+					note={runtimeNote ?? navigation.startupNote}
+				/>
+			}
 		/>
 	);
 }

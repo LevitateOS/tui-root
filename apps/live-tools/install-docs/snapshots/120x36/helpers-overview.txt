@@ -1,5 +1,5 @@
 ┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│Installation Docs             ││Helpers Overview  lines 1-31/140                                                      │
+│Installation Docs             ││Helpers Overview  lines 1-31/141                                                      │
 ├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
 │ ▸ Getting Started            ││ Helper functions available in recipe scripts (/docs/recipe-format). All helpers are  │
 │                              ││ pure functions that take explicit inputs and return explicit outputs.                │

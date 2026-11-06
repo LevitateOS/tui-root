@@ -1,5 +1,5 @@
 ┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│Installation Docs             ││CLI Reference  lines 1-31/65                                                          │
+│Installation Docs             ││CLI Reference  lines 1-31/88                                                          │
 ├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
 │ ▸ Getting Started            ││ The Recipe CLI executes build-time Rhai recipes inside a configured Ginux domain and │
 │                              ││ returns named published products. Prepare the launcher, verified image and worker    │
@@ -9,28 +9,28 @@
 │                              ││ ◆ Commands                                                                           │
 │ ▸ Helpers                    ││                                                                                      │
 │                              ││ Command                   │ Behavior                                                 │
-│ ▸ Architecture               ││ ──────────────────────────┼───────────────────────────────────────────────────────── │
+│ ▸ Architecture               ││ ──────────────────────────┼─────────────────────────────────                         │
 │                              ││ recipe install RECIPE     │ Run necessary                                            │
-│ ▸ Rec Tooling                ││ recipe isinstalled RECIPE │ Check the owned selected target;                         │
+│ ▸ Rec Tooling                ││                           │ acquire/build/install work with                          │
+│                              ││                           │ custom readiness.                                        │
+│                              ││ recipe isinstalled RECIPE │ Check the owned selected target;                         │
+│                              ││                           │ work needed returns nonzero.                             │
 │                              ││ recipe isbuilt RECIPE     │ Run the custom build readiness                           │
+│                              ││                           │ check.                                                   │
 │                              ││ recipe isacquired RECIPE  │ Run the custom source readiness                          │
+│                              ││                           │ check.                                                   │
 │                              ││ recipe remove RECIPE      │ Remove owned target files;                               │
+│                              ││                           │ earlier publications remain                              │
+│                              ││                           │ immutable.                                               │
 │                              ││ recipe cleanup RECIPE     │ Run optional cleanup with reason                         │
+│                              ││                           │ manual by default.                                       │
 │                              ││ recipe list               │ List declared metadata without                           │
+│                              ││                           │ evaluating recipe setup.                                 │
 │                              ││ recipe info RECIPE        │ Show declared/inherited                                  │
+│                              ││                           │ metadata; dynamic values are                             │
+│                              ││                           │ unavailable.                                             │
 │                              ││ recipe hash FILE          │ Compute SHA256, SHA512 and                               │
+│                              ││                           │ BLAKE3.                                                  │
 │                              ││                                                                                      │
-│                              ││ RECIPE is a path or name resolved using --recipes-path. Current scope covers managed │
-│                              ││ build products and owned target views; live-system activation is outside this        │
-│                              ││ interface. Run recipe --help and recipe install --help for current syntax.           │
-│                              ││                                                                                      │
-│                              ││ ◆ Inputs and Results                                                                 │
-│                              ││                                                                                      │
-│                              ││ ┌ BASH ────────────────────────────────────────────────────────────────────────────┐ │
-│                              ││ │ 1 │recipe install ./producer.rhai [[/]]                                          │ │
-│                              ││ │ 2 │  --input source=./offline-source [[/]]                                       │ │
-│                              ││ │ 3 │  --build-dir .artifacts/work/example [[/]]                                   │ │
-│                              ││ │ 4 │  --state-dir .artifacts/state/example [[/]]                                  │ │
-│                              ││ │ 5 │  --json-output .artifacts/example.json                                       │ │
 └──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
  [install-docs] | navigation | <masked> | h/l prev/next page | [/] prev/next section | j/k scroll content | q quit |
