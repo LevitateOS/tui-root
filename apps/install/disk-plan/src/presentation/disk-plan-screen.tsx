@@ -30,6 +30,7 @@ import {
   APPLY_SCHEMA_VERSION,
   CONFIRM_TOKEN,
   ERROR_SCHEMA_VERSION,
+  INSTALL_MODES,
   PLAN_SCHEMA_VERSION,
   type ApplyResult,
   type DiskInventory,
@@ -164,6 +165,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
   const [applyState, setApplyState] = useState<AsyncState<ApplyResult>>({ kind: "idle" });
   const [confirmToken, setConfirmToken] = useState("");
   const [failure, setFailure] = useState<FailureDiagnostic | null>(null);
+  const [diskListError, setDiskListError] = useState<string | null>(null);
   const [diskCandidates, setDiskCandidates] = useState<DiskInventory[]>([]);
   const [activePane, setActivePane] = useState<"nav" | "content">("nav");
   const [failureReturnIndex, setFailureReturnIndex] = useState<number | null>(null);
@@ -230,7 +232,10 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
     let cancelled = false;
     const explicit = initialDiskRef.current.trim();
     void listDisks()
-      .catch(() => [] as DiskInventory[])
+      .catch((error: unknown) => {
+        setDiskListError(error instanceof Error ? error.message : String(error));
+        return [] as DiskInventory[];
+      })
       .then((listed) => {
         if (cancelled) {
           return;
@@ -457,7 +462,12 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
   const isContentFocus = activePane === "content";
   const pageAllowsContentPane = hasInteractiveContent(page);
   const toggleMode = () => {
-    setFlow((state) => setMode(state, state.mode === "ab" ? "mutable" : "ab"));
+    setFlow((state) =>
+      setMode(
+        state,
+        INSTALL_MODES[(INSTALL_MODES.indexOf(state.mode) + 1) % INSTALL_MODES.length],
+      ),
+    );
   };
   // Every forward move goes through onNext (guarded by canAdvancePage), and
   // every backward move through onPrev; there are no unguarded page jumps.
@@ -742,7 +752,9 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
         <UiText>Selected path: {flow.disk || "(unset)"}</UiText>
         <UiText>Discovered disks (card grid: {diskGridColumns} columns):</UiText>
         {diskCandidates.length === 0 ? (
-          <UiText>- (none discovered)</UiText>
+          <UiText>
+            {diskListError ? `- disk listing failed: ${diskListError}` : "- (none discovered)"}
+          </UiText>
         ) : (
           <SelectableGrid
             items={diskCandidates}

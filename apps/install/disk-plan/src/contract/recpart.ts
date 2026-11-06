@@ -36,7 +36,13 @@ state_size_mb: number | null, };
 
 export type ResolvedLayout = { mode: InstallMode, efi_size_mb: number, root_size_mb: number | null, root_a_size_mb: number | null, root_b_size_mb: number | null, state_size_mb: number | null, };
 
-export type PartitionTemplate = { index: number, name: string, filesystem: string, label: string, gpt_type: string, size_mb: number | null, mountpoint: string, };
+export type Filesystem = "vfat" | "ext4";
+
+export type PartitionTemplate = { index: number, name: string, filesystem: Filesystem, label: string, gpt_type: string, 
+/**
+ * The legacy-BIOS bootable flag (set on the ESP).
+ */
+bootable: boolean, size_mb: number | null, mountpoint: string, };
 
 export type PartitionPlan = { schema_version: number, mode: InstallMode, layout_request: LayoutRequest, resolved_layout: ResolvedLayout, disk: DiskTarget, partitions: Array<PartitionTemplate>, sfdisk_script: string, };
 
