@@ -34,6 +34,8 @@ holds a stand-in for every tool it runs (`fixtures/`), so they never touch a dis
   real app; it also has each variant's whole install screen. It listens on every address and prints
   a URL with an access token; open that URL (from another machine, through an SSH tunnel to the
   port if a firewall is in the way). Without the token, nothing that can start a program answers.
+- `cargo xtask stories --export FILE` records every story instead (the real app in a PTY, its keys
+  typed) and writes one self-contained HTML file that replays them in xterm.js: no server needed.
 
 ## Stories
 
