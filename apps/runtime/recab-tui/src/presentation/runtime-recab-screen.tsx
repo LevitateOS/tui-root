@@ -46,6 +46,8 @@ const STATUS_ROWS: ReadonlyArray<[string, (status: Status) => string]> = [
 	["next_boot", (s) => formatSlot(s.next_boot)],
 	["default", (s) => formatSlot(s.default_slot)],
 	["known_good", (s) => formatSlot(s.known_good_slot)],
+	["committed", (s) => (s.committed ? "yes" : "no")],
+	["rollback", (s) => formatSlot(s.rollback_slot)],
 	["entry_prefix", (s) => s.entry_prefix],
 ];
 

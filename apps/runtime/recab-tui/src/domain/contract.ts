@@ -5,10 +5,25 @@ export type Slot = "A" | "B";
 export type Status = {
 	active_slot: Slot;
 	inactive_slot: Slot;
+	/**
+	 * A one-shot trial boot is set in the firmware and not yet taken.
+	 */
 	trial_pending: boolean;
+	/**
+	 * The slot the next boot starts: the trial slot, else the default.
+	 */
 	next_boot: Slot | null;
 	default_slot: Slot | null;
 	known_good_slot: Slot | null;
+	/**
+	 * The running slot is the known-good slot. After a trial boot this is
+	 * false until `recab commit`; an uncommitted slot is left on next boot.
+	 */
+	committed: boolean;
+	/**
+	 * The slot `recab rollback` would select, if any.
+	 */
+	rollback_slot: Slot | null;
 	entry_prefix: string;
 };
 
