@@ -24,4 +24,5 @@ and `.oxfmtrc.json`.
 
 Run any app with `cargo xtask tui <name>` (it builds the app's Rust tools and puts
 them on PATH first), render one headlessly with `cargo xtask inspect <name>` (`--input` types keys),
-and typecheck everything with `cargo xtask check`.
+and check every TUI package (typecheck, lint, format, renders at the install
+screen's docs-pane size, snapshots, key walks) with `cargo xtask check tui`.

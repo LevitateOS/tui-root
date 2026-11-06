@@ -5,24 +5,12 @@
 	"bin": {
 		"install-docs": "./src/main.ts"
 	},
-	"levitate": {
-		"inspect": {
-			"pages": {
-				"list": [
-					"--pages"
-				],
-				"arg": "--slug"
-			}
-		}
-	},
 	"type": "module",
 	"scripts": {
 		"typecheck": "tsc --noEmit",
 		"lint": "oxlint --config ../../../../.oxlintrc.json src --deny-warnings",
 		"format": "oxfmt --config ../../../../.oxfmtrc.json --write src package.json tsconfig.json",
-		"format:check": "oxfmt --config ../../../../.oxfmtrc.json --check src package.json tsconfig.json",
-		"inspect:check": "bash scripts/verify-inspect-snapshots.sh",
-		"test:e2e": "bun test ./src/install-viewer.chrome.pty.test.ts"
+		"format:check": "oxfmt --config ../../../../.oxfmtrc.json --check src package.json tsconfig.json"
 	},
 	"dependencies": {
 		"@levitate/docs-content": "workspace:*",
@@ -34,5 +22,18 @@
 		"@types/bun": "^1.2.17",
 		"@types/react": "^19.2.0",
 		"typescript": "^5.9.2"
+	},
+	"levitate": {
+		"inspect": {
+			"pages": {
+				"list": [
+					"--pages"
+				],
+				"arg": "--slug"
+			},
+			"mask": [
+				"page \\d+/\\d+"
+			]
+		}
 	}
 }

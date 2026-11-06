@@ -26,10 +26,11 @@ Legacy non-interactive flags (`--list`, `--page`, `--all`) were removed.
 ## Development
 
 ```bash
-bun install            # at the repo root: one workspace, one lockfile
-bun run typecheck
-bun run lint
-bun run format:check
-bun run test:e2e
-bun run inspect:check
+cargo xtask check tui           # typecheck, lint, format, renders, snapshots for every TUI package
+cargo xtask check tui --bless   # accept the current renders as the snapshots
+cargo xtask inspect install-docs --stdout -- --slug installation
 ```
+
+Snapshots live in `snapshots/<columns>x<rows>/<page>.txt`; add a file to snapshot another
+page or size. The status bar's page count is masked (`levitate.inspect.mask` in
+`package.json`), so docs edits elsewhere don't fail them.

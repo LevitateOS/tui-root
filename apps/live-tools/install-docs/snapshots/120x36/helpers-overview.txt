@@ -33,4 +33,4 @@
 │                              ││ │20 │    ctx                                                                       │ │
 │                              ││ │21 │}                                                                             │ │
 └──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
- [docs] | navigation | q quit | tab toggle pane | m sidebar mode | page 11/37 | h/l [/] pages/sections | j/k content |
+ [docs] | navigation | q quit | tab toggle pane | m sidebar mode | <masked> | h/l [/] pages/sections | j/k content |

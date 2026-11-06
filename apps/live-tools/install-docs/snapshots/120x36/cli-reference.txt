@@ -1,0 +1,36 @@
+┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
+│Installation Docs             ││CLI Reference  lines 1-31/65                                                          │
+├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
+│ ▸ Getting Started            ││ The Recipe CLI executes build-time Rhai recipes inside a configured Ginux domain and │
+│                              ││ returns named published products. Prepare the launcher, verified image and worker    │
+│ ▾ Package Manager            ││ first using the Recipe README                                                        │
+│  ▸ CLI Reference             ││ (https://github.com/LevitateOS/recipe/blob/main/README.md).                          │
+│    Recipe Format             ││                                                                                      │
+│                              ││ ◆ Commands                                                                           │
+│ ▸ Helpers                    ││                                                                                      │
+│                              ││ Command                   │ Behavior                                                 │
+│ ▸ Architecture               ││ ──────────────────────────┼───────────────────────────────────────────────────────── │
+│                              ││ recipe install RECIPE     │ Run necessary                                            │
+│ ▸ Rec Tooling                ││ recipe isinstalled RECIPE │ Check the owned selected target;                         │
+│                              ││ recipe isbuilt RECIPE     │ Run the custom build readiness                           │
+│                              ││ recipe isacquired RECIPE  │ Run the custom source readiness                          │
+│                              ││ recipe remove RECIPE      │ Remove owned target files;                               │
+│                              ││ recipe cleanup RECIPE     │ Run optional cleanup with reason                         │
+│                              ││ recipe list               │ List declared metadata without                           │
+│                              ││ recipe info RECIPE        │ Show declared/inherited                                  │
+│                              ││ recipe hash FILE          │ Compute SHA256, SHA512 and                               │
+│                              ││                                                                                      │
+│                              ││ RECIPE is a path or name resolved using --recipes-path. Current scope covers managed │
+│                              ││ build products and owned target views; live-system activation is outside this        │
+│                              ││ interface. Run recipe --help and recipe install --help for current syntax.           │
+│                              ││                                                                                      │
+│                              ││ ◆ Inputs and Results                                                                 │
+│                              ││                                                                                      │
+│                              ││ ┌ BASH ────────────────────────────────────────────────────────────────────────────┐ │
+│                              ││ │ 1 │recipe install ./producer.rhai [[/]]                                          │ │
+│                              ││ │ 2 │  --input source=./offline-source [[/]]                                       │ │
+│                              ││ │ 3 │  --build-dir .artifacts/work/example [[/]]                                   │ │
+│                              ││ │ 4 │  --state-dir .artifacts/state/example [[/]]                                  │ │
+│                              ││ │ 5 │  --json-output .artifacts/example.json                                       │ │
+└──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
+ [docs] | navigation | q quit | tab toggle pane | m sidebar mode | <masked> | h/l [/] pages/sections | j/k content |

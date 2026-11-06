@@ -33,4 +33,4 @@
 │                              ││                                                                                      │
 │                              ││ Run a command and return its stdout. Throws if the command fails.                    │
 └──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
- [docs] | navigation | q quit | tab toggle pane | m sidebar mode | page 17/37 | h/l [/] pages/sections | j/k content |
+ [docs] | navigation | q quit | tab toggle pane | m sidebar mode | <masked> | h/l [/] pages/sections | j/k content |

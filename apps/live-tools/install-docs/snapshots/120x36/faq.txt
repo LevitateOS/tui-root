@@ -1,5 +1,5 @@
 ┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│Installation Docs             ││Architecture FAQ  lines 1-31/337                                                      │
+│Installation Docs             ││Architecture FAQ  lines 1-31/314                                                      │
 ├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
 │ ▸ Getting Started            ││ Design decisions and rationale behind LevitateOS components. Each answer explains    │
 │                              ││ why we chose a particular approach over alternatives.                                │
@@ -11,26 +11,26 @@
 │  ▸ Architecture FAQ          ││ A >                                                                                  │
 │    How We Compare            ││   LevitateOS is a daily driver Linux distribution competing directly with Arch       │
 │    Atomic Updates (A/B)      ││   Linux. It borrows Arch's philosophy (user maintains their own packages, minimal    │
-│    Variants                  ││   base that users build up) but substitutes hours of compilation with minutes of     │
-│                              ││   extraction from pre-built Rocky Linux packages.                                    │
-│ ▸ Rec Tooling                ││   Dimension       │ Arch Linux                  │ LevitateOS                         │
+│    Variants                  ││   base that users build up) but takes its core system (glibc, systemd, coreutils,    │
+│                              ││   OpenSSH and the rest of a minimal base) pre-built from Fedora instead of compiling │
+│ ▸ Rec Tooling                ││   it.                                                                                │
+│                              ││   Dimension       │ Arch Linux                  │ LevitateOS                         │
 │                              ││   ────────────────┼─────────────────────────────┼─────────────────────────────────── │
 │                              ││   Target User     │ Power users seeking control │ Same                               │
 │                              ││   Philosophy      │ Minimal base, user builds   │ Same                               │
 │                              ││   Package Manager │ pacman + AUR                │ recipe (Rhai scripts)              │
-│                              ││   Binary Source   │ Compiled from source        │ Extracted from Rocky 10 RPMs       │
+│                              ││   Binary Source   │ Compiled from source        │ Core extracted from signed         │
 │                              ││   Build Time      │ Hours (compiling)           │ Minutes (extracting)               │
 │                              ││                                                                                      │
 │                              ││ Q >                                                                                  │
 │                              ││   Why not just use Arch?                                                             │
 │                              ││ A >                                                                                  │
 │                              ││   Arch requires compiling AUR packages. That means build dependencies, compiler      │
-│                              ││   toolchains, and waiting. LevitateOS extracts enterprise-tested Rocky RPMs in       │
+│                              ││   toolchains, and waiting. LevitateOS extracts its core from signed Fedora RPMs in   │
 │                              ││   minutes. Same philosophy, less waiting.                                            │
 │                              ││   If you want to compile everything yourself, use Arch. If you want the same control │
 │                              ││   without the compilation overhead, use LevitateOS.                                  │
 │                              ││                                                                                      │
 │                              ││ Q >                                                                                  │
-│                              ││   Why not Fedora?                                                                    │
 └──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
- [docs] | navigation | q quit | tab toggle pane | m sidebar mode | page 21/37 | h/l [/] pages/sections | j/k content |
+ [docs] | navigation | q quit | tab toggle pane | m sidebar mode | <masked> | h/l [/] pages/sections | j/k content |
