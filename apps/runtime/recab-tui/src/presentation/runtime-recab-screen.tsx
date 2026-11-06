@@ -91,12 +91,12 @@ export function RuntimeRecabScreen() {
 	const busy = useRef(false);
 
 	const runAction = async (action: RuntimeRecabAction) => {
+		if (busy.current) {
+			return;
+		}
 		if (action.section === "Read") {
 			// The status panel runs `recab status` itself.
 			setRefreshes((n) => n + 1);
-			return;
-		}
-		if (busy.current) {
 			return;
 		}
 		busy.current = true;

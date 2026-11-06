@@ -1,5 +1,5 @@
 ┌────────────────────────────────────┐
-│Installation  lines 1-17/64         │
+│Installation  lines 1-16/64         │
 ├────────────────────────────────────┤
 │ Step-by-step guide to installing   │
 │ LevitateOS from the live           │
@@ -17,6 +17,5 @@
 │                                    │
 │ ╭────────────────────────────────╮ │
 │ │ WARNING                        │ │
-│ │ Default update model: A/B      │ │
 └────────────────────────────────────┘
  [install-docs] | content | <masked>
