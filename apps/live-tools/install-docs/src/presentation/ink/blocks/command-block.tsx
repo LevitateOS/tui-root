@@ -1,6 +1,7 @@
+import { MARKERS } from "../theme/index";
 import { Box, Text } from "ink";
 import type { CommandBlock } from "@levitate/docs-content";
-import { wrapBoundedText } from "@levitate/tui-kit";
+import { wrapText } from "@levitate/tui-kit";
 import type { ReactNode } from "react";
 import type { BlockComponentProps } from "./types";
 import type { BlockPlugin } from "./contracts";
@@ -25,10 +26,10 @@ export function CommandBlockView({
 		isSelected && commandLines.length > 0
 			? [`${commandLines[0]}  [COPY]`, ...commandLines.slice(1)]
 			: commandLines;
-	const descriptionLines = wrapBoundedText(block.description, textWidth, 1);
+	const descriptionLines = wrapText(block.description, textWidth);
 	const outputLines =
 		typeof block.output === "string" && block.output.length > 0
-			? block.output.split("\n").flatMap((line) => wrapBoundedText(line, textWidth, 1))
+			? block.output.split("\n").flatMap((line) => wrapText(line, textWidth))
 			: [];
 
 	return (
@@ -45,7 +46,7 @@ export function CommandBlockView({
 			<CommandLineSeries
 				lines={selectedCommandLines}
 				width={textWidth}
-				firstPrefix={isSelected ? "▸ " : "$ "}
+				firstPrefix={isSelected ? `${MARKERS.selected} ` : "$ "}
 				continuationPrefix="  "
 				bold
 			/>
@@ -71,11 +72,11 @@ export const commandBlockPlugin: BlockPlugin<"command"> = {
 	),
 	measure: (block, context, indent) => {
 		const textWidth = Math.max(1, context.contentWidth - indent);
-		const descriptionLines = wrapBoundedText(block.description, textWidth, 1).length;
+		const descriptionLines = wrapText(block.description, textWidth).length;
 		const commandLines = commandSnapshotLines(block).length;
 		const outputLines =
 			typeof block.output === "string" && block.output.length > 0
-				? block.output.split("\n").flatMap((line) => wrapBoundedText(line, textWidth, 1)).length
+				? block.output.split("\n").flatMap((line) => wrapText(line, textWidth)).length
 				: 0;
 		return descriptionLines + commandLines + outputLines;
 	},

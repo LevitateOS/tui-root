@@ -1,4 +1,10 @@
-import { createTheme, type ThemeColor, type TuiTheme } from "@levitate/tui-kit";
+import {
+	createTheme,
+	glyphs,
+	type BorderStyle,
+	type ThemeColor,
+	type TuiTheme,
+} from "@levitate/tui-kit";
 import type { NoteBlock } from "@levitate/docs-content";
 
 /** Colours used by more than one intent, named once. */
@@ -13,6 +19,19 @@ const ink = {
 	info: "#8ab8ff",
 	warning: "#ffc76a",
 } as const satisfies Record<string, ThemeColor>;
+
+/** Box-drawing style of the panes and of code blocks and tables inside them. */
+const BORDER: BorderStyle = "single";
+export const DOCS_GLYPHS = glyphs(BORDER);
+/** Note admonitions are drawn round to set them apart from code blocks. */
+export const NOTE_GLYPHS = glyphs("round");
+
+/** Markers drawn in front of headings and the selected command. */
+export const MARKERS = {
+	heading: "◆",
+	subheading: "›",
+	selected: "▸",
+} as const;
 
 export function createInstallDocsTheme(): TuiTheme {
 	return createTheme(
@@ -46,11 +65,9 @@ export function createInstallDocsTheme(): TuiTheme {
 		{
 			navWidth: 32,
 			minColumns: 88,
-			headerHeight: 1,
-			footerHeight: 1,
 		},
 		{
-			borderGlyphSet: "single",
+			borderGlyphSet: BORDER,
 			panePaddingX: 1,
 			panePaddingY: 0,
 			framePaneGap: 0,

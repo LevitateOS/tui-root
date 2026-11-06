@@ -1,3 +1,4 @@
+import { MARKERS } from "../theme/index";
 import { Box } from "ink";
 import { UiText } from "@levitate/tui-kit";
 import type { ReactNode } from "react";
@@ -14,7 +15,7 @@ export function SectionHeadingItem({
 	indent = 0,
 }: SectionHeadingItemProps): ReactNode {
 	const intent = level === 3 ? "subheading" : "heading";
-	const marker = level === 3 ? "›" : "◆";
+	const marker = level === 3 ? MARKERS.subheading : MARKERS.heading;
 	return (
 		<Box flexDirection="column" paddingLeft={indent}>
 			<UiText intent={intent} bold>

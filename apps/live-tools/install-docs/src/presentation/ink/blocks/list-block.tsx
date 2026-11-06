@@ -90,18 +90,16 @@ export const listBlockPlugin: BlockPlugin<"list"> = {
 					marker,
 					inlineContentToPlainText(item as string | RichText),
 					listWidth,
-					1,
 				).length;
 				continue;
 			}
 
-			lines += prefixWrappedText(marker, inlineContentToPlainText(item.text), listWidth, 1).length;
+			lines += prefixWrappedText(marker, inlineContentToPlainText(item.text), listWidth).length;
 			for (const child of item.children ?? []) {
 				lines += prefixWrappedText(
 					"•",
 					inlineContentToPlainText(child),
 					Math.max(1, listWidth - 2),
-					1,
 				).length;
 			}
 		}

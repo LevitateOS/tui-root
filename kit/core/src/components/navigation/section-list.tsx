@@ -1,6 +1,6 @@
 import { Text } from "ink";
 import { clampNumber, toNonNegativeInt } from "../../utils/clamp";
-import { normalizeTextWidth, truncateBoundedLine } from "../../utils/strings";
+import { truncateLine } from "../../utils/strings";
 
 type SectionListItem = {
 	section: string;
@@ -31,7 +31,7 @@ function renderSectionList(
 		return options.emptyLabel ?? "(no items)";
 	}
 
-	const safeWidth = normalizeTextWidth(options.maxWidth ?? 30, 1);
+	const safeWidth = Math.floor(options.maxWidth ?? 30);
 	const safeSelected = clampNumber(toNonNegativeInt(selectedIndex, 0), 0, items.length - 1);
 	const activeMarker = marker(options.marker, ">");
 	const inactiveMarker = marker(options.inactiveMarker, " ");
@@ -47,16 +47,15 @@ function renderSectionList(
 				lines.push("");
 			}
 			lines.push(
-				truncateBoundedLine(
+				truncateLine(
 					sectionPrefix.length > 0 ? `${sectionPrefix} ${currentSection}` : currentSection,
 					safeWidth,
-					1,
 				),
 			);
 		}
 
 		const selectedMarker = index === safeSelected ? activeMarker : inactiveMarker;
-		lines.push(truncateBoundedLine(`  ${selectedMarker} ${item.label}`, safeWidth, 1));
+		lines.push(truncateLine(`  ${selectedMarker} ${item.label}`, safeWidth));
 	}
 
 	return lines.join("\n");

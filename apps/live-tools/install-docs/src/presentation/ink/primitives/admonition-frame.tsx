@@ -1,5 +1,6 @@
 import { Box, Text } from "ink";
-import { padRight, resolveChromeGlyphSet, truncateLine } from "@levitate/tui-kit";
+import { padRight, truncateLine } from "@levitate/tui-kit";
+import { NOTE_GLYPHS } from "../theme/index";
 import type { ReactNode } from "react";
 
 type AdmonitionFrameProps = {
@@ -28,7 +29,7 @@ export function AdmonitionFrame({
 		);
 	}
 
-	const chrome = resolveChromeGlyphSet("round");
+	const chrome = NOTE_GLYPHS;
 	const horizontalWidth = Math.max(0, safeWidth - 2);
 	const innerWidth = safeWidth - 2;
 	const contentWidth = Math.max(1, innerWidth - 2);

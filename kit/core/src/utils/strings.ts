@@ -1,88 +1,75 @@
-import { toNonNegativeInt, toPositiveInt } from "./clamp";
+import stringWidth from "string-width";
 
-function normalizeWidth(width: number): number {
-	return toNonNegativeInt(width, 0);
+/**
+ * Text is measured in terminal cells with `string-width`, the same model Ink lays
+ * out with, so wide and combining characters truncate, pad and wrap where Ink draws them.
+ */
+export function textWidth(text: string): number {
+	return stringWidth(text);
 }
 
-export function padRight(text: string, width: number): string {
-	const safeWidth = normalizeWidth(width);
-	if (safeWidth <= 0) {
-		return "";
-	}
+const segmenter = new Intl.Segmenter();
 
-	if (text.length >= safeWidth) {
-		return text.slice(0, safeWidth);
-	}
+function graphemes(text: string): string[] {
+	return Array.from(segmenter.segment(text), (part) => part.segment);
+}
 
-	return text + " ".repeat(safeWidth - text.length);
+function cells(width: number): number {
+	return Number.isFinite(width) ? Math.max(0, Math.floor(width)) : 0;
+}
+
+/** The longest prefix of `text` that fits in `width` cells. */
+function takeWidth(text: string, width: number): string {
+	let out = "";
+	let used = 0;
+	for (const g of graphemes(text)) {
+		const w = stringWidth(g);
+		if (used + w > width) break;
+		out += g;
+		used += w;
+	}
+	return out;
 }
 
 export function truncateLine(text: string, width: number): string {
-	const safeWidth = normalizeWidth(width);
-	if (safeWidth <= 0) {
-		return "";
-	}
-
-	if (text.length <= safeWidth) {
-		return text;
-	}
-
-	if (safeWidth === 1) {
-		return "…";
-	}
-
-	return `${text.slice(0, safeWidth - 1)}…`;
+	const safe = cells(width);
+	if (textWidth(text) <= safe) return text;
+	if (safe === 0) return "";
+	return `${takeWidth(text, safe - 1)}…`;
 }
 
-export function horizontalRule(width: number, char = "-"): string {
-	const safeWidth = normalizeWidth(width);
-	if (safeWidth <= 0) {
-		return "";
-	}
-	const fill = typeof char === "string" && char.length > 0 ? char[0] : "-";
-	return fill.repeat(safeWidth);
+export function padRight(text: string, width: number): string {
+	const safe = cells(width);
+	const fitted = takeWidth(text, safe);
+	return fitted + " ".repeat(safe - textWidth(fitted));
 }
 
+export function horizontalRule(width: number, char = "─"): string {
+	return char.repeat(cells(width));
+}
+
+/** Splits a word that is wider than `width` into pieces that fit. */
 function chunkWord(word: string, width: number): string[] {
-	if (word.length <= width) {
-		return [word];
-	}
-
 	const chunks: string[] = [];
-	for (let index = 0; index < word.length; index += width) {
-		chunks.push(word.slice(index, index + width));
+	let rest = word;
+	while (textWidth(rest) > width) {
+		const piece = takeWidth(rest, width) || graphemes(rest)[0];
+		chunks.push(piece);
+		rest = rest.slice(piece.length);
 	}
-	return chunks;
+	return rest.length > 0 ? [...chunks, rest] : chunks;
 }
 
-function wrapText(text: string, width: number): string[] {
-	const safeWidth = normalizeWidth(width);
-	if (safeWidth <= 0) {
-		return [text];
-	}
-
+/** Word-wraps `text` to `width` cells; `\n` starts a new line. */
+export function wrapText(text: string, width: number): string[] {
+	const safe = Math.max(1, cells(width));
 	const output: string[] = [];
-
 	for (const line of text.split("\n")) {
-		const words = line.split(/\s+/).filter((word) => word.length > 0);
-
-		if (words.length === 0) {
-			output.push("");
-			continue;
-		}
-
 		let current = "";
-		for (const word of words) {
-			const wordChunks = chunkWord(word, safeWidth);
-
-			for (const chunk of wordChunks) {
-				if (current.length === 0) {
-					current = chunk;
-					continue;
-				}
-
-				const candidate = `${current} ${chunk}`;
-				if (candidate.length <= safeWidth) {
+		for (const word of line.split(/\s+/).filter((w) => w.length > 0)) {
+			for (const chunk of chunkWord(word, safe)) {
+				const candidate = current.length === 0 ? chunk : `${current} ${chunk}`;
+				if (textWidth(candidate) <= safe) {
 					current = candidate;
 				} else {
 					output.push(current);
@@ -90,47 +77,17 @@ function wrapText(text: string, width: number): string[] {
 				}
 			}
 		}
-
-		if (current.length > 0) {
-			output.push(current);
-		}
+		output.push(current);
 	}
-
-	return output.length > 0 ? output : [""];
+	return output;
 }
 
-export function normalizeTextWidth(width: number, minimum = 20): number {
-	const safeMinimum = Math.max(1, toPositiveInt(minimum, 20));
-	return Math.max(safeMinimum, toPositiveInt(width, safeMinimum));
-}
-
-export function truncateBoundedLine(text: string, width: number, minimum = 20): string {
-	const safeWidth = normalizeTextWidth(width, minimum);
-	return truncateLine(text, safeWidth);
-}
-
-export function wrapBoundedText(text: string, width: number, minimum = 20): string[] {
-	const safeWidth = normalizeTextWidth(width, minimum);
-	return wrapText(text, safeWidth).map((line) => truncateLine(line, safeWidth));
-}
-
-export function prefixWrappedText(
-	prefix: string,
-	text: string,
-	width: number,
-	minimum = 20,
-): string[] {
-	const safeWidth = normalizeTextWidth(width, minimum);
-	const prefixText = prefix.length > 0 ? `${prefix} ` : "";
-	const contentWidth = Math.max(1, safeWidth - prefixText.length);
-	const wrapped = wrapText(text, contentWidth);
-
-	if (prefixText.length === 0) {
-		return wrapped.map((line) => truncateLine(line, safeWidth));
-	}
-
-	const indent = " ".repeat(prefixText.length);
-	return wrapped.map((line, index) =>
-		truncateLine(index === 0 ? `${prefixText}${line}` : `${indent}${line}`, safeWidth),
+/** Wraps `text` after `prefix ` and indents continuation lines to line up under it. */
+export function prefixWrappedText(prefix: string, text: string, width: number): string[] {
+	const safe = Math.max(1, cells(width));
+	const lead = prefix.length > 0 ? `${prefix} ` : "";
+	const indent = " ".repeat(textWidth(lead));
+	return wrapText(text, Math.max(1, safe - textWidth(lead))).map((line, index) =>
+		truncateLine(`${index === 0 ? lead : indent}${line}`, safe),
 	);
 }

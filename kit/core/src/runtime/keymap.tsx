@@ -29,7 +29,7 @@ export type Keymap<A extends string = string> = readonly KeyBinding<A>[];
 
 export type KeyHandlers<A extends string> = Partial<Record<A, (key: KeyName) => void>>;
 
-export type KeymapOptions = {
+type KeymapOptions = {
 	/** Inactive scopes receive nothing. Default true. */
 	active?: boolean;
 	/**
@@ -39,7 +39,7 @@ export type KeymapOptions = {
 	onText?: (text: string) => void;
 };
 
-export function keyName(input: string, key: Key): KeyName | undefined {
+function keyName(input: string, key: Key): KeyName | undefined {
 	if (key.return) return "enter";
 	if (key.escape) return "escape";
 	if (key.tab) return key.shift ? "S-tab" : "tab";

@@ -1,3 +1,4 @@
+import type { BorderStyle } from "../chrome/glyphs";
 import { palette } from "./palette";
 
 /**
@@ -42,20 +43,19 @@ export type ColorIntent =
 	| "panelBorder"
 	| "panelBackground";
 
-export type ThemeColors = Record<ColorIntent, ThemeColor>;
+type ThemeColors = Record<ColorIntent, ThemeColor>;
 
 export type ThemeColorsOverride = Partial<ThemeColors>;
 
 export type ThemeLayout = {
+	/** Outer width of the nav pane. */
 	navWidth: number;
-	headerHeight: number;
-	footerHeight: number;
+	/** Narrower terminals show one pane at a time. */
 	minColumns: number;
-	minRows: number;
 };
 
 export type ThemeChrome = {
-	borderGlyphSet: "single" | "double" | "round" | "bold";
+	borderGlyphSet: BorderStyle;
 	panePaddingX: number;
 	panePaddingY: number;
 	framePaneGap: number;
@@ -100,10 +100,7 @@ export const defaultThemeColors: ThemeColors = {
 
 export const defaultThemeLayout: ThemeLayout = {
 	navWidth: 30,
-	headerHeight: 2,
-	footerHeight: 2,
 	minColumns: 80,
-	minRows: 24,
 };
 
 export const defaultThemeChrome: ThemeChrome = {

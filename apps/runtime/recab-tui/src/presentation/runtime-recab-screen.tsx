@@ -4,12 +4,13 @@ import {
 	KeyValue,
 	SectionList,
 	SegmentedStatusLine,
-	SurfaceFrame,
+	AppShell,
 	UiText,
 	keymapStatusSegments,
 	scopeStatusSegment,
 	textStatusSegment,
 	useKeymap,
+	useShellLayout,
 	useListNavigation,
 } from "@levitate/tui-kit";
 import { runRecabCommand, runRecabStatus } from "../app/recab-runner";
@@ -194,12 +195,13 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
 		return <SegmentedStatusLine segments={segments} />;
 	}, [recabBin, runningActionId, statusError, statusLoading]);
 
+	const layout = useShellLayout({ navWidth: 40 });
 	const sidebar = (
 		<Box flexDirection="column">
 			<SectionList
 				items={sidebarItems}
 				selectedIndex={nav.safeIndex}
-				maxWidth={36}
+				maxWidth={(layout.nav ?? layout.content).textColumns}
 				sectionPrefix="::"
 			/>
 			<UiText> </UiText>
@@ -230,27 +232,14 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
 	);
 
 	return (
-		<SurfaceFrame
-			title="LevitateOS Runtime Tools"
-			showHeader={false}
-			leftWidth={40}
+		<AppShell
+			layout={layout}
+			focus="navigation"
+			navTitle="Actions"
+			nav={sidebar}
+			contentTitle="recab"
+			content={body}
 			footer={footer}
-			leftPane={{
-				title: "Actions",
-				titleMode: "inline",
-				body: sidebar,
-				borderIntent: "navBorder",
-				textIntent: "navItem",
-				titleIntent: "navHeading",
-			}}
-			rightPane={{
-				title: "recab",
-				titleMode: "inline",
-				body,
-				borderIntent: "contentBorder",
-				textIntent: "text",
-				titleIntent: "heading",
-			}}
 		/>
 	);
 }

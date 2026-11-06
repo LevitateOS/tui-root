@@ -1,5 +1,5 @@
 import type { ContentBlock, RichText } from "@levitate/docs-content";
-import { normalizeTextWidth, wrapBoundedText } from "@levitate/tui-kit";
+import { wrapText } from "@levitate/tui-kit";
 import type { DocRenderItem } from "../../domain/render/types";
 import { DEFAULT_INSTALL_BLOCK_PLUGINS } from "../../presentation/ink/blocks/plugins";
 
@@ -27,7 +27,7 @@ function inlineContentToPlainText(content: string | RichText | undefined): strin
 }
 
 function countInlineLines(content: string | RichText | undefined, width: number): number {
-	return wrapBoundedText(inlineContentToPlainText(content), Math.max(1, width), 1).length;
+	return wrapText(inlineContentToPlainText(content), Math.max(1, width)).length;
 }
 
 function blockMeasureError(blockType: string): never {
@@ -41,7 +41,7 @@ export function measureContentBlockLines(
 	contentWidth: number,
 	indent = 0,
 ): number {
-	const safeWidth = Math.max(1, normalizeTextWidth(contentWidth, 1));
+	const safeWidth = Math.max(1, Math.floor(contentWidth));
 	const safeIndent =
 		typeof indent === "number" && Number.isFinite(indent) ? Math.max(0, Math.trunc(indent)) : 0;
 	const plugin = DEFAULT_INSTALL_BLOCK_PLUGINS[block.type];
@@ -80,7 +80,7 @@ export function countRenderPlanLines(
 	items: ReadonlyArray<DocRenderItem>,
 	contentWidth: number,
 ): number {
-	const safeWidth = Math.max(1, normalizeTextWidth(contentWidth, 1));
+	const safeWidth = Math.max(1, Math.floor(contentWidth));
 	if (items.length === 0) {
 		return 0;
 	}

@@ -3,7 +3,8 @@ export { useTuiColors, useTuiTheme, useTuiViewport } from "./app/app-provider";
 export { createTuiApp } from "./app/create-app";
 export { renderApp } from "./app/render-app";
 export type { RenderedTuiApp } from "./app/render-app";
-export { resolveChromeGlyphSet } from "./chrome/glyph-sets";
+export { glyphs, inkBorderStyle } from "./chrome/glyphs";
+export type { BorderStyle, Glyphs } from "./chrome/glyphs";
 export { KeyValue } from "./components/data/key-value";
 export {
 	keymapStatusSegments,
@@ -26,7 +27,8 @@ export { RichTextLine } from "./primitives/display/rich-text";
 export type { RichTextRun } from "./primitives/display/rich-text";
 export { UiText } from "./primitives/display/text";
 export { resolveGridColumns } from "./primitives/layout/grid";
-export { SurfaceFrame, resolveSurfaceFrameGeometry } from "./surfaces/frame/surface-frame";
+export { AppShell, useShellLayout } from "./surfaces/shell";
+export type { PaneLayout, ShellLayout } from "./surfaces/shell";
 export { parseHexColor, resolveColor, resolveIntentColor } from "./theme/colors";
 export type { ColorRuntime } from "./theme/colors";
 export { createTheme } from "./theme/create-theme";
@@ -34,11 +36,11 @@ export type { ColorIntent, ThemeColor, TuiTheme } from "./theme/tokens";
 export { clampNumber } from "./utils/clamp";
 export {
 	horizontalRule,
-	normalizeTextWidth,
 	padRight,
 	prefixWrappedText,
+	textWidth,
 	truncateLine,
-	wrapBoundedText,
+	wrapText,
 } from "./utils/strings";
 export { keyHint, keymapHelp, useKeymap } from "./runtime/keymap";
 export type { KeyBinding, KeyHandlers, KeyName, Keymap } from "./runtime/keymap";

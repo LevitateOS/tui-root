@@ -42,7 +42,6 @@ export function startInstallDocsApp(options: StartInstallDocsOptions = {}): Rend
 			navItems={session.navItems}
 			getContent={(slug, title) => contentForSlug(session.source, slug, title)}
 			initialSlug={session.initialSlug}
-			title={profile.title}
 			renderers={renderers}
 		/>,
 		{ app },

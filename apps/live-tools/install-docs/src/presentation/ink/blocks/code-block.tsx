@@ -1,16 +1,12 @@
 import { Box, Text } from "ink";
 import type { CodeBlock } from "@levitate/docs-content";
-import {
-	resolveChromeGlyphSet,
-	RichTextLine,
-	truncateLine,
-	type RichTextRun,
-} from "@levitate/tui-kit";
+import { RichTextLine, truncateLine, type RichTextRun } from "@levitate/tui-kit";
 import type { ReactNode } from "react";
 import type { BlockComponentProps } from "./types";
 import type { BlockPlugin } from "./contracts";
 import { codeSnapshotLines } from "./shared/content-utils";
 import { useIntentColor } from "./shared/intent-color";
+import { DOCS_GLYPHS } from "../theme/index";
 import { parseSyntaxTokenLine, pushToken, type SyntaxToken } from "./shared/syntax-markup";
 import { defaultDocsBlockRendererKey } from "./shared/renderer-key";
 
@@ -88,7 +84,7 @@ export function CodeBlockView({
 	const borderColor = useIntentColor("panelBorder");
 	const headingColor = useIntentColor("accent");
 	const dimTextColor = useIntentColor("dimText");
-	const chrome = resolveChromeGlyphSet("single");
+	const chrome = DOCS_GLYPHS;
 	const labelParts = [block.language.toUpperCase()];
 	if (typeof block.filename === "string" && block.filename.length > 0) {
 		labelParts.push(block.filename);

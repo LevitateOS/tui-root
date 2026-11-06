@@ -18,25 +18,38 @@ too (`navItem`, `heading`, `panelBorder`); an app's own colours sit in its theme
 - `hooks/`: hotkeys, focus between panes, list/grid navigation, scroll state.
 - `primitives/`: text, rich text, grid layout.
 - `components/`: navigation lists and grids, status line, key/value table.
-- `surfaces/`: `SurfaceFrame`, the bordered two-pane frame every app uses.
-- `chrome/`: box-drawing glyph sets and the renderer that draws pane title rows.
+- `surfaces/`: `useShellLayout` and `AppShell`, the two-pane frame every app uses.
+- `chrome/`: the one box-drawing glyph table (and the same glyphs as an Ink `borderStyle`).
 - `theme/`: colour intents, palette, colour runtime, `createTheme`.
 - `utils/`: string width/wrap/pad and number helpers.
+
+## The frame
+
+`useShellLayout()` computes the frame once from the terminal size and the theme
+(`layout.navWidth`, `layout.minColumns`, `chrome.*`): a nav pane and a content pane
+side by side, or, below `minColumns`, one full-width pane (the focused one). Each
+pane's `textColumns`/`textRows` is what its body may draw into, so apps size their
+content from it instead of repeating the geometry. `AppShell` draws exactly that
+layout. A titled pane is a top border, a title row and a divider (text rows from
+the glyph table) above an Ink box whose borders use the same glyphs. Text is
+measured in terminal cells with `string-width`, as Ink does.
 
 ## Quick Start
 
 ```tsx
-import { createTuiApp, renderApp, SurfaceFrame, UiText, useHotkeys } from "@levitate/tui-kit";
-import { useApp } from "ink";
+import { AppShell, createTuiApp, renderApp, UiText, useShellLayout } from "@levitate/tui-kit";
 
 function Demo() {
-	const { exit } = useApp();
-	useHotkeys(["q", "C-c"], () => exit());
+	const layout = useShellLayout();
 	return (
-		<SurfaceFrame
-			showHeader={false}
-			leftPane={{ title: "Menu", body: <UiText>one</UiText> }}
-			rightPane={{ title: "Demo", body: <UiText>Hello from tui-kit (q quits)</UiText> }}
+		<AppShell
+			layout={layout}
+			focus="content"
+			navTitle="Menu"
+			nav={<UiText>one</UiText>}
+			contentTitle="Demo"
+			content={<UiText>Hello from tui-kit (Ctrl-C quits)</UiText>}
+			footer={<UiText intent="dimText">demo</UiText>}
 		/>
 	);
 }

@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from "react";
 import { useStdout } from "ink";
-import { readScreenSize, type TerminalSize } from "../runtime/terminal/screen-size";
 import type { ColorRuntime } from "../theme/colors";
 import type { TuiTheme } from "../theme/tokens";
 
@@ -35,48 +34,25 @@ export function useTuiColors(): ColorRuntime {
 	return useTuiApp().colors;
 }
 
+type TerminalSize = {
+	columns: number;
+	rows: number;
+};
+
+/** The terminal's size from Ink's stdout, updated on resize (80x24 when stdout is not a terminal). */
 export function useTuiViewport(): TerminalSize {
 	const { stdout } = useStdout();
-	const processViewport = readScreenSize({
-		columns: process.stdout.columns,
-		rows: process.stdout.rows,
+	const read = (): TerminalSize => ({
+		columns: Math.max(1, stdout.columns || 80),
+		rows: Math.max(1, stdout.rows || 24),
 	});
-	const readViewport = (): TerminalSize => readScreenSize(stdout, processViewport);
-	const [size, setSize] = useState<TerminalSize>(() => readViewport());
-
+	const [size, setSize] = useState(read);
 	useEffect(() => {
-		setSize((previous) => {
-			const next = readViewport();
-			if (previous.columns === next.columns && previous.rows === next.rows) {
-				return previous;
-			}
-			return next;
-		});
-
-		if (!stdout) {
-			return;
-		}
-
-		const onResize = () => {
-			setSize((previous) => {
-				const next = readViewport();
-				if (previous.columns === next.columns && previous.rows === next.rows) {
-					return previous;
-				}
-				return next;
-			});
-		};
-
+		const onResize = () => setSize(read());
 		stdout.on("resize", onResize);
-
 		return () => {
-			if (typeof stdout.off === "function") {
-				stdout.off("resize", onResize);
-				return;
-			}
-			stdout.removeListener?.("resize", onResize);
+			stdout.off("resize", onResize);
 		};
 	}, [stdout]);
-
 	return size;
 }

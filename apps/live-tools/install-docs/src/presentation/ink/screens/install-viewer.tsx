@@ -1,35 +1,44 @@
 import { useApp } from "ink";
+
 import type { CommandBlock, ContentBlock, InlineNode, RichText } from "@levitate/docs-content";
+
 import { useEffect, useMemo, useState } from "react";
+
 import {
-	SurfaceFrame,
-	UiText,
-	resolveSurfaceFrameGeometry,
+	AppShell,
 	truncateLine,
 	useKeymap,
 	useFocusPlane,
 	useScrollState,
-	useTuiTheme,
-	useTuiViewport,
+	useShellLayout,
 	type TreeNavMode,
 } from "@levitate/tui-kit";
 import { BACKWARD_KEYS, CONTENT_KEYS, NAV_KEYS, VIEWER_KEYS } from "../keymap";
+
 import type { DocsContentLike, FlatDocsNavItem } from "../../../domain/content/contracts";
+
 import { resolveDocsLinkTarget } from "../../../domain/navigation/link-target";
+
 import type { DocRenderItem } from "../../../domain/render/types";
+
 import { computeDocsViewport } from "../../../rendering/pipeline/viewport";
+
 import { measureDocItemLines } from "../../../rendering/plan/line-metrics";
+
 import { InstallContentPane } from "../components/content-pane";
+
 import { InstallSidebar } from "../components/sidebar";
+
 import { InstallStatusBar } from "../components/status-bar";
+
 import type { DocsRendererRegistry } from "../document/renderer-registry";
+
 import { useInstallNavigation } from "../hooks/use-install-navigation";
 
 type InstallViewerScreenProps = {
 	navItems: ReadonlyArray<FlatDocsNavItem>;
 	getContent: (slug: string, title: string) => DocsContentLike;
 	initialSlug?: string;
-	title?: string;
 	renderers: DocsRendererRegistry;
 	onExit?: () => void;
 };
@@ -198,19 +207,18 @@ export function InstallViewerScreen({
 	navItems,
 	getContent,
 	initialSlug,
-	title = "LevitateOS Field Manual",
 	renderers,
 	onExit,
 }: InstallViewerScreenProps) {
 	const { exit } = useApp();
-	const theme = useTuiTheme();
-	const viewport = useTuiViewport();
 	const navigation = useInstallNavigation(navItems, initialSlug);
 	const scroll = useScrollState(0);
 	const [sidebarMode, setSidebarMode] = useState<TreeNavMode>("focus-section");
 	const [actionableIndex, setActionableIndex] = useState(0);
 	const [runtimeNote, setRuntimeNote] = useState<string | undefined>(undefined);
-	const focus = useFocusPlane({ initial: "navigation" });
+	const layout = useShellLayout();
+	// When only one pane fits (the install screen's docs pane), start on the page itself.
+	const focus = useFocusPlane({ initial: layout.narrow ? "content" : "navigation" });
 
 	const quit = () => {
 		onExit?.();
@@ -225,49 +233,11 @@ export function InstallViewerScreen({
 				previous === "focus-section" ? "all-sections" : "focus-section",
 			),
 	});
-	if (navItems.length === 0) {
-		return (
-			<SurfaceFrame
-				title={title}
-				footer="q quit"
-				leftWidth={theme.layout.navWidth}
-				showHeader={false}
-				leftPane={{
-					title: "Installation Docs",
-					titleMode: "inline",
-					body: "(no docs pages)",
-					borderIntent: "navBorder",
-					textIntent: "navItem",
-					titleIntent: "navHeading",
-				}}
-				rightPane={{
-					title: "Overview",
-					titleMode: "inline",
-					body: <UiText>No docs pages are available.</UiText>,
-					borderIntent: "contentBorder",
-					textIntent: "text",
-					titleIntent: "heading",
-				}}
-			/>
-		);
-	}
 
 	const currentItem = navItems[navigation.safeIndex]!;
-	const geometry = resolveSurfaceFrameGeometry({
-		columns: viewport.columns,
-		rows: viewport.rows,
-		requestedLeftWidth: theme.layout.navWidth,
-		headerHeight: theme.layout.headerHeight,
-		footerHeight: theme.layout.footerHeight,
-		hasFooter: true,
-		hasHeader: false,
-		gutterColumns: theme.chrome.framePaneGap,
-		leftTitleRows: 2,
-		rightTitleRows: 2,
-	});
-	const contentRows = Math.max(1, geometry.rightTextRows);
-	const contentColumns = Math.max(1, geometry.rightTextColumns);
-	const sidebarMaxWidth = Math.max(1, geometry.leftTextColumns);
+	const contentRows = layout.content.textRows;
+	const contentColumns = layout.content.textColumns;
+	const sidebarMaxWidth = (layout.nav ?? layout.content).textColumns;
 
 	const content = getContent(currentItem.slug, currentItem.title);
 	const docsViewport = computeDocsViewport(
@@ -430,40 +400,24 @@ export function InstallViewerScreen({
 		/>
 	);
 	const contentPaneMeta = `lines ${docsViewport.startItem}-${docsViewport.endItem}/${Math.max(docsViewport.totalItems, 1)}`;
-	const contentPaneTitle = truncateLine(
-		`${currentItem.title}  ${contentPaneMeta}`,
-		Math.max(1, geometry.rightTextColumns),
-	);
+	const contentPaneTitle = truncateLine(`${currentItem.title}  ${contentPaneMeta}`, contentColumns);
 
 	return (
-		<SurfaceFrame
-			title={title}
+		<AppShell
+			layout={layout}
+			focus={focus.plane}
+			navTitle="Installation Docs"
+			nav={sidebar}
+			contentTitle={contentPaneTitle}
+			content={
+				<InstallContentPane
+					viewport={docsViewport}
+					renderers={renderers}
+					selectedItemKey={selectedItemKey}
+					selectedLinkHref={selectedLinkHref}
+				/>
+			}
 			footer={footer}
-			leftWidth={theme.layout.navWidth}
-			showHeader={false}
-			leftPane={{
-				title: "Installation Docs",
-				titleMode: "inline",
-				body: sidebar,
-				borderIntent: "navBorder",
-				textIntent: "navItem",
-				titleIntent: "navHeading",
-			}}
-			rightPane={{
-				title: contentPaneTitle,
-				titleMode: "inline",
-				body: (
-					<InstallContentPane
-						viewport={docsViewport}
-						renderers={renderers}
-						selectedItemKey={selectedItemKey}
-						selectedLinkHref={selectedLinkHref}
-					/>
-				),
-				borderIntent: "contentBorder",
-				textIntent: "text",
-				titleIntent: "heading",
-			}}
 		/>
 	);
 }

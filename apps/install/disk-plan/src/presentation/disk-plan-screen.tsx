@@ -1,21 +1,29 @@
 import { CONFIRM_KEYS, CONTENT_KEYS, DISK_KEYS, GLOBAL_KEYS, MODE_KEYS, NAV_KEYS } from "./keymap";
+
 import { Box, Text, useApp } from "ink";
-import { useEffect, useMemo, useRef, useState } from "react";
+
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+
 import {
 	SelectableGrid,
 	SegmentedStatusLine,
-	SurfaceFrame,
+	AppShell,
+	inkBorderStyle,
+	resolveIntentColor,
+	useShellLayout,
+	useTuiColors,
+	useTuiTheme,
 	UiText,
 	keymapStatusSegments,
-	resolveGridColumns,
 	scopeStatusSegment,
 	textStatusSegment,
 	useGridNavigation,
 	useKeymap,
-	useTuiViewport,
 } from "@levitate/tui-kit";
+
 import type { DiskMode } from "../cli/parse-args";
+
 import {
 	buildApplyCommand,
 	buildPlanCommand,
@@ -27,6 +35,7 @@ import {
 	type RecpartRun,
 	type RecpartRunResult,
 } from "../app/plan-runner";
+
 import {
 	APPLY_SCHEMA_VERSION,
 	CONFIRM_TOKEN,
@@ -38,6 +47,7 @@ import {
 	type ErrorPayload,
 	type PartitionPlan,
 } from "../contract/recpart";
+
 import {
 	currentPage,
 	nextPage,
@@ -47,8 +57,11 @@ import {
 	type DiskPlanPageId,
 	DISK_PLAN_PAGES,
 } from "../domain/flow";
+
 import { canAdvancePage } from "../domain/guards";
+
 import { formatBytes, known, parseRecpartJson, unlistedDisk } from "../domain/recpart";
+
 import { confirmStatusLine, failureDiagnosticLines, progressStepLine } from "./page-text";
 
 type AsyncState<T> =
@@ -175,20 +188,13 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 	// twice (navigation does not start it; only an explicit confirm does).
 	const applyRunRef = useRef<RecpartRun | null>(null);
 	const initialDiskRef = useRef(disk);
-	const viewport = useTuiViewport();
+	const theme = useTuiTheme();
+	const colors = useTuiColors();
 
 	const page = currentPage(flow);
-	const diskColumnsSpec = useMemo(
-		() => ({
-			base: 1,
-			breakpoints: [
-				{ minWidth: 110, columns: 2 },
-				{ minWidth: 180, columns: 4 },
-			],
-		}),
-		[],
-	);
-	const diskGridColumns = resolveGridColumns(diskColumnsSpec, viewport.columns, 1);
+	const layout = useShellLayout({ navWidth: 38 });
+	// A disk card needs about this many columns for path, size and model.
+	const diskGridColumns = Math.max(1, Math.min(4, Math.floor(layout.content.textColumns / 40)));
 	const diskNav = useGridNavigation({
 		count: diskCandidates.length,
 		columns: diskGridColumns,
@@ -653,7 +659,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 					<SelectableGrid
 						items={diskCandidates}
 						selectedIndex={diskNav.safeIndex}
-						columns={diskColumnsSpec}
+						columns={diskGridColumns}
 						gapX={1}
 						gapY={0}
 						renderItem={(item, context) => {
@@ -661,8 +667,12 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 							return (
 								<Box
 									width="100%"
-									borderStyle="single"
-									borderColor={context.selected ? "cyan" : "gray"}
+									borderStyle={inkBorderStyle(theme.chrome.borderGlyphSet)}
+									borderColor={resolveIntentColor(
+										theme,
+										context.selected ? "accent" : "dimText",
+										colors,
+									)}
 									flexDirection="column"
 									paddingX={1}
 								>
@@ -1044,27 +1054,14 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 	}
 
 	return (
-		<SurfaceFrame
-			title="LevitateOS Disk Plan"
-			showHeader={false}
-			leftWidth={38}
+		<AppShell
+			layout={layout}
+			focus={activePane === "nav" ? "navigation" : "content"}
+			navTitle="Pages"
+			nav={sidebar}
+			contentTitle={page}
+			content={body}
 			footer={footer}
-			leftPane={{
-				title: "Pages",
-				titleMode: "inline",
-				body: sidebar,
-				borderIntent: "navBorder",
-				textIntent: "navItem",
-				titleIntent: "navHeading",
-			}}
-			rightPane={{
-				title: page,
-				titleMode: "inline",
-				body,
-				borderIntent: "contentBorder",
-				textIntent: "text",
-				titleIntent: "heading",
-			}}
 		/>
 	);
 }

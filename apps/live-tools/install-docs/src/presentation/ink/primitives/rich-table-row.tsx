@@ -1,3 +1,4 @@
+import { DOCS_GLYPHS } from "../theme/index";
 import type { RichText } from "@levitate/docs-content";
 import { RichTextLine, type ColorIntent, type RichTextRun } from "@levitate/tui-kit";
 import type { ReactNode } from "react";
@@ -16,7 +17,7 @@ type RichTableRowProps = {
 	selectedLinkHref?: string;
 };
 
-export const TABLE_COLUMN_SEPARATOR = " │ ";
+export const TABLE_COLUMN_SEPARATOR = ` ${DOCS_GLYPHS.v} `;
 
 function tableCellRuns(
 	cell: TableCellContent,

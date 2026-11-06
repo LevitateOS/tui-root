@@ -1,10 +1,11 @@
-import { horizontalRule, normalizeTextWidth } from "@levitate/tui-kit";
+import { horizontalRule } from "@levitate/tui-kit";
 import { Box, Text } from "ink";
 import { type RichText, type TableBlock } from "@levitate/docs-content";
 import type { ReactNode } from "react";
 import type { BlockComponentProps } from "./types";
 import type { BlockPlugin } from "./contracts";
 import { useIntentColor } from "./shared/intent-color";
+import { DOCS_GLYPHS } from "../theme/index";
 import { defaultDocsBlockRendererKey } from "./shared/renderer-key";
 import { inlineContentToPlainText } from "./shared/rich-text-renderer";
 import {
@@ -14,14 +15,14 @@ import {
 } from "../primitives/rich-table-row";
 
 function tableDividerLine(columnWidths: ReadonlyArray<number>, rowWidth: number): string {
-	const junction = "─┼─";
+	const { h, x } = DOCS_GLYPHS;
 	const natural = columnWidths
-		.map((width) => horizontalRule(Math.max(1, width), "─"))
-		.join(junction);
+		.map((width) => horizontalRule(Math.max(1, width), h))
+		.join(`${h}${x}${h}`);
 	if (natural.length >= rowWidth) {
 		return natural.slice(0, rowWidth);
 	}
-	return `${natural}${horizontalRule(rowWidth - natural.length, "─")}`;
+	return `${natural}${horizontalRule(rowWidth - natural.length, DOCS_GLYPHS.h)}`;
 }
 
 function computeColumnWidths(matrix: ReadonlyArray<ReadonlyArray<string>>): number[] {
@@ -55,7 +56,7 @@ export function TableBlockView({
 		return null;
 	}
 
-	const safeWidth = Math.max(1, normalizeTextWidth(contentWidth, 1));
+	const safeWidth = Math.max(1, Math.floor(contentWidth));
 	const tableWidth = Math.max(1, safeWidth - indent);
 	const separatorWidth = (widths.length - 1) * TABLE_COLUMN_SEPARATOR.length;
 	const maxContentWidth = Math.max(1, tableWidth - separatorWidth);

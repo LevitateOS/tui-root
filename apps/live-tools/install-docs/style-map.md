@@ -1,6 +1,6 @@
 # Docs TUI Style Map
 
-Single-hop guide for style changes in `docs/tui`.
+Single-hop guide for style changes in this app (`tui/apps/live-tools/install-docs`).
 
 ## First Hop
 

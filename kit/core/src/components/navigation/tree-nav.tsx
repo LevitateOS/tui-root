@@ -1,6 +1,6 @@
 import { Box, Text } from "ink";
 import { clampNumber, toNonNegativeInt } from "../../utils/clamp";
-import { padRight, truncateBoundedLine } from "../../utils/strings";
+import { padRight, truncateLine } from "../../utils/strings";
 import { useTuiColors, useTuiTheme } from "../../app/app-provider";
 import { resolveIntentColor } from "../../theme/colors";
 import { type ColorIntent } from "../../theme/tokens";
@@ -94,10 +94,7 @@ function buildTreeNavRows(
 		return [
 			{
 				key: "empty",
-				text: padRight(
-					truncateBoundedLine(options.emptyLabel ?? "(empty)", safeWidth, 1),
-					safeWidth,
-				),
+				text: padRight(truncateLine(options.emptyLabel ?? "(empty)", safeWidth), safeWidth),
 				kind: "item",
 			},
 		];
@@ -116,7 +113,7 @@ function buildTreeNavRows(
 		const collapsed = mode === "focus-section" && !isActiveSection;
 		const sectionMarker = collapsed ? collapsedSectionMarker : expandedSectionMarker;
 		const sectionLabel = padRight(
-			truncateBoundedLine(`${sectionMarker} ${section.title}`, safeWidth, 1),
+			truncateLine(`${sectionMarker} ${section.title}`, safeWidth),
 			safeWidth,
 		);
 
@@ -136,10 +133,7 @@ function buildTreeNavRows(
 		for (const { item, index } of section.items) {
 			const active = index === safeSelected;
 			const itemMarker = active ? activeItemMarker : inactiveItemMarker;
-			const rowText = padRight(
-				truncateBoundedLine(` ${itemMarker} ${item.label}`, safeWidth, 1),
-				safeWidth,
-			);
+			const rowText = padRight(truncateLine(` ${itemMarker} ${item.label}`, safeWidth), safeWidth);
 			rows.push({
 				key: item.key,
 				text: rowText,

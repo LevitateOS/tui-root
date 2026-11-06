@@ -83,14 +83,12 @@ export const conversationBlockPlugin: BlockPlugin<"conversation"> = {
 				`${roleLabel}:`,
 				inlineContentToPlainText(message.text),
 				conversationWidth,
-				1,
 			).length;
 			for (const listItem of message.list ?? []) {
 				lines += prefixWrappedText(
 					"•",
 					inlineContentToPlainText(listItem),
 					Math.max(1, conversationWidth - 2),
-					1,
 				).length;
 			}
 		}
