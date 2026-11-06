@@ -18,7 +18,6 @@ export const palette = {
 	blue900: "#1e3a8a",
 	sky300: "#7dd3fc",
 	yellow: "#facc15",
-	yellow200: "#fef08a",
 	red400: "#f87171",
 	green300: "#86efac",
 } as const satisfies Record<string, `#${string}`>;

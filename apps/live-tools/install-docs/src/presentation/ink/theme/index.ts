@@ -9,6 +9,7 @@ const ink = {
 	link: "#7db3ff",
 	white: "#ffffff",
 	selection: "#2f5ed7",
+	panel: "#49455e",
 	info: "#8ab8ff",
 	warning: "#ffc76a",
 } as const satisfies Record<string, ThemeColor>;
@@ -18,33 +19,32 @@ export function createInstallDocsTheme(): TuiTheme {
 		{
 			background: "inherit",
 			border: ink.border,
-			sidebarBorder: ink.border,
-			sidebarBackground: "inherit",
+			navBorder: ink.border,
+			navBackground: "inherit",
 			contentBackground: "inherit",
 			headerBackground: "inherit",
 			footerBackground: "inherit",
-			sidebarSectionText: ink.text,
-			sidebarItemText: "#b8b3c9",
-			sidebarItemActiveText: "#f5f7ff",
-			sidebarItemActiveBackground: "#1f4acc",
+			navHeading: ink.text,
+			navItem: "#b8b3c9",
+			selection: "#f5f7ff",
+			selectionBackground: "#1f4acc",
 			text: ink.text,
 			dimText: ink.dimText,
 			accent: ink.link,
-			linkText: ink.link,
-			linkActiveText: ink.white,
+			link: ink.link,
+			linkActive: ink.white,
 			linkActiveBackground: ink.selection,
 			info: ink.info,
 			warning: ink.warning,
 			code: ink.warning,
-			commandBarBackground: "inherit",
-			commandPrompt: ink.info,
-			sectionHeading: "#9cc4ff",
-			sectionSubheading: ink.link,
-			cardBorder: "#49455e",
-			cardBackground: "inherit",
+			heading: "#9cc4ff",
+			subheading: ink.link,
+			contentBorder: ink.panel,
+			panelBorder: ink.panel,
+			panelBackground: "inherit",
 		},
 		{
-			sidebarWidth: 32,
+			navWidth: 32,
 			minColumns: 88,
 			headerHeight: 1,
 			footerHeight: 1,
@@ -57,6 +57,12 @@ export function createInstallDocsTheme(): TuiTheme {
 		},
 	);
 }
+
+/** Command rows: the prompt and command text, and the row behind them. */
+export const COMMAND_COLORS = {
+	prompt: ink.info,
+	background: "inherit",
+} as const satisfies Record<string, ThemeColor>;
 
 export type NoteColors = {
 	label: string;

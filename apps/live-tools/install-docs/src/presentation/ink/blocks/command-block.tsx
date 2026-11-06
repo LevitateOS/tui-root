@@ -17,7 +17,7 @@ export function CommandBlockView({
 }: BlockComponentProps<CommandBlock>): ReactNode {
 	const safeWidth = Math.max(1, contentWidth);
 	const textWidth = Math.max(1, safeWidth - indent);
-	const cardBackground = useIntentColor("cardBackground");
+	const panelBackground = useIntentColor("panelBackground");
 	const descriptionColor = useIntentColor(isSelected ? "accent" : "dimText");
 	const dimTextColor = useIntentColor("dimText");
 	const commandLines = commandSnapshotLines(block);
@@ -37,7 +37,7 @@ export function CommandBlockView({
 				<Text
 					key={`command-description-${index}`}
 					color={descriptionColor}
-					backgroundColor={cardBackground}
+					backgroundColor={panelBackground}
 				>
 					{line}
 				</Text>
@@ -50,7 +50,7 @@ export function CommandBlockView({
 				bold
 			/>
 			{outputLines.map((line, outputIndex) => (
-				<Text key={`output-${outputIndex}`} color={dimTextColor} backgroundColor={cardBackground}>
+				<Text key={`output-${outputIndex}`} color={dimTextColor} backgroundColor={panelBackground}>
 					{line}
 				</Text>
 			))}

@@ -11,6 +11,7 @@ import {
 	useScrollState,
 	useTuiTheme,
 	useTuiViewport,
+	type TreeNavMode,
 } from "@levitate/tui-kit";
 import { BACKWARD_KEYS, CONTENT_KEYS, NAV_KEYS, VIEWER_KEYS } from "../keymap";
 import type { DocsContentLike, FlatDocsNavItem } from "../../../domain/content/contracts";
@@ -19,7 +20,7 @@ import type { DocRenderItem } from "../../../domain/render/types";
 import { computeDocsViewport } from "../../../rendering/pipeline/viewport";
 import { measureDocItemLines } from "../../../rendering/plan/line-metrics";
 import { InstallContentPane } from "../components/content-pane";
-import { InstallSidebar, type SidebarMode } from "../components/sidebar";
+import { InstallSidebar } from "../components/sidebar";
 import { InstallStatusBar } from "../components/status-bar";
 import type { DocsRendererRegistry } from "../document/renderer-registry";
 import { useInstallNavigation } from "../hooks/use-install-navigation";
@@ -206,7 +207,7 @@ export function InstallViewerScreen({
 	const viewport = useTuiViewport();
 	const navigation = useInstallNavigation(navItems, initialSlug);
 	const scroll = useScrollState(0);
-	const [sidebarMode, setSidebarMode] = useState<SidebarMode>("focus-section");
+	const [sidebarMode, setSidebarMode] = useState<TreeNavMode>("focus-section");
 	const [actionableIndex, setActionableIndex] = useState(0);
 	const [runtimeNote, setRuntimeNote] = useState<string | undefined>(undefined);
 	const focus = useFocusPlane({ initial: "navigation" });
@@ -229,23 +230,23 @@ export function InstallViewerScreen({
 			<SurfaceFrame
 				title={title}
 				footer="q quit"
-				leftWidth={theme.layout.sidebarWidth}
+				leftWidth={theme.layout.navWidth}
 				showHeader={false}
 				leftPane={{
 					title: "Installation Docs",
 					titleMode: "inline",
 					body: "(no docs pages)",
-					borderIntent: "sidebarBorder",
-					textIntent: "sidebarItemText",
-					titleIntent: "sidebarSectionText",
+					borderIntent: "navBorder",
+					textIntent: "navItem",
+					titleIntent: "navHeading",
 				}}
 				rightPane={{
 					title: "Overview",
 					titleMode: "inline",
 					body: <UiText>No docs pages are available.</UiText>,
-					borderIntent: "cardBorder",
+					borderIntent: "contentBorder",
 					textIntent: "text",
-					titleIntent: "sectionHeading",
+					titleIntent: "heading",
 				}}
 			/>
 		);
@@ -255,7 +256,7 @@ export function InstallViewerScreen({
 	const geometry = resolveSurfaceFrameGeometry({
 		columns: viewport.columns,
 		rows: viewport.rows,
-		requestedLeftWidth: theme.layout.sidebarWidth,
+		requestedLeftWidth: theme.layout.navWidth,
 		headerHeight: theme.layout.headerHeight,
 		footerHeight: theme.layout.footerHeight,
 		hasFooter: true,
@@ -438,15 +439,15 @@ export function InstallViewerScreen({
 		<SurfaceFrame
 			title={title}
 			footer={footer}
-			leftWidth={theme.layout.sidebarWidth}
+			leftWidth={theme.layout.navWidth}
 			showHeader={false}
 			leftPane={{
 				title: "Installation Docs",
 				titleMode: "inline",
 				body: sidebar,
-				borderIntent: "sidebarBorder",
-				textIntent: "sidebarItemText",
-				titleIntent: "sidebarSectionText",
+				borderIntent: "navBorder",
+				textIntent: "navItem",
+				titleIntent: "navHeading",
 			}}
 			rightPane={{
 				title: contentPaneTitle,
@@ -459,9 +460,9 @@ export function InstallViewerScreen({
 						selectedLinkHref={selectedLinkHref}
 					/>
 				),
-				borderIntent: "cardBorder",
+				borderIntent: "contentBorder",
 				textIntent: "text",
-				titleIntent: "sectionHeading",
+				titleIntent: "heading",
 			}}
 		/>
 	);

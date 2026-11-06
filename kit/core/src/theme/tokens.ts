@@ -8,42 +8,46 @@ import { palette } from "./palette";
 export type ThemeColor = `#${string}` | "inherit";
 
 export type ColorIntent =
-	| "border"
+	// text
 	| "text"
 	| "dimText"
 	| "accent"
-	| "linkText"
-	| "linkActiveText"
-	| "linkActiveBackground"
+	| "heading"
+	| "subheading"
+	| "code"
 	| "info"
 	| "warning"
 	| "error"
 	| "success"
+	// links
+	| "link"
+	| "linkActive"
+	| "linkActiveBackground"
+	// the two-pane frame
+	| "border"
+	| "navBorder"
+	| "contentBorder"
 	| "background"
-	| "sidebarBackground"
+	| "navBackground"
 	| "contentBackground"
 	| "headerBackground"
 	| "footerBackground"
-	| "sidebarSectionText"
-	| "sidebarItemText"
-	| "sidebarItemActiveText"
-	| "sidebarItemActiveBackground"
-	| "sidebarBorder"
 	| "footerSeparator"
-	| "commandBarBackground"
-	| "commandPrompt"
-	| "sectionHeading"
-	| "sectionSubheading"
-	| "cardBorder"
-	| "cardBackground"
-	| "code";
+	// navigation lists
+	| "navHeading"
+	| "navItem"
+	| "selection"
+	| "selectionBackground"
+	// boxed blocks inside a pane
+	| "panelBorder"
+	| "panelBackground";
 
 export type ThemeColors = Record<ColorIntent, ThemeColor>;
 
 export type ThemeColorsOverride = Partial<ThemeColors>;
 
 export type ThemeLayout = {
-	sidebarWidth: number;
+	navWidth: number;
 	headerHeight: number;
 	footerHeight: number;
 	minColumns: number;
@@ -64,39 +68,38 @@ export type TuiTheme = {
 };
 
 export const defaultThemeColors: ThemeColors = {
-	border: palette.white,
 	text: palette.gray200,
 	dimText: palette.slate400,
 	accent: palette.sky300,
-	linkText: palette.sky300,
-	linkActiveText: palette.slate900,
-	linkActiveBackground: palette.slate300,
+	heading: palette.slate200,
+	subheading: palette.sky300,
+	code: palette.yellow,
 	info: palette.blue300,
 	warning: palette.yellow,
 	error: palette.red400,
 	success: palette.green300,
-	code: palette.yellow,
+	link: palette.sky300,
+	linkActive: palette.slate900,
+	linkActiveBackground: palette.slate300,
+	border: palette.white,
+	navBorder: palette.white,
+	contentBorder: palette.slate500,
 	background: palette.zinc950,
-	sidebarBackground: palette.blue900,
+	navBackground: palette.blue900,
 	contentBackground: palette.zinc900,
 	headerBackground: palette.slate800,
 	footerBackground: palette.slate900,
-	sidebarSectionText: palette.blue100,
-	sidebarItemText: palette.blue200,
-	sidebarItemActiveText: palette.slate900,
-	sidebarItemActiveBackground: palette.slate300,
-	sidebarBorder: palette.white,
 	footerSeparator: palette.gray500,
-	commandBarBackground: palette.zinc800,
-	commandPrompt: palette.yellow200,
-	sectionHeading: palette.slate200,
-	sectionSubheading: palette.sky300,
-	cardBorder: palette.slate500,
-	cardBackground: palette.zinc800,
+	navHeading: palette.blue100,
+	navItem: palette.blue200,
+	selection: palette.slate900,
+	selectionBackground: palette.slate300,
+	panelBorder: palette.slate500,
+	panelBackground: palette.zinc800,
 };
 
 export const defaultThemeLayout: ThemeLayout = {
-	sidebarWidth: 30,
+	navWidth: 30,
 	headerHeight: 2,
 	footerHeight: 2,
 	minColumns: 80,

@@ -1053,17 +1053,17 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 				title: "Pages",
 				titleMode: "inline",
 				body: sidebar,
-				borderIntent: "sidebarBorder",
-				textIntent: "sidebarItemText",
-				titleIntent: "sidebarSectionText",
+				borderIntent: "navBorder",
+				textIntent: "navItem",
+				titleIntent: "navHeading",
 			}}
 			rightPane={{
 				title: page,
 				titleMode: "inline",
 				body,
-				borderIntent: "cardBorder",
+				borderIntent: "contentBorder",
 				textIntent: "text",
-				titleIntent: "sectionHeading",
+				titleIntent: "heading",
 			}}
 		/>
 	);

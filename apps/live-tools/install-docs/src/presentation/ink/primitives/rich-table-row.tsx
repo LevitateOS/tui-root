@@ -80,7 +80,7 @@ export function RichTableRow({
 	columnWidths,
 	rowWidth,
 	fallbackIntent = "text",
-	backgroundIntent = "cardBackground",
+	backgroundIntent = "panelBackground",
 	bold = false,
 	selectedLinkHref,
 }: RichTableRowProps): ReactNode {

@@ -13,7 +13,7 @@ export function SectionHeadingItem({
 	level,
 	indent = 0,
 }: SectionHeadingItemProps): ReactNode {
-	const intent = level === 3 ? "sectionSubheading" : "sectionHeading";
+	const intent = level === 3 ? "subheading" : "heading";
 	const marker = level === 3 ? "›" : "◆";
 	return (
 		<Box flexDirection="column" paddingLeft={indent}>

@@ -1,6 +1,6 @@
 import { Box } from "ink";
 import type { InlineNode, RichText } from "@levitate/docs-content";
-import { RichTextLine, linkRuns, type ColorIntent, type RichTextRun } from "@levitate/tui-kit";
+import { RichTextLine, type ColorIntent, type RichTextRun } from "@levitate/tui-kit";
 import type { ReactNode } from "react";
 
 type RichTextRendererProps = {
@@ -15,6 +15,42 @@ type RichTextWord = {
 	runs: RichTextRun[];
 	length: number;
 };
+
+type LinkRunOptions = {
+	href?: string;
+	isSelected?: boolean;
+	includeHrefWhenDifferent?: boolean;
+};
+
+function linkRuns(label: string, options: LinkRunOptions = {}): RichTextRun[] {
+	const href = options.href?.trim() ?? "";
+	const isSelected = options.isSelected ?? false;
+	const includeHref =
+		(options.includeHrefWhenDifferent ?? true) && href.length > 0 && href !== label;
+	const foregroundIntent = isSelected ? "linkActive" : "link";
+	const backgroundIntent = isSelected ? "linkActiveBackground" : undefined;
+
+	const runs: RichTextRun[] = [
+		{
+			text: label,
+			intent: foregroundIntent,
+			backgroundIntent,
+			underline: true,
+			bold: isSelected,
+		},
+	];
+
+	if (includeHref) {
+		runs.push({
+			text: ` (${href})`,
+			intent: foregroundIntent,
+			backgroundIntent,
+			bold: false,
+		});
+	}
+
+	return runs;
+}
 
 function isWhitespace(char: string): boolean {
 	return /\s/.test(char);

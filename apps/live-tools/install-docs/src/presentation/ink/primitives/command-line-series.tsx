@@ -25,7 +25,6 @@ export function CommandLineSeries({
 				<CommandLineRow
 					key={`command-series-${startRowIndex + index}`}
 					line={line}
-					rowIndex={startRowIndex + index}
 					prefix={index === 0 ? firstPrefix : continuationPrefix}
 					width={width}
 					bold={bold}

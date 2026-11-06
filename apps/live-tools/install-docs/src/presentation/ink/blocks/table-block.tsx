@@ -41,7 +41,7 @@ export function TableBlockView({
 	indent = 0,
 	selectedLinkHref,
 }: BlockComponentProps<TableBlock>): ReactNode {
-	const backgroundColor = useIntentColor("cardBackground");
+	const backgroundColor = useIntentColor("panelBackground");
 	const dividerColor = useIntentColor("dimText");
 	const headers = block.headers;
 	const rows = block.rows;
@@ -82,8 +82,8 @@ export function TableBlockView({
 				cells={headers as ReadonlyArray<TableCellContent>}
 				columnWidths={normalizedWidths}
 				rowWidth={tableWidth}
-				fallbackIntent="sectionHeading"
-				backgroundIntent="cardBackground"
+				fallbackIntent="heading"
+				backgroundIntent="panelBackground"
 				bold
 				selectedLinkHref={selectedLinkHref}
 			/>
@@ -97,7 +97,7 @@ export function TableBlockView({
 					columnWidths={normalizedWidths}
 					rowWidth={tableWidth}
 					fallbackIntent="text"
-					backgroundIntent="cardBackground"
+					backgroundIntent="panelBackground"
 					selectedLinkHref={selectedLinkHref}
 				/>
 			))}

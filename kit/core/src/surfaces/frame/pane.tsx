@@ -44,7 +44,7 @@ export function SurfacePane({
 	borderIntent = "border",
 	backgroundIntent = "background",
 	textIntent = "text",
-	titleIntent = "sectionHeading",
+	titleIntent = "heading",
 	titleMode,
 	paddingX,
 	paddingY,

@@ -26,7 +26,7 @@ export function InteractiveBlockView({
 			{introLines.map((lineRuns, lineIndex) => (
 				<RichTextLine
 					key={`interactive-intro-${lineIndex}`}
-					runs={withBackgroundIntent(lineRuns, "cardBackground")}
+					runs={withBackgroundIntent(lineRuns, "panelBackground")}
 					fallbackIntent="dimText"
 				/>
 			))}
@@ -42,7 +42,7 @@ export function InteractiveBlockView({
 						(lineRuns, lineIndex) => (
 							<RichTextLine
 								key={`interactive-step-description-${stepIndex}-${lineIndex}`}
-								runs={withBackgroundIntent(lineRuns, "cardBackground")}
+								runs={withBackgroundIntent(lineRuns, "panelBackground")}
 								fallbackIntent="text"
 							/>
 						),

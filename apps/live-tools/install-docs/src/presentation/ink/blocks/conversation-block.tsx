@@ -33,7 +33,7 @@ export function ConversationBlockView({
 							markerIntent={roleIntent}
 							markerBold
 							contentIntent="text"
-							backgroundIntent="cardBackground"
+							backgroundIntent="panelBackground"
 							selectedLinkHref={selectedLinkHref}
 						/>
 						{(message.list ?? []).map((listItem, listIndex) => (
@@ -50,7 +50,7 @@ export function ConversationBlockView({
 									width={Math.max(1, conversationWidth - 2)}
 									markerIntent="text"
 									contentIntent="text"
-									backgroundIntent="cardBackground"
+									backgroundIntent="panelBackground"
 									selectedLinkHref={selectedLinkHref}
 								/>
 							</Box>

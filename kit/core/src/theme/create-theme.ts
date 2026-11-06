@@ -12,9 +12,9 @@ import {
 
 function normalizeThemeLayout(layout: Partial<ThemeLayout>): ThemeLayout {
 	const candidate: ThemeLayout = {
-		sidebarWidth: toPositiveInt(
-			layout.sidebarWidth ?? defaultThemeLayout.sidebarWidth,
-			defaultThemeLayout.sidebarWidth,
+		navWidth: toPositiveInt(
+			layout.navWidth ?? defaultThemeLayout.navWidth,
+			defaultThemeLayout.navWidth,
 		),
 		headerHeight: toPositiveInt(
 			layout.headerHeight ?? defaultThemeLayout.headerHeight,
@@ -39,7 +39,7 @@ function normalizeThemeLayout(layout: Partial<ThemeLayout>): ThemeLayout {
 		candidate.minRows = minRowsNeeded;
 	}
 
-	const minColumnsNeeded = candidate.sidebarWidth + 1;
+	const minColumnsNeeded = candidate.navWidth + 1;
 	if (candidate.minColumns < minColumnsNeeded) {
 		candidate.minColumns = minColumnsNeeded;
 	}

@@ -1,8 +1,9 @@
-import { parseHexColor } from "../../theme/colors";
+import { parseHexColor } from "@levitate/tui-kit";
 
 const ESCAPED_OPEN = "\u0000TUI_ESCAPED_OPEN\u0000";
 
-type SyntaxToken = {
+/** A run of text in one colour, from docs-content's `[[fg=#hex]]…[[/]]` markup. */
+export type SyntaxToken = {
 	text: string;
 	color?: string;
 };
@@ -11,7 +12,7 @@ function restoreEscapes(value: string): string {
 	return value.replaceAll(ESCAPED_OPEN, "[[").replaceAll("\\{", "{").replaceAll("\\}", "}");
 }
 
-function pushToken(target: SyntaxToken[], token: SyntaxToken): void {
+export function pushToken(target: SyntaxToken[], token: SyntaxToken): void {
 	if (token.text.length === 0) {
 		return;
 	}

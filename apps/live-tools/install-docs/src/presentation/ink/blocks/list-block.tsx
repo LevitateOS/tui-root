@@ -29,8 +29,8 @@ export function ListBlockView({
 								marker={marker}
 								content={item as string | RichText}
 								width={listWidth}
-								markerIntent="sectionSubheading"
-								contentIntent="sectionSubheading"
+								markerIntent="subheading"
+								contentIntent="subheading"
 								selectedLinkHref={selectedLinkHref}
 							/>
 						</Box>
@@ -44,8 +44,8 @@ export function ListBlockView({
 							marker={marker}
 							content={item.text}
 							width={listWidth}
-							markerIntent="sectionSubheading"
-							contentIntent="sectionSubheading"
+							markerIntent="subheading"
+							contentIntent="subheading"
 							selectedLinkHref={selectedLinkHref}
 						/>
 						{(item.children ?? []).map((child, childIndex) => (

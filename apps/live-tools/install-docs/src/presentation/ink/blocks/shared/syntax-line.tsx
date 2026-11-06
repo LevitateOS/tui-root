@@ -1,41 +1,31 @@
 import { Text } from "ink";
-import {
-	parseSyntaxTokenLine,
-	resolveColor,
-	useTuiColors,
-	type ColorIntent,
-} from "@levitate/tui-kit";
+import { resolveColor, useTuiColors, type ThemeColor } from "@levitate/tui-kit";
+import { parseSyntaxTokenLine } from "./syntax-markup";
 import type { ReactNode } from "react";
-import { useIntentColor } from "./intent-color";
 
 type SyntaxLineProps = {
 	line: string;
-	fallbackIntent?: ColorIntent;
-	backgroundIntent?: ColorIntent;
+	/** Text without its own markup colour. */
+	color: ThemeColor;
+	background: ThemeColor;
 	width?: number;
 	bold?: boolean;
 	italic?: boolean;
 	underline?: boolean;
 };
 
-export function syntaxTokenColors(line: string): string[] {
-	return parseSyntaxTokenLine(line)
-		.map((token) => token.color)
-		.filter((color): color is string => typeof color === "string" && color.length > 0);
-}
-
 export function SyntaxLine({
 	line,
-	fallbackIntent = "text",
-	backgroundIntent = "background",
+	color,
+	background,
 	width,
 	bold = false,
 	italic = false,
 	underline = false,
 }: SyntaxLineProps): ReactNode {
-	const fallbackColor = useIntentColor(fallbackIntent);
-	const resolvedBackgroundColor = useIntentColor(backgroundIntent);
 	const colors = useTuiColors();
+	const fallbackColor = resolveColor(color, colors);
+	const resolvedBackgroundColor = resolveColor(background, colors);
 	const tokens = parseSyntaxTokenLine(line);
 	const safeWidth =
 		typeof width === "number" && Number.isFinite(width)

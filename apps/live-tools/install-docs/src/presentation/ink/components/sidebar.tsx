@@ -1,15 +1,13 @@
-import { TreeNav } from "@levitate/tui-kit";
+import { TreeNav, type TreeNavMode } from "@levitate/tui-kit";
 import type { ReactNode } from "react";
 import type { FlatDocsNavItem } from "../../../domain/content/contracts";
-
-export type SidebarMode = "focus-section" | "all-sections";
 
 type InstallSidebarProps = {
 	items: ReadonlyArray<FlatDocsNavItem>;
 	selectedIndex: number;
 	maxWidth: number;
 	currentSection?: string;
-	mode?: SidebarMode;
+	mode?: TreeNavMode;
 };
 
 export function InstallSidebar({
@@ -30,16 +28,8 @@ export function InstallSidebar({
 			maxWidth={maxWidth}
 			currentSection={currentSection}
 			mode={mode}
-			emptyLabel="(no docs pages)"
-			expandedSectionMarker="▾"
-			collapsedSectionMarker="▸"
-			activeItemMarker="▸"
 			inactiveItemMarker=" "
-			sectionIntent="sectionHeading"
-			collapsedSectionIntent="dimText"
-			itemIntent="sidebarItemText"
-			activeItemIntent="sidebarItemActiveText"
-			activeBackgroundIntent="sidebarItemActiveBackground"
+			sectionIntent="heading"
 		/>
 	);
 }

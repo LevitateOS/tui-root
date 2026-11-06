@@ -172,7 +172,7 @@ export function SurfaceFrame({
 	const geometry = resolveSurfaceFrameGeometry({
 		columns: viewport.columns,
 		rows: viewport.rows,
-		requestedLeftWidth: leftWidth ?? theme.layout.sidebarWidth,
+		requestedLeftWidth: leftWidth ?? theme.layout.navWidth,
 		headerHeight: theme.layout.headerHeight,
 		footerHeight: theme.layout.footerHeight,
 		hasFooter: Boolean(footer),
@@ -214,9 +214,9 @@ export function SurfaceFrame({
 					outerHeight={geometry.bodyRows}
 					minOuterWidth={guards.minLeftOuterWidth}
 					flexGrow={0}
-					textIntent={leftPane.textIntent ?? "sidebarItemText"}
-					backgroundIntent={leftPane.backgroundIntent ?? "sidebarBackground"}
-					borderIntent={leftPane.borderIntent ?? "sidebarBorder"}
+					textIntent={leftPane.textIntent ?? "navItem"}
+					backgroundIntent={leftPane.backgroundIntent ?? "navBackground"}
+					borderIntent={leftPane.borderIntent ?? "navBorder"}
 				/>
 			}
 			rightPane={

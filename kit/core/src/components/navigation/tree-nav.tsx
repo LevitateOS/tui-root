@@ -5,7 +5,7 @@ import { useTuiColors, useTuiTheme } from "../../app/app-provider";
 import { resolveIntentColor } from "../../theme/colors";
 import { type ColorIntent } from "../../theme/tokens";
 
-type TreeNavMode = "focus-section" | "all-sections";
+export type TreeNavMode = "focus-section" | "all-sections";
 
 type TreeNavItem = {
 	key: string;
@@ -51,7 +51,7 @@ function marker(token: string | undefined, fallback: string): string {
 
 function normalizeSection(value: string): string {
 	const trimmed = value.trim();
-	return trimmed.length > 0 ? trimmed : "Docs";
+	return trimmed.length > 0 ? trimmed : "Other";
 }
 
 function groupSections(items: ReadonlyArray<TreeNavItem>): GroupedSection[] {
@@ -95,7 +95,7 @@ function buildTreeNavRows(
 			{
 				key: "empty",
 				text: padRight(
-					truncateBoundedLine(options.emptyLabel ?? "(no docs pages)", safeWidth, 1),
+					truncateBoundedLine(options.emptyLabel ?? "(empty)", safeWidth, 1),
 					safeWidth,
 				),
 				kind: "item",
@@ -173,11 +173,11 @@ export function TreeNav({
 	collapsedSectionMarker,
 	activeItemMarker,
 	inactiveItemMarker,
-	sectionIntent = "sidebarSectionText",
+	sectionIntent = "navHeading",
 	collapsedSectionIntent = "dimText",
-	itemIntent = "sidebarItemText",
-	activeItemIntent = "sidebarItemActiveText",
-	activeBackgroundIntent = "sidebarItemActiveBackground",
+	itemIntent = "navItem",
+	activeItemIntent = "selection",
+	activeBackgroundIntent = "selectionBackground",
 }: TreeNavProps) {
 	const theme = useTuiTheme();
 	const colors = useTuiColors();

@@ -1,7 +1,6 @@
 import { Box, Text } from "ink";
 import type { CodeBlock } from "@levitate/docs-content";
 import {
-	parseSyntaxTokenLine,
 	resolveChromeGlyphSet,
 	RichTextLine,
 	truncateLine,
@@ -12,28 +11,13 @@ import type { BlockComponentProps } from "./types";
 import type { BlockPlugin } from "./contracts";
 import { codeSnapshotLines } from "./shared/content-utils";
 import { useIntentColor } from "./shared/intent-color";
+import { parseSyntaxTokenLine, pushToken, type SyntaxToken } from "./shared/syntax-markup";
 import { defaultDocsBlockRendererKey } from "./shared/renderer-key";
 
 const CODE_LINE_NUMBER_PADDING = 1;
-type SyntaxToken = {
-	text: string;
-	color?: string;
-};
 
 function lineNumberText(sourceLine: number, digits: number): string {
 	return String(sourceLine).padStart(digits, " ");
-}
-
-function pushSyntaxToken(row: SyntaxToken[], text: string, color?: string): void {
-	if (text.length === 0) {
-		return;
-	}
-	const previous = row[row.length - 1];
-	if (previous && previous.color === color) {
-		previous.text += text;
-		return;
-	}
-	row.push({ text, color });
 }
 
 function wrapSyntaxRows(line: string, width: number): SyntaxToken[][] {
@@ -58,7 +42,7 @@ function wrapSyntaxRows(line: string, width: number): SyntaxToken[][] {
 			if (currentWidth >= safeWidth) {
 				flush();
 			}
-			pushSyntaxToken(current, char, token.color);
+			pushToken(current, { text: char, color: token.color });
 			currentWidth += 1;
 		}
 	}
@@ -101,7 +85,7 @@ export function CodeBlockView({
 	const lineDigits = Math.max(2, String(Math.max(1, sourceLines.length)).length);
 	const lineNumberGutter = lineDigits + CODE_LINE_NUMBER_PADDING + 1;
 	const codeInnerWidth = Math.max(1, innerWidth - lineNumberGutter);
-	const borderColor = useIntentColor("cardBorder");
+	const borderColor = useIntentColor("panelBorder");
 	const headingColor = useIntentColor("accent");
 	const dimTextColor = useIntentColor("dimText");
 	const chrome = resolveChromeGlyphSet("single");

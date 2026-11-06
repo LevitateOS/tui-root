@@ -239,17 +239,17 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
 				title: "Actions",
 				titleMode: "inline",
 				body: sidebar,
-				borderIntent: "sidebarBorder",
-				textIntent: "sidebarItemText",
-				titleIntent: "sidebarSectionText",
+				borderIntent: "navBorder",
+				textIntent: "navItem",
+				titleIntent: "navHeading",
 			}}
 			rightPane={{
 				title: "recab",
 				titleMode: "inline",
 				body,
-				borderIntent: "cardBorder",
+				borderIntent: "contentBorder",
 				textIntent: "text",
-				titleIntent: "sectionHeading",
+				titleIntent: "heading",
 			}}
 		/>
 	);

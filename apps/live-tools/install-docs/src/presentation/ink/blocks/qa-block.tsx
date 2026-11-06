@@ -26,19 +26,19 @@ export function QABlockView({
 			{block.items.map((item, itemIndex) => {
 				return (
 					<Box key={`qa-item-${itemIndex}`} flexDirection="column">
-						<UiText intent="sectionHeading" bold>
+						<UiText intent="heading" bold>
 							{"Q >"}
 						</UiText>
 						<Box paddingLeft={2}>
 							<RichTextRenderer
 								content={item.question}
-								defaultIntent="sectionHeading"
+								defaultIntent="heading"
 								width={Math.max(1, safeWidth - 2)}
 								minimumWidth={1}
 								selectedLinkHref={selectedLinkHref}
 							/>
 						</Box>
-						<UiText intent="sectionSubheading" bold>
+						<UiText intent="subheading" bold>
 							{"A >"}
 						</UiText>
 						{item.answer.map((answerBlock, answerIndex) => (

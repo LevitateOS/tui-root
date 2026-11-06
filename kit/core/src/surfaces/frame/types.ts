@@ -11,8 +11,8 @@ export type SurfacePaneProps = {
 	minOuterWidth?: number;
 	flexGrow?: number;
 	borderStyle?: "single" | "double" | "round" | "bold" | "none";
-	borderIntent?: "border" | "sidebarBorder" | "cardBorder";
-	backgroundIntent?: "background" | "sidebarBackground" | "contentBackground" | "cardBackground";
+	borderIntent?: "border" | "navBorder" | "contentBorder";
+	backgroundIntent?: "background" | "navBackground" | "contentBackground" | "panelBackground";
 	textIntent?: ColorIntent;
 	titleIntent?: ColorIntent;
 	titleMode?: SurfacePaneTitleMode;
