@@ -157,6 +157,7 @@ function hasInteractiveContent(page: DiskPlanPageId): boolean {
 
 export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 	const { exit } = useApp();
+	const defaultMode = mode;
 	const [flow, setFlow] = useState<DiskPlanFlowState>({
 		pageIndex: 0,
 		mode,
@@ -712,13 +713,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 			<Box flexDirection="column">
 				<Text bold>Mode Selection</Text>
 				<UiText>Select the installation layout policy before planning.</UiText>
-				<UiText>`ab` is the default and recommended mode for LevitateOS.</UiText>
-				<UiText>
-					LevitateOS is recipe-driven and package/runtime changes are expected to be LLM-assisted.
-				</UiText>
-				<UiText>
-					A/B layout provides safer rollback/recovery boundaries when those automated changes drift.
-				</UiText>
+				<UiText>The default ({defaultMode}) is the one this system was launched with.</UiText>
 				<UiText> </UiText>
 				<Box flexDirection="row" gap={1}>
 					<Box
@@ -730,7 +725,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 					>
 						<UiText bold intent={abSelected ? "accent" : "text"}>
 							{abSelected ? "▸ " : "  "}
-							ab (default, recommended)
+							ab{defaultMode === "ab" ? " (default)" : ""}
 						</UiText>
 						<UiText>- Dual-slot style partition layout.</UiText>
 						<UiText>- Better rollback/upgrade posture.</UiText>
@@ -745,7 +740,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 					>
 						<UiText bold intent={mutableSelected ? "accent" : "text"}>
 							{mutableSelected ? "▸ " : "  "}
-							mutable (optional, advanced)
+							mutable{defaultMode === "mutable" ? " (default)" : ""}
 						</UiText>
 						<UiText>- Conventional mutable root filesystem.</UiText>
 						<UiText>- Simpler ad-hoc package changes.</UiText>

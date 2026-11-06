@@ -1,5 +1,5 @@
 ┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│Installation Docs             ││Command Helpers  lines 1-31/92                                                        │
+│Docs                          ││Command Helpers  lines 1-31/92                                                        │
 ├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
 │ ▸ Getting Started            ││ Functions for executing shell commands with different return types and behaviors.    │
 │                              ││                                                                                      │

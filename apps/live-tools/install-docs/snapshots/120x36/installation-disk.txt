@@ -1,5 +1,5 @@
 ┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│Installation Docs             ││Disk Preparation  lines 1-31/161                                                      │
+│Docs                          ││Disk Preparation  lines 1-31/161                                                      │
 ├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
 │ ▾ Getting Started            ││ Installation steps 1-5: Boot the live environment and prepare your disk. See         │
 │    Getting Started           ││ Installation (/docs/installation) for an overview.                                   │

@@ -1,5 +1,5 @@
 ┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│Installation Docs             ││CLI Reference  lines 1-31/88                                                          │
+│Docs                          ││CLI Reference  lines 1-31/88                                                          │
 ├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
 │ ▸ Getting Started            ││ The Recipe CLI executes build-time Rhai recipes inside a configured Ginux domain and │
 │                              ││ returns named published products. Prepare the launcher, verified image and worker    │

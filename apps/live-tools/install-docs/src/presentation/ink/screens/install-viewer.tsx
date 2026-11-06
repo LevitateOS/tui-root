@@ -1,6 +1,5 @@
-import { Box, useApp } from "ink";
+import { Box, useApp, useStdout } from "ink";
 import { useEffect, useMemo, useState } from "react";
-import type { DocsContent } from "@levitate/docs-content";
 import {
 	AppShell,
 	RichTextLine,
@@ -13,28 +12,17 @@ import {
 	type RichTextRun,
 } from "@levitate/tui-kit";
 import { BACKWARD_KEYS, CONTENT_KEYS, NAV_KEYS, VIEWER_KEYS } from "../keymap";
-import type { FlatDocsNavItem } from "../../../domain/content/contracts";
-import { resolveDocsLinkTarget } from "../../../domain/navigation/link-target";
+import { PAGES, pageContent, resolveDocsLinkTarget } from "../../../docs";
 import { layoutPage, type Line } from "../../../layout/page";
 import { InstallSidebar } from "../components/sidebar";
 import { InstallStatusBar } from "../components/status-bar";
 import { useInstallNavigation } from "../hooks/use-install-navigation";
 
 type InstallViewerScreenProps = {
-	navItems: ReadonlyArray<FlatDocsNavItem>;
-	getContent: (slug: string, title: string) => DocsContent;
-	initialSlug?: string;
+	/** Title of the page list (the launcher names the distro's docs). */
+	title: string;
+	initialIndex: number;
 };
-
-function copyToClipboardOsc52(text: string): boolean {
-	try {
-		const payload = Buffer.from(text, "utf8").toString("base64");
-		process.stdout.write(`\u001b]52;c;${payload}\u0007`);
-		return true;
-	} catch {
-		return false;
-	}
-}
 
 /** The line as drawn: runs of the selected action take their `selected` style. */
 function drawn(line: Line, selected: number | undefined): RichTextRun[] {
@@ -43,24 +31,21 @@ function drawn(line: Line, selected: number | undefined): RichTextRun[] {
 	);
 }
 
-export function InstallViewerScreen({
-	navItems,
-	getContent,
-	initialSlug,
-}: InstallViewerScreenProps) {
+export function InstallViewerScreen({ title, initialIndex }: InstallViewerScreenProps) {
 	const { exit } = useApp();
 	const layout = useShellLayout();
-	const navigation = useInstallNavigation(navItems, initialSlug);
+	const navigation = useInstallNavigation(initialIndex);
+	const { write } = useStdout();
 	// When only one pane fits (the install screen's docs pane), start on the page itself.
 	const focus = useFocusPlane({ initial: layout.narrow ? "content" : "navigation" });
 	const [sidebarMode, setSidebarMode] = useState<NavListMode>("focus-section");
 	const [actionIndex, setActionIndex] = useState(0);
 	const [runtimeNote, setRuntimeNote] = useState<string | undefined>(undefined);
 
-	const currentItem = navItems[navigation.safeIndex]!;
+	const currentItem = PAGES[navigation.safeIndex]!;
 	const rows = layout.content.textRows;
 	const columns = layout.content.textColumns;
-	const content = getContent(currentItem.slug, currentItem.title);
+	const content = pageContent(currentItem.slug);
 	const page = useMemo(() => layoutPage(content, columns), [content, columns]);
 	const scroll = useScrollState(page.lines.length - rows);
 	const actions = page.anchors;
@@ -98,9 +83,11 @@ export function InstallViewerScreen({
 			setRuntimeNote("no actions on this page");
 			return;
 		}
-		const copied = copyToClipboardOsc52(action.kind === "command" ? action.command : action.href);
+		// OSC 52 asks the terminal to set the clipboard; terminals without it ignore the sequence.
+		const payload = action.kind === "command" ? action.command : action.href;
+		write(`\u001b]52;c;${Buffer.from(payload, "utf8").toString("base64")}\u0007`);
 		const what = action.kind === "command" ? "command" : `link (${action.label})`;
-		setRuntimeNote(copied ? `copied ${what}` : "copy failed (terminal clipboard unsupported)");
+		setRuntimeNote(`sent ${what} to the terminal clipboard (OSC 52)`);
 	};
 	const activateAction = () => {
 		const action = actions[actionIndex];
@@ -108,7 +95,7 @@ export function InstallViewerScreen({
 			copyAction();
 			return;
 		}
-		const target = resolveDocsLinkTarget(action.href, currentItem.slug, navItems);
+		const target = resolveDocsLinkTarget(action.href, currentItem.slug);
 		if (!target.ok) {
 			setRuntimeNote(`invalid docs link target: '${action.href}' (${target.reason})`);
 			return;
@@ -156,10 +143,10 @@ export function InstallViewerScreen({
 		<AppShell
 			layout={layout}
 			focus={focus.plane}
-			navTitle="Installation Docs"
+			navTitle={title}
 			nav={
 				<InstallSidebar
-					items={navItems}
+					items={PAGES}
 					selectedIndex={navigation.safeIndex}
 					maxWidth={(layout.nav ?? layout.content).textColumns}
 					mode={sidebarMode}
@@ -179,10 +166,10 @@ export function InstallViewerScreen({
 			footer={
 				<InstallStatusBar
 					page={navigation.safeIndex + 1}
-					pageCount={navItems.length}
+					pageCount={PAGES.length}
 					focus={focus.plane}
 					action={actions.length > 0 ? `${actionIndex + 1}/${actions.length}` : undefined}
-					note={runtimeNote ?? navigation.startupNote}
+					note={runtimeNote}
 				/>
 			}
 		/>

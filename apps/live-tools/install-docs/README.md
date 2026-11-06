@@ -1,6 +1,6 @@
 # install-docs
 
-Interactive terminal docs viewer for LevitateOS, built on `@levitate/tui-kit`.
+Terminal viewer for the docs in `@levitate/docs-content`, built on `@levitate/tui-kit`. The launcher passes `--title` and `--slug`.
 
 Style change map: `style-map.md`
 
@@ -8,7 +8,7 @@ Style change map: `style-map.md`
 
 ```bash
 bun src/main.tsx
-bun src/main.tsx --slug installation
+bun src/main.tsx --slug installation --title "LevitateOS install guide"
 ```
 
 On the live ISO the builder bundles it and launches it as `levitate-install-docs` in the install screen's right pane.

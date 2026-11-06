@@ -1,6 +1,6 @@
 import { NavList, type NavListMode } from "@levitate/tui-kit";
 import type { ReactNode } from "react";
-import type { FlatDocsNavItem } from "../../../domain/content/contracts";
+import type { FlatDocsNavItem } from "../../../docs";
 
 type InstallSidebarProps = {
 	items: ReadonlyArray<FlatDocsNavItem>;
