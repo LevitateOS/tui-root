@@ -4,6 +4,7 @@ import { RichTextLine, type ColorIntent } from "@levitate/tui-kit";
 import type { ReactNode } from "react";
 import { wrapRichTextRuns } from "../blocks/shared/rich-text-renderer";
 import { withBackgroundIntent } from "./rich-text-runs";
+import { useIntentColor } from "../blocks/shared/intent-color";
 
 type PrefixedRichListItemProps = {
 	marker: string;
@@ -28,6 +29,7 @@ export function PrefixedRichListItem({
 	lineKeyPrefix = "list-item",
 	selectedLinkHref,
 }: PrefixedRichListItemProps): ReactNode {
+	const markerColor = useIntentColor(markerIntent);
 	const safeWidth = Math.max(1, width);
 	const prefix = `${marker} `;
 	const textWidth = Math.max(1, safeWidth - prefix.length);
@@ -37,7 +39,7 @@ export function PrefixedRichListItem({
 
 	return (
 		<Box flexDirection="row" width={safeWidth}>
-			<Text color={markerIntent} bold={markerBold}>
+			<Text color={markerColor} bold={markerBold}>
 				{prefix}
 			</Text>
 			<Box flexDirection="column" width={textWidth}>

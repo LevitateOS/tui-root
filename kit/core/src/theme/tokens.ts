@@ -1,6 +1,11 @@
 import { palette } from "./palette";
 
-export type ColorMode = "truecolor" | "ansi256" | "ansi16" | "mono";
+/**
+ * A theme colour: `#rrggbb`, or `"inherit"` to leave the terminal's own colour.
+ * Ink hands hex to chalk, which converts it to whatever the terminal supports
+ * (256 or 16 colours, or none), so a theme states each colour once.
+ */
+export type ThemeColor = `#${string}` | "inherit";
 
 export type ColorIntent =
 	| "border"
@@ -30,20 +35,12 @@ export type ColorIntent =
 	| "sectionHeading"
 	| "sectionSubheading"
 	| "cardBorder"
-	| "cardBackground";
+	| "cardBackground"
+	| "code";
 
-export type ColorValue = {
-	truecolor: string;
-	ansi256: number;
-	ansi16: string;
-	mono?: "normal" | "bold" | "dim";
-};
+export type ThemeColors = Record<ColorIntent, ThemeColor>;
 
-export type ThemeColors = Record<ColorIntent, ColorValue>;
-
-export type ThemeColorOverride = Partial<ColorValue> | string;
-
-export type ThemeColorsOverride = Partial<Record<ColorIntent, ThemeColorOverride>>;
+export type ThemeColorsOverride = Partial<ThemeColors>;
 
 export type ThemeLayout = {
 	sidebarWidth: number;
@@ -67,174 +64,35 @@ export type TuiTheme = {
 };
 
 export const defaultThemeColors: ThemeColors = {
-	border: {
-		truecolor: palette.white,
-		ansi256: 255,
-		ansi16: "white",
-		mono: "normal",
-	},
-	text: {
-		truecolor: "#e5e7eb",
-		ansi256: 15,
-		ansi16: "white",
-		mono: "normal",
-	},
-	dimText: {
-		truecolor: "#94a3b8",
-		ansi256: 248,
-		ansi16: "gray",
-		mono: "normal",
-	},
-	accent: {
-		truecolor: "#7dd3fc",
-		ansi256: 117,
-		ansi16: "cyan",
-		mono: "bold",
-	},
-	linkText: {
-		truecolor: "#7dd3fc",
-		ansi256: 117,
-		ansi16: "cyan",
-		mono: "bold",
-	},
-	linkActiveText: {
-		truecolor: "#0f172a",
-		ansi256: 17,
-		ansi16: "black",
-		mono: "bold",
-	},
-	linkActiveBackground: {
-		truecolor: "#cbd5e1",
-		ansi256: 251,
-		ansi16: "white",
-		mono: "bold",
-	},
-	info: {
-		truecolor: "#93c5fd",
-		ansi256: 111,
-		ansi16: "blue",
-		mono: "bold",
-	},
-	warning: {
-		truecolor: "#facc15",
-		ansi256: 220,
-		ansi16: "yellow",
-		mono: "bold",
-	},
-	error: {
-		truecolor: "#f87171",
-		ansi256: 203,
-		ansi16: "red",
-		mono: "bold",
-	},
-	success: {
-		truecolor: "#86efac",
-		ansi256: 114,
-		ansi16: "green",
-		mono: "bold",
-	},
-	background: {
-		truecolor: palette.zinc950,
-		ansi256: 232,
-		ansi16: "black",
-		mono: "normal",
-	},
-	sidebarBackground: {
-		truecolor: palette.blue900,
-		ansi256: 18,
-		ansi16: "blue",
-		mono: "normal",
-	},
-	contentBackground: {
-		truecolor: palette.zinc900,
-		ansi256: 234,
-		ansi16: "black",
-		mono: "normal",
-	},
-	headerBackground: {
-		truecolor: palette.slate800,
-		ansi256: 237,
-		ansi16: "gray",
-		mono: "normal",
-	},
-	footerBackground: {
-		truecolor: palette.slate900,
-		ansi256: 233,
-		ansi16: "black",
-		mono: "normal",
-	},
-	sidebarSectionText: {
-		truecolor: "#dbeafe",
-		ansi256: 189,
-		ansi16: "white",
-		mono: "bold",
-	},
-	sidebarItemText: {
-		truecolor: "#bfdbfe",
-		ansi256: 153,
-		ansi16: "white",
-		mono: "normal",
-	},
-	sidebarItemActiveText: {
-		truecolor: "#0f172a",
-		ansi256: 17,
-		ansi16: "black",
-		mono: "bold",
-	},
-	sidebarItemActiveBackground: {
-		truecolor: "#cbd5e1",
-		ansi256: 251,
-		ansi16: "white",
-		mono: "bold",
-	},
-	sidebarBorder: {
-		truecolor: palette.white,
-		ansi256: 255,
-		ansi16: "white",
-		mono: "normal",
-	},
-	footerSeparator: {
-		truecolor: palette.gray500,
-		ansi256: 242,
-		ansi16: "gray",
-		mono: "dim",
-	},
-	commandBarBackground: {
-		truecolor: palette.zinc800,
-		ansi256: 238,
-		ansi16: "gray",
-		mono: "normal",
-	},
-	commandPrompt: {
-		truecolor: "#fef08a",
-		ansi256: 229,
-		ansi16: "yellow",
-		mono: "bold",
-	},
-	sectionHeading: {
-		truecolor: "#e2e8f0",
-		ansi256: 255,
-		ansi16: "white",
-		mono: "bold",
-	},
-	sectionSubheading: {
-		truecolor: "#7dd3fc",
-		ansi256: 117,
-		ansi16: "cyan",
-		mono: "bold",
-	},
-	cardBorder: {
-		truecolor: "#64748b",
-		ansi256: 244,
-		ansi16: "gray",
-		mono: "normal",
-	},
-	cardBackground: {
-		truecolor: palette.zinc800,
-		ansi256: 238,
-		ansi16: "gray",
-		mono: "normal",
-	},
+	border: palette.white,
+	text: palette.gray200,
+	dimText: palette.slate400,
+	accent: palette.sky300,
+	linkText: palette.sky300,
+	linkActiveText: palette.slate900,
+	linkActiveBackground: palette.slate300,
+	info: palette.blue300,
+	warning: palette.yellow,
+	error: palette.red400,
+	success: palette.green300,
+	code: palette.yellow,
+	background: palette.zinc950,
+	sidebarBackground: palette.blue900,
+	contentBackground: palette.zinc900,
+	headerBackground: palette.slate800,
+	footerBackground: palette.slate900,
+	sidebarSectionText: palette.blue100,
+	sidebarItemText: palette.blue200,
+	sidebarItemActiveText: palette.slate900,
+	sidebarItemActiveBackground: palette.slate300,
+	sidebarBorder: palette.white,
+	footerSeparator: palette.gray500,
+	commandBarBackground: palette.zinc800,
+	commandPrompt: palette.yellow200,
+	sectionHeading: palette.slate200,
+	sectionSubheading: palette.sky300,
+	cardBorder: palette.slate500,
+	cardBackground: palette.zinc800,
 };
 
 export const defaultThemeLayout: ThemeLayout = {

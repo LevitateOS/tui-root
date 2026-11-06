@@ -93,7 +93,7 @@ function inlineNodeToRuns(
 	}
 
 	if (node.type === "code") {
-		return [{ text: node.text, intent: "warning" }];
+		return [{ text: node.text, intent: "code" }];
 	}
 
 	return [{ text: node.text, intent: defaultIntent, italic: true }];

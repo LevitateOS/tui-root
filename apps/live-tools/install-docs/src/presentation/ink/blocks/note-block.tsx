@@ -4,7 +4,8 @@ import { RichTextLine, type ColorIntent } from "@levitate/tui-kit";
 import type { ReactNode } from "react";
 import type { BlockComponentProps } from "./types";
 import type { BlockPlugin } from "./contracts";
-import { useIntentColor } from "./shared/intent-color";
+import { useColor } from "./shared/intent-color";
+import { NOTE_COLORS } from "../theme/index";
 import { defaultDocsBlockRendererKey } from "./shared/renderer-key";
 import {
 	RichTextRenderer,
@@ -13,38 +14,6 @@ import {
 } from "./shared/rich-text-renderer";
 import { AdmonitionFrame } from "../primitives/admonition-frame";
 import { padRunsToWidth } from "../primitives/rich-text-runs";
-
-type NotePalette = {
-	label: string;
-	labelColor: string;
-	backgroundColor: string;
-	borderColor: string;
-};
-
-function notePalette(variant: NoteBlock["variant"]): NotePalette {
-	if (variant === "danger") {
-		return {
-			label: "DANGER",
-			labelColor: "#ffd0d0",
-			backgroundColor: "#371010",
-			borderColor: "#ff7d7d",
-		};
-	}
-	if (variant === "warning") {
-		return {
-			label: "WARNING",
-			labelColor: "#ffe8a6",
-			backgroundColor: "#47310b",
-			borderColor: "#ffd36e",
-		};
-	}
-	return {
-		label: "INFO",
-		labelColor: "#b6ffe7",
-		backgroundColor: "#0d2b22",
-		borderColor: "#6decc9",
-	};
-}
 
 function noteContentIntent(variant: NoteBlock["variant"]): ColorIntent {
 	if (variant === "warning" || variant === "danger") {
@@ -61,16 +30,17 @@ export function NoteBlockView({
 }: BlockComponentProps<NoteBlock>): ReactNode {
 	const safeWidth = Math.max(1, contentWidth);
 	const noteWidth = Math.max(1, safeWidth - indent);
-	const palette = notePalette(block.variant);
+	const palette = NOTE_COLORS[block.variant];
 	const contentIntent = noteContentIntent(block.variant);
-	const fallbackCardBackground = useIntentColor("cardBackground");
-	const backgroundColor = palette.backgroundColor || fallbackCardBackground;
+	const backgroundColor = useColor(palette.backgroundColor);
+	const labelColor = useColor(palette.labelColor);
+	const borderColor = useColor(palette.borderColor);
 
 	if (noteWidth < 4) {
 		return (
 			<Box flexDirection="column" paddingLeft={indent} width={safeWidth}>
 				<Text backgroundColor={backgroundColor}>
-					<Text color={palette.labelColor} backgroundColor={backgroundColor} bold>
+					<Text color={labelColor} backgroundColor={backgroundColor} bold>
 						{`${palette.label}: `}
 					</Text>
 					<RichTextRenderer
@@ -96,8 +66,8 @@ export function NoteBlockView({
 			<AdmonitionFrame
 				width={noteWidth}
 				label={palette.label}
-				borderColor={palette.borderColor}
-				labelColor={palette.labelColor}
+				borderColor={borderColor}
+				labelColor={labelColor}
 				backgroundColor={backgroundColor}
 				rows={noteLines.map((lineRuns, index) => (
 					<RichTextLine

@@ -1,5 +1,10 @@
 import { Text } from "ink";
-import { parseSyntaxTokenLine, type ColorIntent } from "@levitate/tui-kit";
+import {
+	parseSyntaxTokenLine,
+	resolveColor,
+	useTuiColors,
+	type ColorIntent,
+} from "@levitate/tui-kit";
 import type { ReactNode } from "react";
 import { useIntentColor } from "./intent-color";
 
@@ -7,7 +12,6 @@ type SyntaxLineProps = {
 	line: string;
 	fallbackIntent?: ColorIntent;
 	backgroundIntent?: ColorIntent;
-	backgroundColor?: string;
 	width?: number;
 	bold?: boolean;
 	italic?: boolean;
@@ -23,20 +27,15 @@ export function syntaxTokenColors(line: string): string[] {
 export function SyntaxLine({
 	line,
 	fallbackIntent = "text",
-	backgroundIntent,
-	backgroundColor,
+	backgroundIntent = "background",
 	width,
 	bold = false,
 	italic = false,
 	underline = false,
 }: SyntaxLineProps): ReactNode {
 	const fallbackColor = useIntentColor(fallbackIntent);
-	const resolvedBackgroundColor =
-		typeof backgroundColor === "string" && backgroundColor.length > 0
-			? backgroundColor
-			: backgroundIntent
-				? useIntentColor(backgroundIntent)
-				: undefined;
+	const resolvedBackgroundColor = useIntentColor(backgroundIntent);
+	const colors = useTuiColors();
 	const tokens = parseSyntaxTokenLine(line);
 	const safeWidth =
 		typeof width === "number" && Number.isFinite(width)
@@ -83,7 +82,7 @@ export function SyntaxLine({
 			{paddedTokens.map((token, index) => (
 				<Text
 					key={`${index}-${token.text}`}
-					color={token.color ?? fallbackColor}
+					color={token.color ? resolveColor(token.color, colors) : fallbackColor}
 					backgroundColor={resolvedBackgroundColor}
 				>
 					{token.text.length > 0 ? token.text : " "}

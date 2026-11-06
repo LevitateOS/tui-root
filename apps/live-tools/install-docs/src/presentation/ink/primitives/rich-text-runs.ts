@@ -35,7 +35,7 @@ export function truncateRunsToWidth(
 	runs: ReadonlyArray<RichTextRun>,
 	width: number,
 	fallbackIntent: ColorIntent,
-	_backgroundIntent?: ColorIntent,
+	backgroundIntent?: ColorIntent,
 ): RichTextRun[] {
 	if (width <= 0) {
 		return [];
@@ -48,6 +48,7 @@ export function truncateRunsToWidth(
 			{
 				text: "…",
 				intent: fallbackIntent,
+				backgroundIntent,
 			},
 		];
 	}
@@ -56,22 +57,27 @@ export function truncateRunsToWidth(
 	truncated.push({
 		text: "…",
 		intent: fallbackIntent,
+		backgroundIntent,
 	});
 	return truncated;
 }
 
+/** Gives every run without its own background `backgroundIntent`. */
 export function withBackgroundIntent(
 	runs: ReadonlyArray<RichTextRun>,
-	_backgroundIntent: ColorIntent,
+	backgroundIntent: ColorIntent,
 ): RichTextRun[] {
-	return cloneRuns(runs);
+	return runs.map((run) => ({
+		...run,
+		backgroundIntent: run.backgroundIntent ?? backgroundIntent,
+	}));
 }
 
 export function padRunsToWidth(
 	runs: ReadonlyArray<RichTextRun>,
 	width: number,
 	fallbackIntent: ColorIntent,
-	_backgroundIntent?: ColorIntent,
+	backgroundIntent?: ColorIntent,
 ): RichTextRun[] {
 	const padded = cloneRuns(runs);
 	const missing = width - runsLength(padded);
@@ -81,6 +87,7 @@ export function padRunsToWidth(
 	padded.push({
 		text: " ".repeat(missing),
 		intent: fallbackIntent,
+		backgroundIntent,
 	});
 	return padded;
 }

@@ -769,10 +769,10 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 									flexDirection="column"
 									paddingX={1}
 								>
-									<Text bold color={context.selected ? "cyan" : undefined}>
+									<UiText bold intent={context.selected ? "accent" : "text"}>
 										{context.selected ? "▸ " : "  "}
 										{item.path}
-									</Text>
+									</UiText>
 									<UiText>
 										size:{" "}
 										{item.size_bytes > 0 ? formatBytes(item.size_bytes) : "(not listed by recpart)"}
@@ -824,10 +824,10 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 						paddingX={1}
 						width="50%"
 					>
-						<Text bold color={abSelected ? "cyan" : undefined}>
+						<UiText bold intent={abSelected ? "accent" : "text"}>
 							{abSelected ? "▸ " : "  "}
 							ab (default, recommended)
-						</Text>
+						</UiText>
 						<UiText>- Dual-slot style partition layout.</UiText>
 						<UiText>- Better rollback/upgrade posture.</UiText>
 						<UiText>- Safer for recipe + automated maintenance workflows.</UiText>
@@ -839,10 +839,10 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 						paddingX={1}
 						width="50%"
 					>
-						<Text bold color={mutableSelected ? "cyan" : undefined}>
+						<UiText bold intent={mutableSelected ? "accent" : "text"}>
 							{mutableSelected ? "▸ " : "  "}
 							mutable (optional, advanced)
-						</Text>
+						</UiText>
 						<UiText>- Conventional mutable root filesystem.</UiText>
 						<UiText>- Simpler ad-hoc package changes.</UiText>
 						<UiText>- Less rollback-oriented and easier to break over time.</UiText>
@@ -854,7 +854,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 					risk.
 				</UiText>
 				<UiText>
-					Current mode: <Text color="cyan">{flow.mode}</Text>
+					Current mode: <UiText intent="accent">{flow.mode}</UiText>
 				</UiText>
 				<UiText>Use m/h/l (or arrows) to toggle mode, then continue.</UiText>
 			</Box>
@@ -885,9 +885,9 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 		} else if (planState.kind === "failure") {
 			body = (
 				<Box flexDirection="column">
-					<Text bold color="red">
+					<UiText bold intent="error">
 						Plan Failed
-					</Text>
+					</UiText>
 					<UiText>Exit: {planState.raw.exitCode}</UiText>
 					<UiText>{limitLines(planState.raw.stderr || planState.raw.stdout)}</UiText>
 				</Box>
@@ -895,9 +895,9 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 		} else {
 			body = (
 				<Box flexDirection="column">
-					<Text bold color="red">
+					<UiText bold intent="error">
 						Plan Error
-					</Text>
+					</UiText>
 					<UiText>{planState.message}</UiText>
 				</Box>
 			);
@@ -923,9 +923,9 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 					{applySummary.warnings.length > 0 ? (
 						<>
 							<UiText> </UiText>
-							<Text bold color="yellow">
+							<UiText bold intent="warning">
 								Apply would refuse this disk
-							</Text>
+							</UiText>
 							{applySummary.warnings.map((warning, index) => (
 								<UiText key={`warning-${index}`}>{warning}</UiText>
 							))}
@@ -936,9 +936,9 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 		} else if (applyDryRunState.kind === "failure") {
 			body = (
 				<Box flexDirection="column">
-					<Text bold color="red">
+					<UiText bold intent="error">
 						Dry-run Failed
-					</Text>
+					</UiText>
 					<UiText>Exit: {applyDryRunState.raw.exitCode}</UiText>
 					<UiText>{limitLines(applyDryRunState.raw.stderr || applyDryRunState.raw.stdout)}</UiText>
 				</Box>
@@ -946,9 +946,9 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 		} else {
 			body = (
 				<Box flexDirection="column">
-					<Text bold color="red">
+					<UiText bold intent="error">
 						Dry-run Error
-					</Text>
+					</UiText>
 					<UiText>{applyDryRunState.message}</UiText>
 				</Box>
 			);
@@ -981,18 +981,18 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 		} else if (preflightState.kind === "error") {
 			body = (
 				<Box flexDirection="column">
-					<Text bold color="red">
+					<UiText bold intent="error">
 						Preflight Error
-					</Text>
+					</UiText>
 					<UiText>{preflightState.message}</UiText>
 				</Box>
 			);
 		} else {
 			body = (
 				<Box flexDirection="column">
-					<Text bold color="red">
+					<UiText bold intent="error">
 						Preflight Failure
-					</Text>
+					</UiText>
 					<UiText>{limitLines(preflightState.raw.stderr || preflightState.raw.stdout)}</UiText>
 				</Box>
 			);
@@ -1004,12 +1004,12 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 		const target = diskCandidates.find((item) => item.path === flow.disk);
 		body = (
 			<Box flexDirection="column">
-				<Text bold color={unlocked ? "green" : "yellow"}>
+				<UiText bold intent={unlocked ? "success" : "warning"}>
 					Destructive Apply Confirmation
-				</Text>
-				<Text bold color="red">
+				</UiText>
+				<UiText bold intent="error">
 					ALL DATA on {flow.disk || "(unset)"} will be erased.
-				</Text>
+				</UiText>
 				<UiText>
 					Disk: {flow.disk || "(unset)"} | size:{" "}
 					{target && target.size_bytes > 0 ? formatBytes(target.size_bytes) : "?"} | model:{" "}
@@ -1057,9 +1057,9 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 		} else if (applyState.kind === "success") {
 			body = (
 				<Box flexDirection="column">
-					<Text bold color="green">
+					<UiText bold intent="success">
 						Apply Completed
-					</Text>
+					</UiText>
 					{applyState.value.steps.map((step, index) => (
 						<UiText key={`${step.phase}-${index}`}>
 							{progressStepLine(step.phase, step.command, step.status)}
@@ -1071,9 +1071,9 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 		} else if (applyState.kind === "failure") {
 			body = (
 				<Box flexDirection="column">
-					<Text bold color="red">
+					<UiText bold intent="error">
 						Apply Failed
-					</Text>
+					</UiText>
 					<UiText>Exit: {applyState.raw.exitCode}</UiText>
 					<UiText>{limitLines(applyState.raw.stderr || applyState.raw.stdout)}</UiText>
 					<UiText>Next: failure-diagnostics page</UiText>
@@ -1082,9 +1082,9 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 		} else if (applyState.kind === "error") {
 			body = (
 				<Box flexDirection="column">
-					<Text bold color="red">
+					<UiText bold intent="error">
 						Apply Error
-					</Text>
+					</UiText>
 					<UiText>{applyState.message}</UiText>
 					<UiText>Next: failure-diagnostics page</UiText>
 				</Box>
@@ -1135,9 +1135,9 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 			const lines = failureDiagnosticLines(failure);
 			body = (
 				<Box flexDirection="column">
-					<Text bold color="red">
+					<UiText bold intent="error">
 						{lines[0]}
-					</Text>
+					</UiText>
 					{lines.slice(1).map((line) => (
 						<UiText key={line}>{line}</UiText>
 					))}

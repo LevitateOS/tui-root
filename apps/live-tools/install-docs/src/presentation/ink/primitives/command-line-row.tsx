@@ -1,6 +1,5 @@
 import type { ColorIntent } from "@levitate/tui-kit";
 import type { ReactNode } from "react";
-import { useIntentColor } from "../blocks/shared/intent-color";
 import { SyntaxLine } from "../blocks/shared/syntax-line";
 
 type CommandLineRowProps = {
@@ -13,8 +12,6 @@ type CommandLineRowProps = {
 	bold?: boolean;
 };
 
-const COMMAND_ROW_BACKGROUND = "#000000";
-
 export function CommandLineRow({
 	line,
 	width,
@@ -25,7 +22,6 @@ export function CommandLineRow({
 	bold = true,
 }: CommandLineRowProps): ReactNode {
 	void rowIndex;
-	const lineBackground = useIntentColor(backgroundIntent) ?? COMMAND_ROW_BACKGROUND;
 	const fullLine = `${prefix}${line}`;
 
 	return (
@@ -33,7 +29,6 @@ export function CommandLineRow({
 			line={fullLine}
 			fallbackIntent={fallbackIntent}
 			backgroundIntent={backgroundIntent}
-			backgroundColor={lineBackground}
 			width={width}
 			bold={bold}
 		/>

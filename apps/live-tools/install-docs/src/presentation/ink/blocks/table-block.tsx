@@ -41,6 +41,8 @@ export function TableBlockView({
 	indent = 0,
 	selectedLinkHref,
 }: BlockComponentProps<TableBlock>): ReactNode {
+	const backgroundColor = useIntentColor("cardBackground");
+	const dividerColor = useIntentColor("dimText");
 	const headers = block.headers;
 	const rows = block.rows;
 	const plainHeaders = headers.map((cell) => inlineContentToPlainText(cell as string | RichText));
@@ -55,8 +57,6 @@ export function TableBlockView({
 
 	const safeWidth = Math.max(1, normalizeTextWidth(contentWidth, 1));
 	const tableWidth = Math.max(1, safeWidth - indent);
-	const backgroundColor = useIntentColor("cardBackground");
-	const dividerColor = useIntentColor("dimText");
 	const separatorWidth = (widths.length - 1) * TABLE_COLUMN_SEPARATOR.length;
 	const maxContentWidth = Math.max(1, tableWidth - separatorWidth);
 	const normalizedWidths = (() => {

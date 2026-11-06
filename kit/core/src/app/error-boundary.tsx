@@ -1,4 +1,4 @@
-import { Text } from "ink";
+import { UiText } from "../primitives/display/text";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
 type ErrorBoundaryProps = {
@@ -35,6 +35,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 			return this.props.fallback;
 		}
 
-		return <Text color="red">Unhandled TUI error: {this.state.error.message}</Text>;
+		return <UiText intent="error">Unhandled TUI error: {this.state.error.message}</UiText>;
 	}
 }

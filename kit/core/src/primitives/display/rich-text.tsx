@@ -1,7 +1,7 @@
 import { Text } from "ink";
 import type { ColorIntent } from "../../theme/tokens";
 import { useTuiColors, useTuiTheme } from "../../app/app-provider";
-import { resolveIntentColor } from "../../theme/colors";
+import { resolveColor, resolveIntentColor } from "../../theme/colors";
 
 export type RichTextRun = {
 	text: string;
@@ -24,8 +24,8 @@ function resolveRunColor(
 	colors: ReturnType<typeof useTuiColors>,
 	fallbackIntent: ColorIntent,
 ) {
-	if (typeof run.literalColor === "string" && run.literalColor.length > 0) {
-		return run.literalColor;
+	if (run.literalColor) {
+		return resolveColor(run.literalColor, colors);
 	}
 	return resolveIntentColor(theme, run.intent ?? fallbackIntent, colors);
 }

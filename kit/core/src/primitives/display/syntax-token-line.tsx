@@ -1,24 +1,11 @@
+import { parseHexColor } from "../../theme/colors";
+
 const ESCAPED_OPEN = "\u0000TUI_ESCAPED_OPEN\u0000";
 
 type SyntaxToken = {
 	text: string;
 	color?: string;
 };
-
-function normalizeHexColor(value: string): string | undefined {
-	const candidate = value.trim().toLowerCase();
-	if (/^#[0-9a-f]{6}$/.test(candidate)) {
-		return candidate;
-	}
-	if (/^#[0-9a-f]{3}$/.test(candidate)) {
-		const [, r, g, b] = candidate;
-		return `#${r}${r}${g}${g}${b}${b}`;
-	}
-	if (/^#[0-9a-f]{8}$/.test(candidate)) {
-		return candidate.slice(0, 7);
-	}
-	return undefined;
-}
 
 function restoreEscapes(value: string): string {
 	return value.replaceAll(ESCAPED_OPEN, "[[").replaceAll("\\{", "{").replaceAll("\\}", "}");
@@ -72,7 +59,7 @@ export function parseSyntaxTokenLine(line: string): SyntaxToken[] {
 		if (tag === "/") {
 			activeColor = undefined;
 		} else if (tag.startsWith("fg=")) {
-			const color = normalizeHexColor(tag.slice(3));
+			const color = parseHexColor(tag.slice(3));
 			if (color) {
 				activeColor = color;
 			}

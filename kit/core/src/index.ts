@@ -28,10 +28,10 @@ export { parseSyntaxTokenLine } from "./primitives/display/syntax-token-line";
 export { UiText } from "./primitives/display/text";
 export { resolveGridColumns } from "./primitives/layout/grid";
 export { SurfaceFrame, resolveSurfaceFrameGeometry } from "./surfaces/frame/surface-frame";
-export { resolveIntentColor } from "./theme/colors";
+export { resolveColor, resolveIntentColor } from "./theme/colors";
 export type { ColorRuntime } from "./theme/colors";
 export { createTheme } from "./theme/create-theme";
-export type { ColorIntent, TuiTheme } from "./theme/tokens";
+export type { ColorIntent, ThemeColor, TuiTheme } from "./theme/tokens";
 export { clampNumber } from "./utils/clamp";
 export {
 	horizontalRule,

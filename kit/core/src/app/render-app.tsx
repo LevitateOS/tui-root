@@ -35,8 +35,6 @@ export function renderApp(element: ReactElement, options: RenderAppOptions = {})
 		options.app ??
 		createTuiApp({
 			theme: options.theme,
-			colorMode: options.colorMode,
-			colorEnabled: options.colorEnabled,
 		});
 
 	const handle = render(wrapWithProvider(app, element), {

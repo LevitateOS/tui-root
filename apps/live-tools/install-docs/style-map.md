@@ -28,11 +28,11 @@ Block plugin registration is in `src/presentation/ink/blocks/plugins.tsx`.
 
 Use these when a style must be consistent across multiple blocks.
 
-- Command rows (prompt + full-row background): `src/presentation/ink/primitives/command-line-row.tsx`
+- Command rows (prompt + `commandBarBackground` row background): `src/presentation/ink/primitives/command-line-row.tsx`
 - Multi-line command groups: `src/presentation/ink/primitives/command-line-series.tsx`
 - Prefixed rich text rows (bullets/labels + wrapping): `src/presentation/ink/primitives/prefixed-rich-list-item.tsx`
 - Table row rich text + truncation: `src/presentation/ink/primitives/rich-table-row.tsx`
-- Rich text run utilities (pad/truncate/background): `src/presentation/ink/primitives/rich-text-runs.ts`
+- Rich text run utilities (pad/truncate, and `withBackgroundIntent` for a background): `src/presentation/ink/primitives/rich-text-runs.ts`
 - Admonition frame chrome: `src/presentation/ink/primitives/admonition-frame.tsx`
 
 ## Rich Text Rendering
@@ -44,4 +44,4 @@ Use these when a style must be consistent across multiple blocks.
 
 - Change one block only: edit that block file.
 - Change repeated visual behavior: edit the primitive and keep block files thin.
-- Change colors globally: edit theme intents in `src/presentation/ink/theme/index.ts`.
+- Change colors globally: edit `src/presentation/ink/theme/index.ts`. Each intent is one `#rrggbb` (or `"inherit"` for the terminal's own colour); note admonition colours are `NOTE_COLORS` there. Every colour goes through the kit's `resolveColor`, so chalk adapts it to the terminal (256 or 16 colours) and `NO_COLOR` turns all of it off. No component holds a colour literal.
