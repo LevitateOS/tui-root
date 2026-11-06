@@ -10,11 +10,6 @@
     "resolveJsonModule": true,
     "declaration": true,
     "outDir": "dist",
-    "ignoreDeprecations": "5.0",
-    "baseUrl": ".",
-    "paths": {
-      "@levitate/tui-kit": ["types/tui-kit-shim.d.ts"]
-    },
     "types": ["bun", "node"]
   },
   "include": [
@@ -25,7 +20,6 @@
     "flows/**/*.ts",
     "presentation/**/*.ts",
     "presentation/**/*.tsx",
-    "types/**/*.d.ts",
     "index.ts",
     "main.ts"
   ]

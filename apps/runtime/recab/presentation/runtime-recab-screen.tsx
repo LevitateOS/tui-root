@@ -18,7 +18,7 @@ import {
   type RuntimeRecabAction,
   type RuntimeRecabActionId,
 } from "../flows";
-import { formatSlot, type RecabCommandResult, type RecabStatus } from "../domain";
+import { formatSlot, type RecabCommandResult, type Status } from "../domain";
 
 type RuntimeRecabScreenProps = {
   recabBin: string;
@@ -38,7 +38,7 @@ function compactOutput(result: RecabCommandResult, maxLines = 10): string {
   return `${lines.slice(0, maxLines).join("\n")}\n... (${lines.length - maxLines} more lines)`;
 }
 
-function statusEntries(status: RecabStatus | null): Array<{ key: string; value: string }> {
+function statusEntries(status: Status | null): Array<{ key: string; value: string }> {
   if (!status) {
     return [
       { key: "active", value: "(unknown)" },
@@ -51,14 +51,18 @@ function statusEntries(status: RecabStatus | null): Array<{ key: string; value: 
     ];
   }
   return [
-    { key: "active", value: status.activeSlot },
-    { key: "inactive", value: status.inactiveSlot },
-    { key: "trial_pending", value: status.trialPending ? "yes" : "no" },
-    { key: "next_boot", value: formatSlot(status.nextBoot) },
-    { key: "default", value: formatSlot(status.defaultSlot) },
-    { key: "known_good", value: formatSlot(status.knownGoodSlot) },
-    { key: "entry_prefix", value: status.entryPrefix },
+    { key: "active", value: status.active_slot },
+    { key: "inactive", value: status.inactive_slot },
+    { key: "trial_pending", value: status.trial_pending ? "yes" : "no" },
+    { key: "next_boot", value: formatSlot(status.next_boot) },
+    { key: "default", value: formatSlot(status.default_slot) },
+    { key: "known_good", value: formatSlot(status.known_good_slot) },
+    { key: "entry_prefix", value: status.entry_prefix },
   ];
+}
+
+function exitText(result: RecabCommandResult): string {
+  return result.exitCode === null ? "did not run to completion" : `exit ${result.exitCode}`;
 }
 
 function formatResultSummary(result: RecabCommandResult | null): string {
@@ -66,13 +70,13 @@ function formatResultSummary(result: RecabCommandResult | null): string {
     return "No command executed in this session.";
   }
   const args = result.args.join(" ");
-  return `${result.command} ${args} (exit ${result.exitCode}, ${result.durationMs}ms)`;
+  return `${result.command} ${args} (${exitText(result)}, ${result.durationMs}ms)`;
 }
 
 export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
   const { exit } = useApp();
   const nav = useListNavigation(RUNTIME_RECAB_ACTIONS.length, 0);
-  const [status, setStatus] = useState<RecabStatus | null>(null);
+  const [status, setStatus] = useState<Status | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [runningActionId, setRunningActionId] = useState<RuntimeRecabActionId | null>(null);
@@ -88,8 +92,8 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
     setLastResult(result);
 
     if (result.exitCode !== 0) {
-      setStatusError(`status failed (exit ${result.exitCode})`);
-      setNotice(`status failed (exit ${result.exitCode})`);
+      setStatusError(`status failed (${exitText(result)})`);
+      setNotice(`status failed (${exitText(result)})`);
       setStatusLoading(false);
       return;
     }
@@ -110,19 +114,23 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
     if (isBusy) {
       return;
     }
+    if (action.id === "status-refresh") {
+      await refreshStatus();
+      return;
+    }
     setRunningActionId(action.id);
-    setNotice(`running ${action.command.args.join(" ")}`);
+    setNotice(`running recab ${action.args.join(" ")}`);
 
     const result = await runRecabCommand({
       recabBin,
-      args: action.command.args,
+      args: action.args,
     });
     setLastResult(result);
     if (result.exitCode === 0) {
-      setNotice(`${action.command.command} succeeded`);
+      setNotice(`recab ${action.args[0]} succeeded`);
       await refreshStatus();
     } else {
-      setNotice(`${action.command.command} failed (exit ${result.exitCode})`);
+      setNotice(`recab ${action.args[0]} failed (${exitText(result)})`);
     }
     setRunningActionId(null);
   };
@@ -156,22 +164,16 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
     }
     void runAction(activeAction);
   });
-  useHotkeys(["r"], () => {
-    if (isBusy) {
-      return;
-    }
-    void refreshStatus();
-  });
-  useHotkeys(["a"], () => runActionById("set-next-a"));
-  useHotkeys(["b"], () => runActionById("set-next-b"));
-  useHotkeys(["c"], () => runActionById("commit"));
-  useHotkeys(["x"], () => runActionById("rollback"));
+  // One hotkey per action; the action table is static, so the hook order is too.
+  for (const action of RUNTIME_RECAB_ACTIONS) {
+    useHotkeys([action.hotkey], () => runActionById(action.id));
+  }
 
   const sidebarItems = useMemo(
     () =>
       RUNTIME_RECAB_ACTIONS.map((action) => ({
         section: action.section,
-        label: `${action.label} (${action.hotkeyHint})`,
+        label: `${action.label} (${action.hotkey})`,
       })),
     [],
   );
@@ -187,8 +189,11 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
       ),
       hotkeyStatusSegment("move", "j/k", "select"),
       hotkeyStatusSegment("run", "enter", "execute"),
-      hotkeyStatusSegment("refresh", "r", "status"),
-      hotkeyStatusSegment("quick", "a/b/c/x", "slot ops"),
+      hotkeyStatusSegment(
+        "quick",
+        RUNTIME_RECAB_ACTIONS.map((action) => action.hotkey).join("/"),
+        "actions",
+      ),
       hotkeyStatusSegment("quit", "q", "quit"),
     ];
     if (statusError) {
@@ -223,9 +228,7 @@ export function RuntimeRecabScreen({ recabBin }: RuntimeRecabScreenProps) {
       <Text bold>Selected Action</Text>
       <UiText>{activeAction.label}</UiText>
       <UiText intent="dimText">{activeAction.description}</UiText>
-      <UiText intent="dimText">
-        Command: {`${recabBin} ${activeAction.command.args.join(" ")}`}
-      </UiText>
+      <UiText intent="dimText">Command: {`${recabBin} ${activeAction.args.join(" ")}`}</UiText>
       <UiText> </UiText>
       <Text bold>Last Command</Text>
       <UiText>{formatResultSummary(lastResult)}</UiText>

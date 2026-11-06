@@ -1,17 +1,18 @@
-import type { ErrorSummary } from "../domain/apply-model";
+import { CONFIRM_TOKEN, type ErrorPayload } from "../contract/recpart";
 
 export function confirmStatusLine(token: string): string {
-  return token === "DESTROY" ? "Status: unlocked" : "Status: locked";
+  return token === CONFIRM_TOKEN ? "Status: unlocked" : "Status: locked";
 }
 
+/** One apply step; a dry-run step has no status because it has not run. */
 export function progressStepLine(phase: string, command: string, status: number | null): string {
-  const state = status === null || status === 0 ? "OK" : "FAIL";
+  const state = status === null ? "PLANNED" : status === 0 ? "OK" : "FAIL";
   return `[${state}] ${phase} :: ${command}`;
 }
 
 export function failureDiagnosticLines(failure: {
   source: string;
-  detail: ErrorSummary | null;
+  detail: ErrorPayload | null;
   observed: string;
   remediation: string;
 }): string[] {

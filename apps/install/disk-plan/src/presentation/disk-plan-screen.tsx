@@ -16,15 +16,26 @@ import {
 } from "@levitate/tui-kit";
 import type { DiskMode } from "../cli/parse-args";
 import {
-  listHostDisks,
+  buildApplyCommand,
+  buildPlanCommand,
+  listDisks,
   resolveDiskPath,
   runRecpartDryRun,
   runRecpartPlan,
   startRecpartApply,
-  type DiskCandidate,
   type RecpartRun,
+  type RecpartRunResult,
 } from "../app/plan-runner";
-import { runPreflightChecks, type PreflightCheck } from "../app/preflight";
+import {
+  APPLY_SCHEMA_VERSION,
+  CONFIRM_TOKEN,
+  ERROR_SCHEMA_VERSION,
+  PLAN_SCHEMA_VERSION,
+  type ApplyResult,
+  type DiskInventory,
+  type ErrorPayload,
+  type PartitionPlan,
+} from "../contract/recpart";
 import {
   currentPage,
   nextPage,
@@ -35,13 +46,7 @@ import {
   DISK_PLAN_PAGES,
 } from "../domain/flow";
 import { canAdvancePage } from "../domain/guards";
-import { formatBytes, parsePlanSummary, type PlanSummary } from "../domain/plan-model";
-import {
-  parseApplySummary,
-  parseErrorSummary,
-  type ApplySummary,
-  type ErrorSummary,
-} from "../domain/apply-model";
+import { formatBytes, known, parseRecpartJson, unlistedDisk } from "../domain/recpart";
 import { confirmStatusLine, failureDiagnosticLines, progressStepLine } from "./page-text";
 
 type AsyncState<T> =
@@ -56,7 +61,7 @@ type AsyncState<T> =
 
 type FailureDiagnostic = {
   source: "plan" | "apply-dry-run" | "preflight" | "apply";
-  detail: ErrorSummary | null;
+  detail: ErrorPayload | null;
   observed: string;
   remediation: string;
 };
@@ -74,36 +79,59 @@ function limitLines(input: string, maxLines = 16): string {
   return `${lines.slice(0, maxLines).join("\n")}\n... (${lines.length - maxLines} more lines)`;
 }
 
-function pageLabel(page: DiskPlanPageId): string {
-  return page;
-}
-
-function isPlanReady(plan: AsyncState<PlanSummary>): boolean {
+function isPlanReady(plan: AsyncState<PartitionPlan>): boolean {
   return plan.kind === "success";
 }
 
-function isDryRunReady(applyDryRun: AsyncState<ApplySummary>): boolean {
+function isDryRunReady(applyDryRun: AsyncState<ApplyResult>): boolean {
   return applyDryRun.kind === "success";
 }
 
-function arePreflightChecksPassing(preflight: AsyncState<PreflightCheck[]>): boolean {
-  return preflight.kind === "success" && preflight.value.every((check) => check.ok);
+/** Preflight is a fresh dry-run: it passes when recpart would not refuse the disk. */
+function arePreflightChecksPassing(preflight: AsyncState<ApplyResult>): boolean {
+  return preflight.kind === "success" && preflight.value.warnings.length === 0;
 }
 
-function isApplyFinished(apply: AsyncState<ApplySummary>): boolean {
+function isApplyFinished(apply: AsyncState<ApplyResult>): boolean {
   return apply.kind === "success" || apply.kind === "failure" || apply.kind === "error";
 }
 
 function displayVendor(vendor: string): string | null {
-  const normalized = vendor.trim();
-  if (normalized.length === 0) {
-    return null;
-  }
+  const normalized = known(vendor);
   const generic = new Set(["ATA", "NVME", "SCSI"]);
-  if (generic.has(normalized.toUpperCase())) {
+  if (normalized === null || generic.has(normalized.toUpperCase())) {
     return null;
   }
   return normalized;
+}
+
+/**
+ * Turn a finished recpart run into the async state: the document of the
+ * expected schema on success, the raw output on failure.
+ */
+function runState<T extends { schema_version: number }>(
+  result: RecpartRunResult,
+  schemaVersion: number,
+): AsyncState<T> {
+  if (result.exitCode !== 0) {
+    return {
+      kind: "failure",
+      raw: {
+        stdout: result.stdout,
+        stderr: result.stderr,
+        json: result.json,
+        exitCode: result.exitCode,
+      },
+    };
+  }
+  const value = parseRecpartJson<T>(result.json, schemaVersion);
+  if (!value) {
+    return {
+      kind: "error",
+      message: `${result.command.join(" ")} did not print schema ${schemaVersion} JSON`,
+    };
+  }
+  return { kind: "success", value };
 }
 
 function hasInteractiveContent(page: DiskPlanPageId): boolean {
@@ -117,17 +145,17 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
     mode,
     disk,
   });
-  const [planState, setPlanState] = useState<AsyncState<PlanSummary>>({ kind: "idle" });
-  const [applyDryRunState, setApplyDryRunState] = useState<AsyncState<ApplySummary>>({
+  const [planState, setPlanState] = useState<AsyncState<PartitionPlan>>({ kind: "idle" });
+  const [applyDryRunState, setApplyDryRunState] = useState<AsyncState<ApplyResult>>({
     kind: "idle",
   });
-  const [preflightState, setPreflightState] = useState<AsyncState<PreflightCheck[]>>({
+  const [preflightState, setPreflightState] = useState<AsyncState<ApplyResult>>({
     kind: "idle",
   });
-  const [applyState, setApplyState] = useState<AsyncState<ApplySummary>>({ kind: "idle" });
+  const [applyState, setApplyState] = useState<AsyncState<ApplyResult>>({ kind: "idle" });
   const [confirmToken, setConfirmToken] = useState("");
   const [failure, setFailure] = useState<FailureDiagnostic | null>(null);
-  const [diskCandidates, setDiskCandidates] = useState<DiskCandidate[]>([]);
+  const [diskCandidates, setDiskCandidates] = useState<DiskInventory[]>([]);
   const [activePane, setActivePane] = useState<"nav" | "content">("nav");
   const [failureReturnIndex, setFailureReturnIndex] = useState<number | null>(null);
   // The one destructive apply of this session. Held so it can never be started
@@ -171,7 +199,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
     source: FailureDiagnostic["source"],
     run: { stderr: string; stdout: string; json: string | null },
   ) => {
-    const detail = run.json ? parseErrorSummary(run.json) : null;
+    const detail = run.json ? parseRecpartJson<ErrorPayload>(run.json, ERROR_SCHEMA_VERSION) : null;
     setFailure({
       source,
       detail,
@@ -192,52 +220,41 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
     disksListedRef.current = true;
     let cancelled = false;
     const explicit = initialDiskRef.current.trim();
-    void listHostDisks(explicit).then((listed) => {
-      if (cancelled) {
-        return;
-      }
-      let devices = listed;
-      if (explicit.length > 0) {
-        const wanted = resolveDiskPath(explicit);
-        const found = devices.findIndex((item) => item.path === wanted);
-        if (found < 0) {
-          // Keep an explicit --disk even when it is not a usable device, so
-          // the selection never silently moves to another disk; preflight and
-          // recpart then reject it with a clear error.
-          devices = [
-            {
-              path: explicit,
-              size: "?",
-              model: "",
-              vendor: "",
-              serial: "",
-              transport: "",
-              rotational: null,
-              removable: null,
-              label: `${explicit} (not found)`,
-            },
-            ...devices,
-          ];
+    void listDisks()
+      .catch(() => [] as DiskInventory[])
+      .then((listed) => {
+        if (cancelled) {
+          return;
         }
-        const index = Math.max(
-          0,
-          devices.findIndex((item) => item.path === wanted || item.path === explicit),
-        );
+        let devices = listed;
+        if (explicit.length > 0) {
+          const wanted = resolveDiskPath(explicit);
+          const found = devices.findIndex((item) => item.path === wanted);
+          if (found < 0) {
+            // Keep an explicit --disk even when recpart does not list it, so
+            // the selection never silently moves to another disk; recpart then
+            // rejects it with a clear error.
+            devices = [unlistedDisk(explicit), ...devices];
+          }
+          const index = Math.max(
+            0,
+            devices.findIndex((item) => item.path === wanted || item.path === explicit),
+          );
+          setDiskCandidates(devices);
+          setDiskIndex(index);
+          setFlow((state) => ({ ...state, disk: devices[index]?.path ?? explicit }));
+          return;
+        }
         setDiskCandidates(devices);
-        setDiskIndex(index);
-        setFlow((state) => ({ ...state, disk: devices[index]?.path ?? explicit }));
-        return;
-      }
-      setDiskCandidates(devices);
-      if (devices.length === 0) {
-        return;
-      }
-      setDiskIndex(0);
-      const first = devices[0]?.path ?? "";
-      if (first.length > 0) {
-        setFlow((state) => ({ ...state, disk: first }));
-      }
-    });
+        if (devices.length === 0) {
+          return;
+        }
+        setDiskIndex(0);
+        const first = devices[0]?.path ?? "";
+        if (first.length > 0) {
+          setFlow((state) => ({ ...state, disk: first }));
+        }
+      });
     return () => {
       cancelled = true;
     };
@@ -277,7 +294,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
     if (!/[a-zA-Z]/.test(input)) {
       return;
     }
-    setConfirmToken((value) => (value + input.toUpperCase()).slice(0, 7));
+    setConfirmToken((value) => (value + input.toUpperCase()).slice(0, CONFIRM_TOKEN.length));
   });
 
   useEffect(() => {
@@ -291,35 +308,11 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
         if (cancelled) {
           return;
         }
-        if (result.exitCode !== 0) {
-          setPlanState({
-            kind: "failure",
-            raw: {
-              stdout: result.stdout,
-              stderr: result.stderr,
-              json: result.json,
-              exitCode: result.exitCode,
-            },
-          });
+        const state = runState<PartitionPlan>(result, PLAN_SCHEMA_VERSION);
+        setPlanState(state);
+        if (state.kind === "failure") {
           setFailureFromRun("plan", result);
-          return;
         }
-        if (!result.json) {
-          setPlanState({
-            kind: "error",
-            message: "plan command succeeded but no JSON payload was emitted",
-          });
-          return;
-        }
-        const summary = parsePlanSummary(result.json);
-        if (!summary) {
-          setPlanState({
-            kind: "error",
-            message: "plan JSON failed schema validation (expected schema_version=1)",
-          });
-          return;
-        }
-        setPlanState({ kind: "success", value: summary });
       })
       .catch((error: unknown) => {
         if (cancelled) {
@@ -344,35 +337,11 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
         if (cancelled) {
           return;
         }
-        if (result.exitCode !== 0) {
-          setApplyDryRunState({
-            kind: "failure",
-            raw: {
-              stdout: result.stdout,
-              stderr: result.stderr,
-              json: result.json,
-              exitCode: result.exitCode,
-            },
-          });
+        const state = runState<ApplyResult>(result, APPLY_SCHEMA_VERSION);
+        setApplyDryRunState(state);
+        if (state.kind === "failure") {
           setFailureFromRun("apply-dry-run", result);
-          return;
         }
-        if (!result.json) {
-          setApplyDryRunState({
-            kind: "error",
-            message: "apply dry-run succeeded but no JSON payload was emitted",
-          });
-          return;
-        }
-        const summary = parseApplySummary(result.json);
-        if (!summary) {
-          setApplyDryRunState({
-            kind: "error",
-            message: "apply dry-run JSON failed schema validation (expected schema_version=1)",
-          });
-          return;
-        }
-        setApplyDryRunState({ kind: "success", value: summary });
       })
       .catch((error: unknown) => {
         if (cancelled) {
@@ -392,19 +361,21 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
     }
     let cancelled = false;
     setPreflightState({ kind: "running" });
-    void runPreflightChecks(flow.disk)
-      .then((checks) => {
+    void runRecpartDryRun(flow.disk, flow.mode)
+      .then((result) => {
         if (cancelled) {
           return;
         }
-        setPreflightState({ kind: "success", value: checks });
-        const failed = checks.find((check) => !check.ok);
-        if (failed) {
+        const state = runState<ApplyResult>(result, APPLY_SCHEMA_VERSION);
+        setPreflightState(state);
+        if (state.kind === "failure") {
+          setFailureFromRun("preflight", result);
+        } else if (state.kind === "success" && state.value.warnings.length > 0) {
           setFailure({
             source: "preflight",
             detail: null,
-            observed: `${failed.expectation}; observed: ${failed.observed}`,
-            remediation: failed.remediation,
+            observed: state.value.warnings.join("\n"),
+            remediation: "Resolve what recpart reports, then re-enter this page.",
           });
         }
       })
@@ -418,7 +389,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
     return () => {
       cancelled = true;
     };
-  }, [flow.disk, page]);
+  }, [flow.disk, flow.mode, page]);
 
   const applyStarted = applyState.kind !== "idle";
   const confirmIndex = DISK_PLAN_PAGES.indexOf("destructive-confirm");
@@ -426,7 +397,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
   const failureIndex = DISK_PLAN_PAGES.indexOf("failure-diagnostics");
 
   function startApply() {
-    if (page !== "destructive-confirm" || confirmToken !== "DESTROY") {
+    if (page !== "destructive-confirm" || confirmToken !== CONFIRM_TOKEN) {
       return;
     }
     if (applyRunRef.current !== null || applyStarted) {
@@ -449,35 +420,11 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
 
     void run.result
       .then((result) => {
-        if (result.exitCode !== 0) {
-          setApplyState({
-            kind: "failure",
-            raw: {
-              stdout: result.stdout,
-              stderr: result.stderr,
-              json: result.json,
-              exitCode: result.exitCode,
-            },
-          });
+        const state = runState<ApplyResult>(result, APPLY_SCHEMA_VERSION);
+        setApplyState(state);
+        if (state.kind === "failure") {
           setFailureFromRun("apply", result);
-          return;
         }
-        if (!result.json) {
-          setApplyState({
-            kind: "error",
-            message: "apply succeeded but no JSON payload was emitted",
-          });
-          return;
-        }
-        const summary = parseApplySummary(result.json);
-        if (!summary) {
-          setApplyState({
-            kind: "error",
-            message: "apply JSON failed schema validation (expected schema_version=1)",
-          });
-          return;
-        }
-        setApplyState({ kind: "success", value: summary });
       })
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
@@ -512,7 +459,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
         planReady: isPlanReady(planState),
         commandPreviewReady: isDryRunReady(applyDryRunState),
         preflightPassing: arePreflightChecksPassing(preflightState),
-        confirmUnlocked: confirmToken === "DESTROY",
+        confirmUnlocked: confirmToken === CONFIRM_TOKEN,
         applyFinished: isApplyFinished(applyState),
       })
     ) {
@@ -705,7 +652,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
       segments.push(hotkeyStatusSegment("pick", "enter/h/j/k/l", "select disk"));
     }
     if (page === "destructive-confirm") {
-      segments.push(hotkeyStatusSegment("apply", "enter", "apply after DESTROY"));
+      segments.push(hotkeyStatusSegment("apply", "enter", `apply after ${CONFIRM_TOKEN}`));
     }
     if (isNavFocus) {
       segments.push(hotkeyStatusSegment("nav", "j/k/h/l", "browse pages"));
@@ -808,15 +755,18 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
                     {context.selected ? "▸ " : "  "}
                     {item.path}
                   </Text>
-                  <UiText>size: {item.size}</UiText>
-                  {vendor ? <UiText>vendor: {vendor}</UiText> : null}
-                  <UiText>model: {item.model || "(unknown)"}</UiText>
-                  <UiText>transport: {item.transport || "(unknown)"}</UiText>
-                  <UiText>serial: {item.serial || "(unknown)"}</UiText>
                   <UiText>
-                    media:{" "}
-                    {item.rotational === null ? "(unknown)" : item.rotational ? "hdd" : "ssd"}
-                    {item.removable === null ? "" : item.removable ? " | removable" : " | fixed"}
+                    size:{" "}
+                    {item.size_bytes > 0 ? formatBytes(item.size_bytes) : "(not listed by recpart)"}
+                  </UiText>
+                  {vendor ? <UiText>vendor: {vendor}</UiText> : null}
+                  <UiText>model: {known(item.model) ?? "(unknown)"}</UiText>
+                  <UiText>transport: {known(item.transport) ?? "(unknown)"}</UiText>
+                  <UiText>serial: {known(item.serial) ?? "(unknown)"}</UiText>
+                  <UiText>
+                    media: {item.rotational ? "hdd" : "ssd"}
+                    {item.removable ? " | removable" : " | fixed"}
+                    {item.read_only ? " | read-only" : ""}
                   </UiText>
                 </Box>
               );
@@ -901,15 +851,15 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
       body = (
         <Box flexDirection="column">
           <Text bold>Plan Summary</Text>
-          <UiText>Disk: {plan.diskPath}</UiText>
-          <UiText>Size: {formatBytes(plan.diskSizeBytes)}</UiText>
+          <UiText>Disk: {plan.disk.path}</UiText>
+          <UiText>Size: {formatBytes(plan.disk.size_bytes)}</UiText>
           <UiText>Mode: {plan.mode}</UiText>
           <UiText>Partitions: {plan.partitions.length}</UiText>
           <UiText> </UiText>
           {plan.partitions.map((partition) => (
             <UiText key={`${partition.index}-${partition.name}`}>
               #{partition.index} {partition.name} {partition.filesystem} {partition.mountpoint}{" "}
-              {partition.sizeMb === null ? "(rest)" : `(${partition.sizeMb}MB)`}
+              {partition.size_mb === null ? "(rest)" : `(${partition.size_mb}MB)`}
             </UiText>
           ))}
         </Box>
@@ -944,12 +894,8 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
       body = (
         <Box flexDirection="column">
           <Text bold>Exact Command Sequence (No Hidden Commands)</Text>
-          <UiText>
-            recpart plan --disk {flow.disk} --mode {flow.mode} --json
-          </UiText>
-          <UiText>
-            recpart apply --disk {flow.disk} --mode {flow.mode} --dry-run --json
-          </UiText>
+          <UiText>{buildPlanCommand(flow.disk, flow.mode).join(" ")}</UiText>
+          <UiText>{buildApplyCommand(flow.disk, flow.mode, { dryRun: true }).join(" ")}</UiText>
           <UiText> </UiText>
           {applySummary.steps.map((step, index) => (
             <UiText key={`${step.phase}-${index}`}>
@@ -995,18 +941,17 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
     if (preflightState.kind === "running" || preflightState.kind === "idle") {
       body = <UiText>Running preflight checks ...</UiText>;
     } else if (preflightState.kind === "success") {
+      const refusals = preflightState.value.warnings;
       body = (
         <Box flexDirection="column">
           <Text bold>Preflight Checks</Text>
-          {preflightState.value.map((check) => (
-            <Box key={check.id} flexDirection="column">
-              <UiText>
-                {check.ok ? "[OK]" : "[FAIL]"} {check.expectation}
-              </UiText>
-              <UiText>observed: {check.observed}</UiText>
-              {check.ok ? null : <UiText>remediation: {check.remediation}</UiText>}
-            </Box>
-          ))}
+          <UiText>{buildApplyCommand(flow.disk, flow.mode, { dryRun: true }).join(" ")}</UiText>
+          <UiText> </UiText>
+          {refusals.length === 0 ? (
+            <UiText>[OK] recpart would apply to this disk.</UiText>
+          ) : (
+            refusals.map((refusal) => <UiText key={refusal}>[FAIL] {refusal}</UiText>)
+          )}
           <UiText> </UiText>
           <UiText>
             {arePreflightChecksPassing(preflightState)
@@ -1037,7 +982,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
   }
 
   if (page === "destructive-confirm") {
-    const unlocked = confirmToken === "DESTROY";
+    const unlocked = confirmToken === CONFIRM_TOKEN;
     const target = diskCandidates.find((item) => item.path === flow.disk);
     body = (
       <Box flexDirection="column">
@@ -1048,12 +993,14 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
           ALL DATA on {flow.disk || "(unset)"} will be erased.
         </Text>
         <UiText>
-          Disk: {flow.disk || "(unset)"} | size: {target?.size ?? "?"} | model:{" "}
-          {target?.model || "(unknown)"} | serial: {target?.serial || "(unknown)"}
+          Disk: {flow.disk || "(unset)"} | size:{" "}
+          {target && target.size_bytes > 0 ? formatBytes(target.size_bytes) : "?"} | model:{" "}
+          {known(target?.model ?? "") ?? "(unknown)"} | serial:{" "}
+          {known(target?.serial ?? "") ?? "(unknown)"}
         </UiText>
         <UiText>Mode: {flow.mode}</UiText>
         <UiText> </UiText>
-        <UiText>Type token to unlock destructive apply: DESTROY</UiText>
+        <UiText>Type token to unlock destructive apply: {CONFIRM_TOKEN}</UiText>
         <UiText>Token: {confirmToken || "(empty)"}</UiText>
         <UiText>{confirmStatusLine(confirmToken)}</UiText>
         <UiText>
@@ -1071,7 +1018,10 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
         <Box flexDirection="column">
           <Text bold>Applying Changes</Text>
           <UiText>
-            Running: recpart apply --disk {flow.disk} --mode {flow.mode} --confirm DESTROY --json
+            Running:{" "}
+            {buildApplyCommand(flow.disk, flow.mode, { dryRun: false, confirmDestroy: true }).join(
+              " ",
+            )}
           </UiText>
           {applyDryRunState.kind === "success" ? (
             <>
@@ -1134,10 +1084,10 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
       body = (
         <Box flexDirection="column">
           <Text bold>Handoff</Text>
-          <UiText>Install target: {handoff.installTarget}</UiText>
+          <UiText>Install target: {handoff.install_target}</UiText>
           <UiText> </UiText>
           <Text bold>Mount Topology</Text>
-          {handoff.mountMap.map((entry) => (
+          {handoff.mount_map.map((entry) => (
             <UiText key={`${entry.path}-${entry.device}`}>
               {entry.path}
               {" <- "}
@@ -1146,7 +1096,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
           ))}
           <UiText> </UiText>
           <Text bold>Next Commands</Text>
-          {handoff.nextCommands.map((command) => (
+          {handoff.next_commands.map((command) => (
             <UiText key={command}>{command}</UiText>
           ))}
         </Box>
@@ -1187,7 +1137,7 @@ export function DiskPlanScreen({ disk, mode }: DiskPlanScreenProps) {
         titleIntent: "sidebarSectionText",
       }}
       rightPane={{
-        title: pageLabel(page),
+        title: page,
         titleMode: "inline",
         body,
         borderIntent: "cardBorder",

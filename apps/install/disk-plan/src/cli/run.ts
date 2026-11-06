@@ -12,6 +12,10 @@ export function runCli(args: string[] = process.argv.slice(2)): void {
     console.error(options.error);
     process.exit(2);
   }
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    console.error("disk-plan requires interactive TTY stdin/stdout. Run from a terminal.");
+    process.exit(2);
+  }
   const mounted = startDiskPlanApp({
     disk: options.disk ?? undefined,
     mode: options.mode,

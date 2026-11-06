@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { parseRecabStatusJson, type RecabCommandResult, type RecabStatus } from "../domain";
+import { parseRecabStatusJson, type RecabCommandResult, type Status } from "../domain";
 
 export async function runRecabCommand(spec: {
   recabBin: string;
@@ -15,7 +15,6 @@ export async function runRecabCommand(spec: {
 
     let stdout = "";
     let stderr = "";
-    let failedToStart = false;
     let startErrorMessage: string | null = null;
 
     child.stdout?.on("data", (chunk: Buffer | string) => {
@@ -25,11 +24,10 @@ export async function runRecabCommand(spec: {
       stderr += chunk.toString();
     });
     child.on("error", (error: unknown) => {
-      failedToStart = true;
       startErrorMessage = error instanceof Error ? error.message : String(error);
     });
     child.on("close", (code: number | null) => {
-      const exitCode = failedToStart ? 127 : (code ?? 1);
+      const exitCode = startErrorMessage === null ? code : null;
       const durationMs = Date.now() - startedAt;
       const stderrText =
         startErrorMessage && startErrorMessage.trim().length > 0
@@ -43,7 +41,6 @@ export async function runRecabCommand(spec: {
         stdout,
         stderr: stderrText,
         durationMs,
-        failedToStart,
       });
     });
   });
@@ -51,7 +48,7 @@ export async function runRecabCommand(spec: {
 
 export async function runRecabStatus(spec: {
   recabBin: string;
-}): Promise<{ result: RecabCommandResult; status: RecabStatus | null; parseError: string | null }> {
+}): Promise<{ result: RecabCommandResult; status: Status | null; parseError: string | null }> {
   const result = await runRecabCommand({
     recabBin: spec.recabBin,
     args: ["status", "--json"],

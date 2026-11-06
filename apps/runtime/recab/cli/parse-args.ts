@@ -1,3 +1,5 @@
+import { RUNTIME_RECAB_ACTIONS } from "../flows";
+
 export type CliOptions = {
   recabBin: string;
   help: boolean;
@@ -40,8 +42,8 @@ export function cliHelpText(): string {
     "runtime recab (A/B runtime shell)",
     "",
     "Usage:",
-    "  bun run index.ts",
-    "  bun run index.ts -- --recab-bin /usr/bin/recab",
+    "  bun run main.ts",
+    "  bun run main.ts -- --recab-bin /usr/bin/recab",
     "",
     "Options:",
     "  --recab-bin <path>   Recab binary path (default: recab from PATH)",
@@ -50,7 +52,7 @@ export function cliHelpText(): string {
     "Hotkeys:",
     "  j/k, arrows          Move action selection",
     "  enter                Execute selected action",
-    "  r                    Refresh status",
+    ...RUNTIME_RECAB_ACTIONS.map((action) => `  ${action.hotkey.padEnd(21)}${action.label}`),
     "  q, esc, ctrl-c       Quit",
   ].join("\n");
 }

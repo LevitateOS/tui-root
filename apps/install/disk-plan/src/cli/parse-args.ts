@@ -1,4 +1,6 @@
-export type DiskMode = "ab" | "mutable";
+import { INSTALL_MODES, type InstallMode } from "../contract/recpart";
+
+export type DiskMode = InstallMode;
 
 export type CliOptions = {
   disk: string | null;
@@ -8,10 +10,7 @@ export type CliOptions = {
 };
 
 function parseMode(value: string | undefined): DiskMode | null {
-  if (value === "ab" || value === "mutable") {
-    return value;
-  }
-  return null;
+  return INSTALL_MODES.find((mode) => mode === value) ?? null;
 }
 
 export function parseCliArgs(args: string[]): CliOptions {
@@ -43,7 +42,7 @@ export function parseCliArgs(args: string[]): CliOptions {
       const value = args[index + 1];
       const parsed = parseMode(value);
       if (!parsed) {
-        error = "--mode must be one of: ab, mutable";
+        error = `--mode must be one of: ${INSTALL_MODES.join(", ")}`;
         break;
       }
       mode = parsed;
@@ -64,8 +63,8 @@ export function cliHelpText(): string {
     "",
     "Usage:",
     "  just tui-install-disk-plan",
-    "  just tui-install-disk-plan -- --disk /dev/sdX [--mode ab|mutable]",
-    "  bun run src/index.ts [--disk /dev/sdX] [--mode ab|mutable]",
+    `  just tui-install-disk-plan -- --disk /dev/sdX [--mode ${INSTALL_MODES.join("|")}]`,
+    `  bun run src/index.ts [--disk /dev/sdX] [--mode ${INSTALL_MODES.join("|")}]`,
     "",
     "Notes:",
     "  - mode defaults to 'ab'",

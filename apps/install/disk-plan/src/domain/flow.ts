@@ -58,11 +58,3 @@ export function setMode(state: DiskPlanFlowState, mode: DiskMode): DiskPlanFlowS
     mode,
   };
 }
-
-export function canAdvance(state: DiskPlanFlowState): boolean {
-  const page = currentPage(state);
-  if (page === "target-disk") {
-    return state.disk.trim().length > 0;
-  }
-  return true;
-}
