@@ -180,6 +180,17 @@ function commandLines(
 ): void {
 	const prompt = COMMAND_COLORS.prompt;
 	const background = COMMAND_COLORS.background;
+	// While selected, every row of the command is highlighted, and the space after its last
+	// row says how to copy it (the line's width never changes, so nothing reflows).
+	const highlight: Partial<Run> = {
+		intent: "linkActive",
+		color: undefined,
+		backgroundIntent: "linkActiveBackground",
+		background: undefined,
+	};
+	const mark = (run: Run): Run =>
+		anchor === undefined ? run : { ...run, anchor, selected: { ...highlight, ...run.selected } };
+	const rows: Line[] = [];
 	lines.forEach((runs, i) => {
 		const lead: Run =
 			i === 0 && anchor !== undefined
@@ -188,7 +199,6 @@ function commandLines(
 						color: prompt,
 						background,
 						bold: true,
-						anchor,
 						selected: { text: `${MARKERS.selected} ` },
 					}
 				: { text: i === 0 ? "$ " : "  ", color: prompt, background, bold: true };
@@ -197,9 +207,29 @@ function commandLines(
 			Math.max(1, width - 2),
 		).forEach((row, j) => {
 			const head = j === 0 ? lead : { text: "  ", color: prompt, background };
-			page.push(padTo([head, ...(row as Line)], width, { background }), indent);
+			rows.push([head, ...(row as Line)].map(mark));
 		});
 	});
+	rows.forEach((row, r) => {
+		const free = width - textWidth(runsText(row));
+		const hint = r === rows.length - 1 ? copyHint(free) : "";
+		const fill: Run = { text: " ".repeat(Math.max(0, free)), background };
+		const padded =
+			free > 0
+				? [
+						...row,
+						anchor === undefined
+							? fill
+							: mark({ ...fill, selected: { text: hint + " ".repeat(free - hint.length) } }),
+					]
+				: row;
+		page.push(padded, indent);
+	});
+}
+
+/** The copy hint that fits in `free` cells after a selected command, or none. */
+function copyHint(free: number): string {
+	return [" (c to copy)", " (c)"].find((hint) => hint.length <= free) ?? "";
 }
 
 function table(

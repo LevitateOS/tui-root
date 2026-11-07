@@ -68,6 +68,23 @@
 							"expect": "│ 5 │UUID=ABCD-1234  /boot   vfat    fmask=0022,dmask=0022"
 						}
 					]
+				},
+				{
+					"name": "selected command",
+					"args": [
+						"--slug",
+						"installation-disk"
+					],
+					"steps": [
+						{
+							"keys": "\\tjj",
+							"expect": "▸ ls /sys/firmware/efi/efivars (c to copy)"
+						},
+						{
+							"keys": "j",
+							"expect": "▸ loadkeys us (c to copy)"
+						}
+					]
 				}
 			]
 		}
