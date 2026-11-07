@@ -14,6 +14,8 @@ Rust tools it runs from PATH and its `inspect` arguments.
 - `disk-plan`: interactive disk planning on top of `recpart`.
 - `recab-tui`: A/B slot status and switching on top of `recab`.
 
+Each manifest's `description` is the app's one-line summary, for `tui list` and the app's `--help`.
+
 ## Kit
 
 - `kit/core`: runtime, primitives, components, chrome and theme.
@@ -23,8 +25,8 @@ and `bun.lock`): the kit lists `ink` and `react` as peer dependencies so every
 app and the kit share one copy. Lint and format use the root `.oxlintrc.json`
 and `.oxfmtrc.json`.
 
-Run any app with `cargo xtask tui <name>` (it builds the app's Rust tools and puts
-them on PATH first). Headless runs use stand-ins instead: each app's `levitate.inspect.path`
+`cargo xtask tui list` lists the apps (what each is for, its tools, pages and stories). Run one
+with `cargo xtask tui <name>` (it builds the app's Rust tools and puts them on PATH first). Headless runs use stand-ins instead: each app's `levitate.inspect.path`
 holds a stand-in for every tool it runs (`fixtures/`), so they never touch a disk or firmware.
 
 - `cargo xtask inspect <name>` renders one screen (`--story NAME` opens a story, `--input` types keys).

@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import manifest from "../package.json";
 import { runApp, UsageError } from "@levitate/tui-kit";
 import { PAGES } from "./docs";
 import { CONTENT_KEYS, NAV_KEYS, VIEWER_KEYS } from "./presentation/ink/keymap";
@@ -7,7 +8,7 @@ import { createInstallDocsTheme } from "./presentation/ink/theme/index";
 
 runApp({
 	name: "install-docs",
-	summary: "the docs, for reading beside a shell",
+	summary: manifest.description,
 	flags: [
 		{ name: "slug", alias: "s", value: "SLUG", help: "open this page (default: the first page)" },
 		{ name: "title", value: "TITLE", help: 'title of the page list (default: "Docs")' },

@@ -2,6 +2,7 @@
 	"name": "@levitate/disk-plan",
 	"version": "0.1.0",
 	"private": true,
+	"description": "plan, check and apply a disk layout with the recpart on PATH",
 	"bin": {
 		"disk-plan": "./src/main.tsx"
 	},

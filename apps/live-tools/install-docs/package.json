@@ -1,6 +1,7 @@
 {
 	"name": "@levitate/install-docs",
 	"version": "0.2.0",
+	"description": "the docs, for reading beside a shell",
 	"license": "(MIT OR Apache-2.0)",
 	"bin": {
 		"install-docs": "./src/main.tsx"

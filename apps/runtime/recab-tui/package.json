@@ -2,6 +2,7 @@
 	"name": "@levitate/recab-tui",
 	"version": "0.1.0",
 	"private": true,
+	"description": "A/B slot status and switching, over the recab on PATH",
 	"bin": {
 		"recab-tui": "./src/main.tsx"
 	},

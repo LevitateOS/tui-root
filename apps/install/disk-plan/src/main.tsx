@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import manifest from "../package.json";
 import { runApp } from "@levitate/tui-kit";
 import { DEFAULT_INSTALL_MODE, INSTALL_MODES, type InstallMode } from "./generated/recpart";
 import { DiskPlanScreen } from "./presentation/disk-plan-screen";
@@ -13,7 +14,7 @@ import {
 
 runApp({
 	name: "disk-plan",
-	summary: "plan, check and apply a disk layout with the recpart on PATH",
+	summary: manifest.description,
 	flags: [
 		{ name: "disk", value: "DEVICE", help: "target disk (default: choose from recpart's list)" },
 		{
