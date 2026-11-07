@@ -32,6 +32,11 @@ and `.oxfmtrc.json`.
 with `cargo xtask tui <name>` (it builds the app's Rust tools and puts them on PATH first). Headless runs use stand-ins instead: each app's `levitate.inspect.path`
 holds a stand-in for every tool it runs (`fixtures/`), so they never touch a disk or firmware.
 
+- `cargo xtask tui <name> --stand-ins` runs it in your terminal with the stand-ins, to try its
+  cases by hand; `--story NAME` starts it in a story's state (its arguments and environment).
+  disk-plan's stand-in lists every fixture disk with `RECPART_FIXTURE_DISKS=all`, and plans an
+  edited layout nothing recorded with this checkout's recpart against the fixture disk (never
+  applying it).
 - `cargo xtask inspect <name>` renders one screen (`--story NAME` opens a story, `--input` types keys).
 - `cargo xtask check tui` checks every TUI package: typecheck, lint, format, renders (including each
   variant's docs pane at the install screen's sizes), snapshots, and every story.

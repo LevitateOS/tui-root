@@ -9,9 +9,10 @@
 # --layout FILE answers by FILE's name (layouts/<name>.json), or by the recorded layout
 # with the same content (the editor names its files by hash): plan-<name>.json, or
 # error-<name>.json on stderr with its code as the exit status when recpart refuses it.
-# With RECPART_FIXTURE_LIVE set to a recpart binary, a layout nothing recorded matches is
-# planned (and dry-run) by that recpart against the fixture disk's recorded inventory, for
-# trying the editor by hand; it never applies.
+# With RECPART_FIXTURE_LIVE set to a recpart binary (or LEVITATE_REAL_TOOLS to the directory
+# holding one, as `cargo xtask tui disk-plan --stand-ins` sets it), a layout nothing recorded
+# matches is planned (and dry-run) by that recpart against the fixture disk's recorded
+# inventory, for trying the editor by hand; it never applies.
 # RECPART_FIXTURE_APPLY=fail makes the real apply fail;
 # RECPART_FIXTURE_DRY_RUN=refuse makes the dry run report a disk apply would refuse.
 # Re-record with ./record.sh when recpart's output changes (the TUI reports a schema mismatch).
@@ -43,8 +44,9 @@ if [ -n "$layout" ]; then
 				break
 			fi
 		done
-		if [ "$key" = "$layout" ] && [ -n "${RECPART_FIXTURE_LIVE:-}" ] && [ "$1" != apply -o "$dry" = 1 ]; then
-			exec "$RECPART_FIXTURE_LIVE" "$@" --inventory "$dir/inspect-$disk.json"
+		live=${RECPART_FIXTURE_LIVE:-${LEVITATE_REAL_TOOLS:+$LEVITATE_REAL_TOOLS/recpart}}
+		if [ "$key" = "$layout" ] && [ -n "$live" ] && [ "$1" != apply -o "$dry" = 1 ]; then
+			exec "$live" "$@" --inventory "$dir/inspect-$disk.json"
 		fi
 	fi
 elif [ "$disk" = vdz ]; then
