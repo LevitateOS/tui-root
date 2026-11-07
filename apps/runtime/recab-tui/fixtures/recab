@@ -7,6 +7,7 @@
 #   fresh        just installed: no trial yet, nothing to roll back to
 #   no-status    status fails as on a system recab doesn't manage
 #   fail         every change fails for want of root
+#   refuse       stage is refused (exit 21), as recab refuses an image that isn't EROFS
 # Changes follow recab's rules (tools/recab/src/state.rs) and persist for the app that
 # ran them (one state file per parent process), so the app sees their effect.
 # Keep the JSON in the shape of recab's `Status` (src/generated/recab.ts).
@@ -44,6 +45,10 @@ set-next | commit | rollback | stage)
 	if [ "$mode" = fail ]; then
 		echo "recab: [RECAB_ERR_PERMISSION] cannot write EFI variable LoaderEntryOneShot: Permission denied" >&2
 		exit 13
+	fi
+	if [ "$mode" = refuse ] && [ "$1" = stage ]; then
+		echo "recab: [RECAB_ERR_STATE] rootfs '$3' is not an EROFS image (no EROFS superblock at byte 1024); pass the system's .erofs image, or the partition holding it" >&2
+		exit 21
 	fi
 	;;
 *)

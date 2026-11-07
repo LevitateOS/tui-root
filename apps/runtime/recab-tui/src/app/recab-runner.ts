@@ -1,5 +1,5 @@
-import { readdirSync, statSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { closeSync, openSync, readdirSync, readSync, statSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { runCommand } from "@levitate/tui-kit";
 import type { Status } from "../generated/recab";
 import { parseRecabStatusJson, recabError, type RecabError } from "../domain/recab";
@@ -28,28 +28,49 @@ export async function readRecabStatus(): Promise<StatusRead> {
 			};
 }
 
-/** What is at `path`: a file, a block device (a partition holding an image), or why
- * neither. */
-export function checkPath(path: string, want: "image" | "file"): string | null {
-	if (!path.startsWith("/")) return "give the full path, starting at /";
+/** The EROFS superblock's magic, a little-endian u32 at byte 1024 (as recab checks). */
+const EROFS_MAGIC = 0xe0f5e1e2;
+
+/** Whether the file or partition at `path` starts like an EROFS image; null when it
+ * can't be read (a partition needs root), so recab decides. */
+function isErofs(path: string): boolean | null {
 	try {
-		const stat = statSync(path);
-		if (stat.isFile()) return null;
-		if (want === "image" && stat.isBlockDevice()) return null;
-		return want === "image" ? "not a file or a partition" : "not a file";
+		const fd = openSync(path, "r");
+		try {
+			const buffer = Buffer.alloc(4);
+			return readSync(fd, buffer, 0, 4, 1024) === 4 && buffer.readUInt32LE(0) === EROFS_MAGIC;
+		} finally {
+			closeSync(fd);
+		}
+	} catch {
+		return null;
+	}
+}
+
+/** What is at `path` (relative to the working directory, or absolute): a file, a block
+ * device (a partition holding an image), an EROFS image for `image`, or why not. */
+export function checkPath(path: string, want: "image" | "file"): string | null {
+	const full = resolve(path);
+	try {
+		const stat = statSync(full);
+		if (!stat.isFile() && !(want === "image" && stat.isBlockDevice()))
+			return want === "image" ? "not a file or a partition" : "not a file";
 	} catch {
 		return "doesn't exist";
 	}
+	if (want === "image" && isErofs(full) === false)
+		return "not an EROFS image (no EROFS superblock); pass the system's .erofs image";
+	return null;
 }
 
 /** Completes `text` as far as the paths it could be agree, as a shell's Tab does. */
 export function completePath(text: string): string {
-	if (!text.startsWith("/")) return text;
+	if (!text) return text;
 	const dir = text.endsWith("/") ? text : dirname(text);
 	const prefix = text.slice(dir.length).replace(/^\//, "");
 	let names: string[];
 	try {
-		names = readdirSync(dir).filter((name) => name.startsWith(prefix));
+		names = readdirSync(dir || ".").filter((name) => name.startsWith(prefix));
 	} catch {
 		return text;
 	}

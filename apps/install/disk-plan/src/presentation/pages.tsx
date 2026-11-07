@@ -42,6 +42,7 @@ import { describeSignature, formatBytes, known } from "../domain/recpart";
 import { DOCS, type DocsRef } from "../docs";
 import type { Saved } from "../app/install-state";
 import { DiskBar, type BarPart } from "./disk-bar";
+import { DISK_CHANGED } from "../machine";
 
 const MB = 1024 * 1024;
 
@@ -936,6 +937,14 @@ export function FailureDiagnostics({ session }: { session: Session }): ReactNode
 	const { run } = failure;
 	return (
 		<Page title={title} subtitle={subtitle}>
+			{run.error?.code === DISK_CHANGED ? (
+				<Callout tone="info" title="Nothing was written: the disk changed since you reviewed it">
+					<UiText>
+						recpart checks that the disk still gives the plan you confirmed before it writes
+						anything. Press R to read the disks again, then check the disk and the plan.
+					</UiText>
+				</Callout>
+			) : null}
 			<Failed title={`Failure in ${failure.step}`} run={run} />
 			{run.error ? (
 				<Section title="Details">

@@ -77,12 +77,23 @@ function SlotCards({ status }: { status: Status }): ReactNode {
 	);
 }
 
-function ErrorCallout({ title, error }: { title: string; error: RecabError }): ReactNode {
+function ErrorCallout({
+	title,
+	error,
+	detail,
+	tone = "danger",
+}: {
+	title: string;
+	error: RecabError;
+	/** A dim line under the message, e.g. the command that ran. */
+	detail?: string;
+	tone?: "danger" | "warning";
+}): ReactNode {
 	return (
-		<Callout tone="danger" title={title}>
+		<Callout tone={tone} title={title}>
 			<UiText>{error.message}</UiText>
 			{error.help ? <UiText bold>{error.help}</UiText> : null}
-			{error.tag ? <UiText intent="dimText">{error.tag}</UiText> : null}
+			<UiText intent="dimText">{[detail, error.tag].filter(Boolean).join(" · ")}</UiText>
 		</Callout>
 	);
 }
@@ -250,8 +261,15 @@ function RunResult({ run, plan }: { run: Run; plan: ActionPlan }): ReactNode {
 					<UiText intent="dimText">{`${run.argv.join(" ")} · ${seconds(result.durationMs)}`}</UiText>
 				</Callout>
 			) : (
+				// Exit 21 is a refusal: recab checked first and changed nothing.
 				<ErrorCallout
-					title={`${run.argv.join(" ")} failed (${exitText(result)})`}
+					title={
+						result.exitCode === 21
+							? `recab refused: ${plan.title.charAt(0).toLowerCase()}${plan.title.slice(1)}`
+							: `${plan.title} failed (${exitText(result)})`
+					}
+					tone={result.exitCode === 21 ? "warning" : "danger"}
+					detail={run.argv.join(" ")}
 					error={recabError(result)}
 				/>
 			)}

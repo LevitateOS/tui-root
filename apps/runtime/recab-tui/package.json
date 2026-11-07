@@ -123,7 +123,7 @@
 				},
 				{
 					"name": "write a system",
-					"about": "Write a new system to slot B: paths with checks, typing B to confirm, the result.",
+					"about": "Write a new system to slot B: a missing path and a non-EROFS file are caught as you type, then typing B confirms.",
 					"steps": [
 						{
 							"keys": "s\\r",
@@ -134,10 +134,11 @@
 							"expect": "doesn't exist"
 						},
 						{
-							"keys": "\\x1b"
+							"keys": "\\x1b\\r/etc/os-release\\r",
+							"expect": "not an EROFS image"
 						},
 						{
-							"keys": "\\r/etc/os-release\\r/etc/os-release\\r\\r",
+							"keys": "\\x1b\\rfixtures/images/filesystem.erofs\\rfixtures/images/vmlinuz\\r\\r",
 							"expect": "Type B to erase slot B"
 						},
 						{
@@ -156,6 +157,19 @@
 						{
 							"keys": "t\\ry",
 							"expect": "Run recab-tui as root"
+						}
+					]
+				},
+				{
+					"name": "stage refused",
+					"about": "recab refuses the stage (exit 21): its own reason is the advice, nothing generic.",
+					"env": {
+						"RECAB_FIXTURE": "refuse"
+					},
+					"steps": [
+						{
+							"keys": "s\\rfixtures/images/filesystem.erofs\\rfixtures/images/vmlinuz\\r\\rB\\r",
+							"expect": "is not an EROFS image"
 						}
 					]
 				}

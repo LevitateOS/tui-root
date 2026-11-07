@@ -6,6 +6,7 @@ export const GLOBAL_KEYS = [
 	{ action: "quit", keys: ["q", "escape", "C-c"], hint: "q", label: "quit" },
 	{ action: "focus", keys: ["tab", "S-tab"], hint: "Tab", label: "switch pane" },
 	{ action: "failure", keys: ["F"], label: "show last failure" },
+	{ action: "refresh", keys: ["R"], label: "read the disks again" },
 ] as const satisfies Keymap;
 
 /** Keys while the page list has focus. */

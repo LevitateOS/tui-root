@@ -124,10 +124,11 @@ export function bootOrder(s: Status): Array<[string, string]> {
 	return rows;
 }
 
+/** What to do, by exit code, where recab's own message doesn't say it. Code 21 (refused,
+ * or the layout unreadable) has none: recab's message names the reason and the fix. */
 const ERROR_HELP: Record<number, string> = {
 	13: "Run recab-tui as root (doas or sudo): changes write EFI variables and the ESP.",
 	20: "recab needs UEFI with efivarfs (/sys/firmware/efi/efivars); writing a system also needs blkid, mkfs.ext4, mount and recstrap.",
-	21: "recab couldn't read the A/B layout or its state: check the slot entries under /boot/loader/entries and /var/lib/recab/state.json.",
 	22: "The change stopped part way. Check the slots before rebooting; recab never selects a slot that can't boot.",
 	23: "The trial boot wasn't healthy and wasn't committed; the machine returns to the known-good slot.",
 };

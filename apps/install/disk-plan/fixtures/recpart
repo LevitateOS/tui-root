@@ -13,7 +13,8 @@
 # holding one, as `cargo xtask tui disk-plan --stand-ins` sets it), a layout nothing recorded
 # matches is planned (and dry-run) by that recpart against the fixture disk's recorded
 # inventory, for trying the editor by hand; it never applies.
-# RECPART_FIXTURE_APPLY=fail makes the real apply fail;
+# RECPART_FIXTURE_APPLY=fail makes the real apply fail, =changed refuses it as a disk
+# that changed since the plan was confirmed (E023, nothing written);
 # RECPART_FIXTURE_DRY_RUN=refuse makes the dry run report a disk apply would refuse.
 # Re-record with ./record.sh when recpart's output changes (the TUI reports a schema mismatch).
 dir=$(dirname "$0")
@@ -86,6 +87,9 @@ apply)
 	elif [ "${RECPART_FIXTURE_APPLY:-}" = fail ]; then
 		cat "$dir/apply-fail.json" >&2
 		exit 1
+	elif [ "${RECPART_FIXTURE_APPLY:-}" = changed ]; then
+		cat "$dir/error-refuse-disk-changed.json" >&2
+		exit 23
 	else
 		answer apply
 	fi

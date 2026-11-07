@@ -1,4 +1,5 @@
 /** The screen's state: recab's status, the question being asked, and the runs so far. */
+import { resolve } from "node:path";
 import { useEffect, useRef, useState } from "react";
 import { startCommand, type CommandResult } from "@levitate/tui-kit";
 import type { Slot, Status } from "../generated/recab";
@@ -122,7 +123,8 @@ export function useRecab() {
 				? null
 				: checkPath(text, prompt.field === "rootfs" ? "image" : "file");
 		if (error) return setPrompt({ ...prompt, error });
-		const answers = { ...prompt.answers, [prompt.field]: text };
+		// recab gets full paths, whatever the working directory.
+		const answers = { ...prompt.answers, [prompt.field]: text && resolve(text) };
 		const field = FIELDS[FIELDS.indexOf(prompt.field) + 1];
 		if (field) return setPrompt({ kind: "path", field, answers, text: "", error: null });
 		if (current)

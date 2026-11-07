@@ -1,5 +1,5 @@
 import { Box, Text, useApp } from "ink";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useReducer, useRef, type ReactNode } from "react";
 import {
 	AppShell,
 	ContentWidth,
@@ -24,7 +24,6 @@ import {
 } from "@levitate/tui-kit";
 import {
 	APPLY_SCHEMA_VERSION,
-	CONFIRM_TOKEN,
 	INSPECT_SCHEMA_VERSION,
 	INSTALL_MODES,
 	PLAN_SCHEMA_VERSION,
@@ -44,7 +43,8 @@ import {
 	writeDocument,
 	writeLayout,
 } from "../app/plan-runner";
-import { saveDiskStep, type Saved } from "../app/install-state";
+import { saveDiskStep } from "../app/install-state";
+import { diskChanged, start, step as advance, tokenFor } from "../machine";
 import { toLayout } from "../domain/layout";
 import {
 	canApply,
@@ -56,7 +56,6 @@ import {
 	shownPages,
 	stepState,
 	type DiskChoice,
-	type Method,
 	type PageId,
 	type Run,
 	type Session,
@@ -108,16 +107,21 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 	const { columns: terminalColumns } = useTuiViewport();
 	const shell = useShellLayout({ navWidth: terminalColumns < 110 ? 28 : 38 });
 	const focus = useFocusPlane({ initial: "navigation" });
-	const [pageId, setPageId] = useState<PageId>("welcome");
-	const [showFailure, setShowFailure] = useState(false);
-	const [token, setToken] = useState("");
-	const [apply, setApply] = useState<Run<ApplyResult>>({ kind: "idle" });
-	const [saved, setSaved] = useState<Saved | null>(null);
-	const [notice, setNotice] = useState<string | null>(null);
+	const [machine, dispatch] = useReducer(advance, defaultMode, start);
+	const {
+		page: pageId,
+		failureShown: showFailure,
+		notice,
+		mode,
+		method,
+		apply,
+		saved,
+		reads,
+	} = machine;
 	// The one destructive apply of this session, held so it cannot start twice.
 	const applyRun = useRef<RunningCommand | null>(null);
 
-	const listing = useAsyncTask("list-disks", listDisks);
+	const listing = useAsyncTask(`list-disks:${reads}`, listDisks);
 	const wanted = requestedDisk.trim();
 	const choices = useMemo<DiskChoice[]>(() => {
 		const listed: DiskChoice[] =
@@ -149,9 +153,6 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 	const path = disk ? diskPath(disk) : null;
 	const reached = (id: PageId) => position(pageId) >= position(id);
 
-	const [mode, setMode] = useState<InstallMode>(defaultMode);
-	const [method, setMethod] = useState<Method>("erase");
-
 	const current = page(pageId);
 	const view: PageId = showFailure ? "failure-diagnostics" : pageId;
 	const contentFocus = focus.isContent && current.interactive && !showFailure;
@@ -159,6 +160,7 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 	const inspect = useRecpartRun<InspectResult>(
 		path && reached("disk-use") ? inspectCommand(path) : null,
 		INSPECT_SCHEMA_VERSION,
+		reads,
 	);
 	const inspected = inspect.kind === "ok" ? inspect.value : null;
 	const editor = usePartitionEditor({
@@ -176,6 +178,7 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 			? planCommand(path, mode, layoutFile)
 			: null,
 		PLAN_SCHEMA_VERSION,
+		reads,
 	);
 	// The plan as reviewed: apply must find the disk giving exactly this plan.
 	const planFile = useMemo(
@@ -187,6 +190,7 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 			? applyCommand(path, mode, layoutFile, planFile, true)
 			: null,
 		APPLY_SCHEMA_VERSION,
+		reads,
 	);
 	const session: Session = {
 		disk,
@@ -197,39 +201,32 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 		plan,
 		dryRun,
 		apply,
-		token,
+		// What was typed counts only for the plan it was typed for.
+		token: tokenFor(machine, planFile),
 	};
-	// The token confirms one disk and one layout.
-	useEffect(() => setToken(""), [path, mode, method, layoutFile]);
 	const prompting = editor.prompt !== null && pageId === "partitions";
 	useEffect(() => {
 		if (focus.isContent && !current.interactive) focus.setPlane("navigation");
 	}, [pageId]);
 
-	const go = (id: PageId | null) => {
-		if (id === null) return;
-		setPageId(id);
-		setNotice(null);
-	};
-	const next = () => {
-		if (current.gate && !current.gate.holds(session)) {
-			setNotice(`to continue, ${current.gate.rule}`);
-			return;
-		}
-		go(current.next(session));
-	};
-	const back = () => (showFailure ? setShowFailure(false) : go(current.back(session)));
+	const setNotice = (text: string | null) => dispatch({ type: "notice", text });
+	const next = () => dispatch({ type: "next", session });
+	const back = () => dispatch({ type: "back", session });
 	const startApply = () => {
 		if (!canApply(session) || applyRun.current || !path) return;
 		const argv = applyCommand(path, mode, layoutFile, planFile, false);
 		const running = startCommand(argv);
 		applyRun.current = running;
-		setApply({ kind: "running", argv });
-		go("apply-progress");
+		dispatch({ type: "apply-started", argv });
 		void running.result.then((result) => {
 			const applied = toRun<ApplyResult>(result, APPLY_SCHEMA_VERSION);
-			if (applied.kind === "ok") setSaved(saveDiskStep(path, mode, applied.value));
-			setApply(applied);
+			// A refused apply wrote nothing; after reading again, another may start.
+			if (diskChanged(applied)) applyRun.current = null;
+			dispatch({
+				type: "apply-finished",
+				run: applied,
+				saved: applied.kind === "ok" ? saveDiskStep(path, mode, applied.value) : null,
+			});
 		});
 	};
 
@@ -239,8 +236,8 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 			quit: () =>
 				apply.kind === "running" ? setNotice("can't quit while recpart apply is running") : exit(),
 			focus: () => (current.interactive ? focus.togglePlane() : focus.setPlane("navigation")),
-			failure: () =>
-				lastFailure(session) ? setShowFailure((shown) => !shown) : setNotice("nothing has failed"),
+			failure: () => dispatch({ type: "toggle-failure", session }),
+			refresh: () => dispatch({ type: "refresh" }),
 		},
 		// Escape cancels the editor's question, and typed text goes into it.
 		{ active: !prompting },
@@ -279,18 +276,18 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 		{
 			pick: (key) => {
 				const first = PICK_FIRST.has(key);
-				if (pageId === "system") setMode(INSTALL_MODES[first ? 0 : 1]);
-				else setMethod(METHODS[first ? 0 : 1]!);
+				if (pageId === "system") dispatch({ type: "mode", mode: INSTALL_MODES[first ? 0 : 1] });
+				else dispatch({ type: "method", method: METHODS[first ? 0 : 1]! });
 			},
 		},
 		{ active: contentFocus && (pageId === "system" || pageId === "disk-use") },
 	);
 	useKeymap(
 		CONFIRM_KEYS,
-		{ apply: startApply, erase: () => setToken((value) => value.slice(0, -1)) },
+		{ apply: startApply, erase: () => dispatch({ type: "erase", plan: planFile }) },
 		{
 			active: pageId === "destructive-confirm" && !showFailure,
-			onText: (text) => setToken((value) => (value + text).slice(0, CONFIRM_TOKEN.length)),
+			onText: (text) => dispatch({ type: "type", text, plan: planFile }),
 		},
 	);
 

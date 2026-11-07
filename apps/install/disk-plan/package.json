@@ -193,6 +193,39 @@
 					]
 				},
 				{
+					"name": "apply refused: the disk changed",
+					"about": "recpart refuses the apply because the disk no longer gives the confirmed plan (E023, nothing written); R reads the disks again and starts over at the disk.",
+					"env": {
+						"RECPART_FIXTURE_APPLY": "changed"
+					},
+					"steps": [
+						{
+							"keys": "jjjjjjj",
+							"expect": "│Step 7 of 9 · Confirm"
+						},
+						{
+							"keys": "DESTROY\\r",
+							"expect": "Apply failed"
+						},
+						{
+							"keys": "j",
+							"expect": "Nothing was written: the disk changed since you reviewed it"
+						},
+						{
+							"keys": "R",
+							"expect": "│Step 1 of 9 · Disk"
+						},
+						{
+							"keys": "jjjjjj",
+							"expect": "│Step 7 of 9 · Confirm"
+						},
+						{
+							"keys": "",
+							"expect": "› _______"
+						}
+					]
+				},
+				{
 					"name": "disk refused",
 					"about": "The dry run reports a disk apply would refuse (a partition mounted), so Checks blocks the way to Confirm.",
 					"env": {
