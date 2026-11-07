@@ -61,8 +61,69 @@
       "gpt_type": "L",
       "bootable": false,
       "size_mb": null,
-      "mountpoint": "/state"
+      "mountpoint": "/var"
     }
   ],
-  "sfdisk_script": "label: gpt\n,1024M,U,*\n,20480M,L\n,20480M,L\n,,L\n"
+  "sfdisk_script": "label: gpt\n,1024M,U,*\n,20480M,L\n,20480M,L\n,,L\n",
+  "manual_layout": null,
+  "wipes_disk": true,
+  "summary": [
+    {
+      "number": 1,
+      "device": "/dev/vdz1",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 1048576,
+        "size_bytes": 1073741824,
+        "filesystem": "vfat",
+        "fs_label": "EFI"
+      },
+      "role": "efi",
+      "mountpoint": "/boot"
+    },
+    {
+      "number": 2,
+      "device": "/dev/vdz2",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 1074790400,
+        "size_bytes": 21474836480,
+        "filesystem": "ext4",
+        "fs_label": "ROOT_A"
+      },
+      "role": "root_a",
+      "mountpoint": "/"
+    },
+    {
+      "number": 3,
+      "device": "/dev/vdz3",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 22549626880,
+        "size_bytes": 21474836480,
+        "filesystem": "ext4",
+        "fs_label": "ROOT_B"
+      },
+      "role": "root_b",
+      "mountpoint": null
+    },
+    {
+      "number": 4,
+      "device": "/dev/vdz4",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 44024463360,
+        "size_bytes": 24693964800,
+        "filesystem": "ext4",
+        "fs_label": "STATE"
+      },
+      "role": "state",
+      "mountpoint": "/var"
+    }
+  ],
+  "swap_file": null
 }

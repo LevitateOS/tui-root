@@ -1,0 +1,23 @@
+{
+  "actions": [
+    {
+      "action": "create",
+      "size_mb": 1024,
+      "role": "efi"
+    },
+    {
+      "action": "create",
+      "size_mb": 16384,
+      "role": "root_a"
+    },
+    {
+      "action": "create",
+      "size_mb": 12288,
+      "role": "root_b"
+    },
+    {
+      "action": "create",
+      "role": "state"
+    }
+  ]
+}

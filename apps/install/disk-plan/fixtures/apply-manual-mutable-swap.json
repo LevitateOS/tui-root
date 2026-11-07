@@ -1,0 +1,266 @@
+{
+  "schema_version": 2,
+  "mode": "mutable",
+  "layout_request": {
+    "efi_size_mb": null,
+    "root_size_mb": null,
+    "root_a_size_mb": null,
+    "root_b_size_mb": null,
+    "state_size_mb": null
+  },
+  "resolved_layout": {
+    "mode": "mutable",
+    "efi_size_mb": 512,
+    "root_size_mb": 60926,
+    "root_a_size_mb": null,
+    "root_b_size_mb": null,
+    "state_size_mb": null
+  },
+  "disk": {
+    "path": "/dev/vdz",
+    "size_bytes": 68719476736,
+    "logical_sector_bytes": 512,
+    "physical_sector_bytes": 512
+  },
+  "dry_run": false,
+  "steps": [
+    {
+      "phase": "partition",
+      "command": "wipefs -a /dev/vdz",
+      "program": "wipefs",
+      "args": [
+        "-a",
+        "/dev/vdz"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "partition",
+      "command": "sfdisk /dev/vdz",
+      "program": "sfdisk",
+      "args": [
+        "/dev/vdz"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "partition",
+      "command": "udevadm settle --timeout=10",
+      "program": "udevadm",
+      "args": [
+        "settle",
+        "--timeout=10"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "partition",
+      "command": "verify-partitions",
+      "program": "verify-partitions",
+      "args": [],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "format",
+      "command": "mkfs.vfat -F 32 -n EFI /dev/vdz1",
+      "program": "mkfs.vfat",
+      "args": [
+        "-F",
+        "32",
+        "-n",
+        "EFI",
+        "/dev/vdz1"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "format",
+      "command": "mkswap -L SWAP /dev/vdz2",
+      "program": "mkswap",
+      "args": [
+        "-L",
+        "SWAP",
+        "/dev/vdz2"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "format",
+      "command": "mkfs.ext4 -F -L ROOT /dev/vdz3",
+      "program": "mkfs.ext4",
+      "args": [
+        "-F",
+        "-L",
+        "ROOT",
+        "/dev/vdz3"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "mount",
+      "command": "mount /dev/vdz3 /mnt/sysroot",
+      "program": "mount",
+      "args": [
+        "/dev/vdz3",
+        "/mnt/sysroot"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "mount",
+      "command": "mount /dev/vdz1 /mnt/sysroot/boot",
+      "program": "mount",
+      "args": [
+        "/dev/vdz1",
+        "/mnt/sysroot/boot"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "swap",
+      "command": "swapon /dev/vdz2",
+      "program": "swapon",
+      "args": [
+        "/dev/vdz2"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    }
+  ],
+  "partition_map": [
+    {
+      "index": 1,
+      "name": "efi",
+      "filesystem": "vfat",
+      "label": "EFI",
+      "gpt_type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+      "bootable": false,
+      "size_mb": 512,
+      "mountpoint": "/boot"
+    },
+    {
+      "index": 2,
+      "name": "swap",
+      "filesystem": "swap",
+      "label": "SWAP",
+      "gpt_type": "0657FD6D-A4AB-43C4-84E5-0933C84B4F4F",
+      "bootable": false,
+      "size_mb": 4096,
+      "mountpoint": "none"
+    },
+    {
+      "index": 3,
+      "name": "root",
+      "filesystem": "ext4",
+      "label": "ROOT",
+      "gpt_type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+      "bootable": false,
+      "size_mb": 60926,
+      "mountpoint": "/"
+    }
+  ],
+  "formatted_devices": [
+    "/dev/vdz1",
+    "/dev/vdz2",
+    "/dev/vdz3"
+  ],
+  "handoff": {
+    "schema_version": 2,
+    "mode": "mutable",
+    "install_target": "/mnt/sysroot",
+    "mount_map": [
+      {
+        "path": "/mnt/sysroot",
+        "device": "/dev/vdz3"
+      },
+      {
+        "path": "/mnt/sysroot/boot",
+        "device": "/dev/vdz1"
+      }
+    ],
+    "mode_context": {
+      "install_target_slot": null,
+      "inactive_slot_hint": null,
+      "slot_a_device": null,
+      "slot_b_device": null
+    },
+    "swaps": [
+      "/dev/vdz2"
+    ]
+  },
+  "warnings": [],
+  "summary": [
+    {
+      "number": 1,
+      "device": "/dev/vdz1",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 1048576,
+        "size_bytes": 536870912,
+        "filesystem": "vfat",
+        "fs_label": "EFI"
+      },
+      "role": "efi",
+      "mountpoint": "/boot"
+    },
+    {
+      "number": 2,
+      "device": "/dev/vdz2",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 537919488,
+        "size_bytes": 4294967296,
+        "filesystem": "swap",
+        "fs_label": "SWAP"
+      },
+      "role": "swap",
+      "mountpoint": null
+    },
+    {
+      "number": 3,
+      "device": "/dev/vdz3",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 4832886784,
+        "size_bytes": 63885541376,
+        "filesystem": "ext4",
+        "fs_label": "ROOT"
+      },
+      "role": "root",
+      "mountpoint": "/"
+    }
+  ],
+  "disk_checks_skipped": false
+}

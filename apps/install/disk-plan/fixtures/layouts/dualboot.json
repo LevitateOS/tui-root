@@ -1,0 +1,34 @@
+{
+  "table_id": "7D3B1C5E-2A4F-4E8B-9C61-0F2E8A4D5B10",
+  "actions": [
+    {
+      "action": "keep",
+      "partition": 1,
+      "role": "efi"
+    },
+    {
+      "action": "resize",
+      "partition": 3,
+      "size_mb": 102400
+    },
+    {
+      "action": "create",
+      "size_mb": 20480,
+      "role": "root_a"
+    },
+    {
+      "action": "create",
+      "size_mb": 20480,
+      "role": "root_b"
+    },
+    {
+      "action": "create",
+      "size_mb": 4096,
+      "role": "swap"
+    },
+    {
+      "action": "create",
+      "role": "state"
+    }
+  ]
+}

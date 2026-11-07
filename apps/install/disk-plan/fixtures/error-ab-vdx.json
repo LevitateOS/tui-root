@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "code": "E003",
+  "component": "plan",
+  "expectation": "disk must have at least 46080MB for mode ab",
+  "observed": "disk has 32768MB",
+  "remediation": "Choose a larger disk or adjust partition policy defaults."
+}

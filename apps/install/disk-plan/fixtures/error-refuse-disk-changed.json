@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "code": "E023",
+  "component": "layout",
+  "expectation": "/dev/vdy still has partition table 00000000-0000-0000-0000-000000000000",
+  "observed": "table id is 7D3B1C5E-2A4F-4E8B-9C61-0F2E8A4D5B10",
+  "remediation": "The disk changed since the layout was made: inspect it again and redo the layout."
+}

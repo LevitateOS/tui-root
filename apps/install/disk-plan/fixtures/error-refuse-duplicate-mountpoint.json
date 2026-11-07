@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "code": "E017",
+  "component": "layout",
+  "expectation": "one partition mounts at /data",
+  "observed": "new partition 3 and new partition 4 both mount there",
+  "remediation": "Give each mount point to one partition."
+}

@@ -1,0 +1,17 @@
+{
+  "actions": [
+    {
+      "action": "delete",
+      "partition": 1
+    },
+    {
+      "action": "create",
+      "size_mb": 512,
+      "role": "efi"
+    },
+    {
+      "action": "create",
+      "role": "root"
+    }
+  ]
+}

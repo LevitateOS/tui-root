@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "disks": [
+    {
+      "path": "/dev/vdw",
+      "size_bytes": 17179869184,
+      "logical_sector_bytes": 512,
+      "physical_sector_bytes": 512,
+      "model": "Fixture Legacy 16G",
+      "vendor": "unknown",
+      "serial": "FIXTURE0004",
+      "transport": "virtio",
+      "rotational": false,
+      "removable": false,
+      "read_only": false
+    },
+    {
+      "path": "/dev/vdx",
+      "size_bytes": 34359738368,
+      "logical_sector_bytes": 512,
+      "physical_sector_bytes": 512,
+      "model": "Fixture Data 32G",
+      "vendor": "unknown",
+      "serial": "FIXTURE0003",
+      "transport": "virtio",
+      "rotational": false,
+      "removable": false,
+      "read_only": false
+    },
+    {
+      "path": "/dev/vdy",
+      "size_bytes": 274877906944,
+      "logical_sector_bytes": 512,
+      "physical_sector_bytes": 512,
+      "model": "Fixture Windows 256G",
+      "vendor": "unknown",
+      "serial": "FIXTURE0002",
+      "transport": "virtio",
+      "rotational": false,
+      "removable": false,
+      "read_only": false
+    },
+    {
+      "path": "/dev/vdz",
+      "size_bytes": 68719476736,
+      "logical_sector_bytes": 512,
+      "physical_sector_bytes": 512,
+      "model": "Fixture Disk 64G",
+      "vendor": "unknown",
+      "serial": "FIXTURE0001",
+      "transport": "virtio",
+      "rotational": false,
+      "removable": false,
+      "read_only": false
+    }
+  ]
+}

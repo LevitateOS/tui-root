@@ -1,0 +1,25 @@
+{
+  "actions": [
+    {
+      "action": "create",
+      "size_mb": 512,
+      "role": "efi"
+    },
+    {
+      "action": "create",
+      "size_mb": 20480,
+      "role": "root"
+    },
+    {
+      "action": "create",
+      "size_mb": 1024,
+      "role": "other",
+      "mountpoint": "/data"
+    },
+    {
+      "action": "create",
+      "role": "other",
+      "mountpoint": "/data"
+    }
+  ]
+}

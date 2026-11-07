@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "disk": {
+    "path": "/dev/vdw",
+    "size_bytes": 17179869184,
+    "logical_sector_bytes": 512,
+    "physical_sector_bytes": 512,
+    "model": "Fixture Legacy 16G",
+    "vendor": "unknown",
+    "serial": "FIXTURE0004",
+    "transport": "virtio",
+    "rotational": false,
+    "removable": false,
+    "read_only": false
+  },
+  "table": "gpt",
+  "table_id": "5E7A9C1B-3D5F-4A71-8B93-A5C7E9F1B3D5",
+  "usable_start_bytes": 17408,
+  "usable_end_bytes": 17179852288,
+  "partitions": [
+    {
+      "number": 1,
+      "device": "/dev/vdw1",
+      "start_bytes": 32256,
+      "size_bytes": 8589902336,
+      "type_guid": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+      "label": null,
+      "part_uuid": "C3F2E4D5-6666-4B7C-AD9E-2F3A4B5C6D06",
+      "attrs": null,
+      "filesystem": "ext4",
+      "fs_label": "old",
+      "fs_uuid": "1f3e5d7c-9b2a-4c68-8e0d-2a4c6e8f0b13",
+      "used_bytes": 2147483648,
+      "mountpoints": [],
+      "min_size_bytes": 2429550592,
+      "max_size_bytes": 17178788352
+    }
+  ],
+  "free": [
+    {
+      "start_bytes": 8589934592,
+      "size_bytes": 8588886016
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "code": "E021",
+  "component": "layout",
+  "expectation": "partition 1 (/dev/vdx1) shrinks to no less than 33856 MiB (its 30720 MiB in use plus headroom)",
+  "observed": "16384 MiB asked",
+  "remediation": "Shrink it less, or free space on it first."
+}

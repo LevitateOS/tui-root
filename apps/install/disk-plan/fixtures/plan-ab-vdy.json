@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "mode": "ab",
+  "layout_request": {
+    "efi_size_mb": null,
+    "root_size_mb": null,
+    "root_a_size_mb": null,
+    "root_b_size_mb": null,
+    "state_size_mb": null
+  },
+  "resolved_layout": {
+    "mode": "ab",
+    "efi_size_mb": 1024,
+    "root_size_mb": null,
+    "root_a_size_mb": 20480,
+    "root_b_size_mb": 20480,
+    "state_size_mb": null
+  },
+  "disk": {
+    "path": "/dev/vdy",
+    "size_bytes": 274877906944,
+    "logical_sector_bytes": 512,
+    "physical_sector_bytes": 512
+  },
+  "partitions": [
+    {
+      "index": 1,
+      "name": "efi",
+      "filesystem": "vfat",
+      "label": "EFI",
+      "gpt_type": "U",
+      "bootable": true,
+      "size_mb": 1024,
+      "mountpoint": "/boot"
+    },
+    {
+      "index": 2,
+      "name": "root_a",
+      "filesystem": "ext4",
+      "label": "ROOT_A",
+      "gpt_type": "L",
+      "bootable": false,
+      "size_mb": 20480,
+      "mountpoint": "/"
+    },
+    {
+      "index": 3,
+      "name": "root_b",
+      "filesystem": "ext4",
+      "label": "ROOT_B",
+      "gpt_type": "L",
+      "bootable": false,
+      "size_mb": 20480,
+      "mountpoint": "none"
+    },
+    {
+      "index": 4,
+      "name": "state",
+      "filesystem": "ext4",
+      "label": "STATE",
+      "gpt_type": "L",
+      "bootable": false,
+      "size_mb": null,
+      "mountpoint": "/var"
+    }
+  ],
+  "sfdisk_script": "label: gpt\n,1024M,U,*\n,20480M,L\n,20480M,L\n,,L\n",
+  "manual_layout": null,
+  "wipes_disk": true,
+  "summary": [
+    {
+      "number": 1,
+      "device": "/dev/vdy1",
+      "change": "erased",
+      "before": {
+        "start_bytes": 1048576,
+        "size_bytes": 536870912,
+        "filesystem": "vfat",
+        "fs_label": "SYSTEM"
+      },
+      "after": null,
+      "role": null,
+      "mountpoint": null
+    },
+    {
+      "number": 2,
+      "device": "/dev/vdy2",
+      "change": "erased",
+      "before": {
+        "start_bytes": 537919488,
+        "size_bytes": 16777216,
+        "filesystem": null,
+        "fs_label": null
+      },
+      "after": null,
+      "role": null,
+      "mountpoint": null
+    },
+    {
+      "number": 3,
+      "device": "/dev/vdy3",
+      "change": "erased",
+      "before": {
+        "start_bytes": 554696704,
+        "size_bytes": 273535729664,
+        "filesystem": "ntfs",
+        "fs_label": "Windows"
+      },
+      "after": null,
+      "role": null,
+      "mountpoint": null
+    },
+    {
+      "number": 4,
+      "device": "/dev/vdy4",
+      "change": "erased",
+      "before": {
+        "start_bytes": 274090426368,
+        "size_bytes": 786432000,
+        "filesystem": "ntfs",
+        "fs_label": null
+      },
+      "after": null,
+      "role": null,
+      "mountpoint": null
+    },
+    {
+      "number": 1,
+      "device": "/dev/vdy1",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 1048576,
+        "size_bytes": 1073741824,
+        "filesystem": "vfat",
+        "fs_label": "EFI"
+      },
+      "role": "efi",
+      "mountpoint": "/boot"
+    },
+    {
+      "number": 2,
+      "device": "/dev/vdy2",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 1074790400,
+        "size_bytes": 21474836480,
+        "filesystem": "ext4",
+        "fs_label": "ROOT_A"
+      },
+      "role": "root_a",
+      "mountpoint": "/"
+    },
+    {
+      "number": 3,
+      "device": "/dev/vdy3",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 22549626880,
+        "size_bytes": 21474836480,
+        "filesystem": "ext4",
+        "fs_label": "ROOT_B"
+      },
+      "role": "root_b",
+      "mountpoint": null
+    },
+    {
+      "number": 4,
+      "device": "/dev/vdy4",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 44024463360,
+        "size_bytes": 230852395008,
+        "filesystem": "ext4",
+        "fs_label": "STATE"
+      },
+      "role": "state",
+      "mountpoint": "/var"
+    }
+  ],
+  "swap_file": null
+}

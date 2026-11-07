@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "code": "E016",
+  "component": "layout",
+  "expectation": "the A/B root slots have the same size",
+  "observed": "root_a is 16384 MiB, root_b is 12288 MiB",
+  "remediation": "Give both slots the same size_mb."
+}

@@ -74,14 +74,14 @@
     },
     {
       "phase": "format",
-      "command": "mkfs.vfat -F 32 -n EFI /dev/vdzp1",
+      "command": "mkfs.vfat -F 32 -n EFI /dev/vdz1",
       "program": "mkfs.vfat",
       "args": [
         "-F",
         "32",
         "-n",
         "EFI",
-        "/dev/vdzp1"
+        "/dev/vdz1"
       ],
       "status": 0,
       "stdout": null,
@@ -90,13 +90,13 @@
     },
     {
       "phase": "format",
-      "command": "mkfs.ext4 -F -L ROOT /dev/vdzp2",
+      "command": "mkfs.ext4 -F -L ROOT /dev/vdz2",
       "program": "mkfs.ext4",
       "args": [
         "-F",
         "-L",
         "ROOT",
-        "/dev/vdzp2"
+        "/dev/vdz2"
       ],
       "status": 0,
       "stdout": null,
@@ -105,10 +105,10 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdzp2 /mnt/sysroot",
+      "command": "mount /dev/vdz2 /mnt/sysroot",
       "program": "mount",
       "args": [
-        "/dev/vdzp2",
+        "/dev/vdz2",
         "/mnt/sysroot"
       ],
       "status": 0,
@@ -118,10 +118,10 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdzp1 /mnt/sysroot/boot",
+      "command": "mount /dev/vdz1 /mnt/sysroot/boot",
       "program": "mount",
       "args": [
-        "/dev/vdzp1",
+        "/dev/vdz1",
         "/mnt/sysroot/boot"
       ],
       "status": 0,
@@ -153,8 +153,8 @@
     }
   ],
   "formatted_devices": [
-    "/dev/vdzp1",
-    "/dev/vdzp2"
+    "/dev/vdz1",
+    "/dev/vdz2"
   ],
   "handoff": {
     "schema_version": 2,
@@ -163,11 +163,11 @@
     "mount_map": [
       {
         "path": "/mnt/sysroot",
-        "device": "/dev/vdzp2"
+        "device": "/dev/vdz2"
       },
       {
         "path": "/mnt/sysroot/boot",
-        "device": "/dev/vdzp1"
+        "device": "/dev/vdz1"
       }
     ],
     "mode_context": {
@@ -175,7 +175,39 @@
       "inactive_slot_hint": null,
       "slot_a_device": null,
       "slot_b_device": null
-    }
+    },
+    "swaps": []
   },
-  "warnings": []
+  "warnings": [],
+  "summary": [
+    {
+      "number": 1,
+      "device": "/dev/vdz1",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 1048576,
+        "size_bytes": 1073741824,
+        "filesystem": "vfat",
+        "fs_label": "EFI"
+      },
+      "role": "efi",
+      "mountpoint": "/boot"
+    },
+    {
+      "number": 2,
+      "device": "/dev/vdz2",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 1074790400,
+        "size_bytes": 67643637760,
+        "filesystem": "ext4",
+        "fs_label": "ROOT"
+      },
+      "role": "root",
+      "mountpoint": "/"
+    }
+  ],
+  "disk_checks_skipped": false
 }

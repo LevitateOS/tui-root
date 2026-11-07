@@ -19,11 +19,178 @@ export type DiskInventory = {
 
 export type DiskListResult = { schema_version: number; disks: Array<DiskInventory> };
 
+export type PartitionInfo = {
+	number: number;
+	device: string;
+	start_bytes: number;
+	size_bytes: number;
+	/**
+	 * GPT type GUID (upper case), or the MBR type byte (`0x83`).
+	 */
+	type_guid: string;
+	/**
+	 * The GPT partition name.
+	 */
+	label: string | null;
+	part_uuid: string | null;
+	/**
+	 * GPT attributes in sfdisk's notation (`RequiredPartition GUID:63`).
+	 */
+	attrs: string | null;
+	/**
+	 * The filesystem blkid found (`ext4`, `vfat`, `ntfs`, `swap`, ...).
+	 */
+	filesystem: string | null;
+	fs_label: string | null;
+	fs_uuid: string | null;
+	/**
+	 * Space in use; `None` when it could not be read (an unmounted
+	 * filesystem needs root, or recpart has no probe for it).
+	 */
+	used_bytes: number | null;
+	/**
+	 * Where it is mounted now (empty when it is not).
+	 */
+	mountpoints: Array<string>;
+	/**
+	 * The smallest and largest size recpart would resize it to, keeping its
+	 * start (the largest takes the free gap right after it); `None` when
+	 * recpart cannot resize this filesystem, or cannot read its used space.
+	 */
+	min_size_bytes: number | null;
+	max_size_bytes: number | null;
+};
+
+export type FreeGap = { start_bytes: number; size_bytes: number };
+
+export type TableType = "gpt" | "mbr" | "none";
+
+export type InspectResult = {
+	schema_version: number;
+	disk: DiskInventory;
+	table: TableType;
+	/**
+	 * The table's identifier (GPT disk GUID, or MBR disk id).
+	 */
+	table_id: string | null;
+	/**
+	 * The space partitions may use: after the GPT header (or the first MiB)
+	 * and before the backup GPT, in bytes from the start of the disk.
+	 */
+	usable_start_bytes: number;
+	usable_end_bytes: number;
+	/**
+	 * Ordered by start.
+	 */
+	partitions: Array<PartitionInfo>;
+	/**
+	 * Unpartitioned space of at least 1 MiB, aligned to 1 MiB, ordered by start.
+	 */
+	free: Array<FreeGap>;
+};
+
+export type Role = "efi" | "root" | "root_a" | "root_b" | "state" | "home" | "swap" | "other";
+
+export type Filesystem = "vfat" | "ext4" | "swap";
+
+export type LayoutAction =
+	| { action: "keep"; partition: number; role: Role | null; mountpoint: string | null }
+	| { action: "delete"; partition: number }
+	| {
+			action: "create";
+			size_mb: number | null;
+			start_mb: number | null;
+			filesystem: Filesystem | null;
+			label: string | null;
+			role: Role | null;
+			mountpoint: string | null;
+	  }
+	| {
+			action: "resize";
+			partition: number;
+			size_mb: number | null;
+			role: Role | null;
+			mountpoint: string | null;
+	  }
+	| {
+			action: "format";
+			partition: number;
+			filesystem: Filesystem;
+			label: string | null;
+			role: Role | null;
+			mountpoint: string | null;
+	  };
+
+export type SwapFileLocation = "root" | "var";
+
+export type SwapFileRequest = { size_mb: number; location: SwapFileLocation };
+
+export type ManualLayout = {
+	/**
+	 * Replace the partition table with an empty GPT one, erasing every
+	 * partition, before the `create` actions. Only `create` may follow.
+	 */
+	new_table: boolean;
+	/**
+	 * When set, the disk's table must still have this id (`inspect`'s
+	 * `table_id`), so a plan made for one disk never edits another.
+	 */
+	table_id: string | null;
+	actions: Array<LayoutAction>;
+	/**
+	 * A swap file in the installed system, in place of (or as well as) a
+	 * swap partition.
+	 */
+	swap_file: SwapFileRequest | null;
+};
+
+export type ChangeKind = "erased" | "created" | "resized" | "formatted" | "untouched";
+
+export type PartitionState = {
+	start_bytes: number;
+	size_bytes: number;
+	filesystem: string | null;
+	fs_label: string | null;
+};
+
+export type PartitionChange = {
+	number: number;
+	device: string;
+	change: ChangeKind;
+	/**
+	 * The partition on the disk now (`None` when it is created).
+	 */
+	before: PartitionState | null;
+	/**
+	 * The partition after apply (`None` when it is erased).
+	 */
+	after: PartitionState | null;
+	role: Role | null;
+	/**
+	 * Where the installed system mounts it (`None`: not mounted).
+	 */
+	mountpoint: string | null;
+};
+
 export type DiskTarget = {
 	path: string;
 	size_bytes: number;
 	logical_sector_bytes: number;
 	physical_sector_bytes: number;
+};
+
+export type PartitionTemplate = {
+	index: number;
+	name: string;
+	filesystem: Filesystem;
+	label: string;
+	gpt_type: string;
+	/**
+	 * The legacy-BIOS bootable flag (set on the ESP).
+	 */
+	bootable: boolean;
+	size_mb: number | null;
+	mountpoint: string;
 };
 
 export type LayoutRequest = {
@@ -49,6 +216,14 @@ export type LayoutRequest = {
 	state_size_mb: number | null;
 };
 
+export type SwapFilePlan = {
+	/**
+	 * The file's path in the installed system (`/swapfile`, `/var/swapfile`).
+	 */
+	path: string;
+	size_mb: number;
+};
+
 export type InstallMode = "ab" | "mutable";
 
 export type ResolvedLayout = {
@@ -60,30 +235,48 @@ export type ResolvedLayout = {
 	state_size_mb: number | null;
 };
 
-export type Filesystem = "vfat" | "ext4";
-
-export type PartitionTemplate = {
-	index: number;
-	name: string;
-	filesystem: Filesystem;
-	label: string;
-	gpt_type: string;
-	/**
-	 * The legacy-BIOS bootable flag (set on the ESP).
-	 */
-	bootable: boolean;
-	size_mb: number | null;
-	mountpoint: string;
-};
-
 export type PartitionPlan = {
 	schema_version: number;
 	mode: InstallMode;
 	layout_request: LayoutRequest;
 	resolved_layout: ResolvedLayout;
 	disk: DiskTarget;
+	/**
+	 * The partitions the installed system uses, with their filesystem and
+	 * mount point; a manual layout's other partitions are only in `summary`.
+	 */
 	partitions: Array<PartitionTemplate>;
 	sfdisk_script: string;
+	/**
+	 * The explicit layout (`--layout`) this plan came from; `None` for the
+	 * `ab`/`mutable` templates.
+	 */
+	manual_layout: ManualLayout | null;
+	/**
+	 * Apply erases the whole disk (`wipefs -a`) before writing the new
+	 * table: always for a template, and for a manual layout with `new_table`.
+	 */
+	wipes_disk: boolean;
+	/**
+	 * What happens to every partition, on the disk now and after apply, in
+	 * partition-number order: the confirm page's list.
+	 */
+	summary: Array<PartitionChange>;
+	/**
+	 * The swap file apply creates, if any.
+	 */
+	swap_file: SwapFilePlan | null;
+};
+
+export type CommandRecord = {
+	phase: string;
+	command: string;
+	program: string;
+	args: Array<string>;
+	status: number | null;
+	stdout: string | null;
+	stderr: string | null;
+	dry_run: boolean;
 };
 
 export type ModeContext = {
@@ -101,17 +294,11 @@ export type HandoffPayload = {
 	install_target: string;
 	mount_map: Array<MountMapping>;
 	mode_context: ModeContext;
-};
-
-export type CommandRecord = {
-	phase: string;
-	command: string;
-	program: string;
-	args: Array<string>;
-	status: number | null;
-	stdout: string | null;
-	stderr: string | null;
-	dry_run: boolean;
+	/**
+	 * Swap devices and files apply activated (`swapon`), as recfstab will
+	 * find them.
+	 */
+	swaps: Array<string>;
 };
 
 export type ApplyResult = {
@@ -129,6 +316,15 @@ export type ApplyResult = {
 	 * In a dry run, the reasons a real apply would refuse this disk; empty when it would proceed.
 	 */
 	warnings: Array<string>;
+	/**
+	 * The plan's per-partition summary (as in the plan).
+	 */
+	summary: Array<PartitionChange>;
+	/**
+	 * The dry run planned from a recorded inventory (`--inventory`), so
+	 * the live-disk checks behind `warnings` did not run.
+	 */
+	disk_checks_skipped: boolean;
 };
 
 export type ErrorPayload = {
@@ -148,6 +344,8 @@ export const ERROR_SCHEMA_VERSION = 1 as const;
 
 export const DISK_LIST_SCHEMA_VERSION = 1 as const;
 
+export const INSPECT_SCHEMA_VERSION = 1 as const;
+
 export const CONFIRM_TOKEN = "DESTROY" as const;
 
 export const INSTALL_MODES = ["ab", "mutable"] as const;
@@ -158,6 +356,19 @@ export const INSTALL_MODE_HELP = {
 } as const;
 
 export const DEFAULT_INSTALL_MODE = "ab" as const;
+
+export const ROLES = ["efi", "root", "root_a", "root_b", "state", "home", "swap", "other"] as const;
+
+export const ROLE_HELP = {
+	efi: "The EFI system partition, mounted at /boot (vfat)",
+	home: "/home (ext4)",
+	other: "Mounted at the action's `mountpoint`",
+	root: "The one root of a mutable install, at / (ext4)",
+	"root-a": "A/B root slot A, installed now and mounted at / (ext4)",
+	"root-b": "A/B root slot B, left unmounted for updates (ext4)",
+	state: "The persistent /var: the A/B state partition, or a mutable install's own /var (ext4)",
+	swap: "A swap partition, activated with swapon",
+} as const;
 
 /** What a recpart run printed, read the one way recpart writes it. */
 export type RecpartOutput<T> =

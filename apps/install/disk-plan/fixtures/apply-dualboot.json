@@ -1,0 +1,430 @@
+{
+  "schema_version": 2,
+  "mode": "ab",
+  "layout_request": {
+    "efi_size_mb": null,
+    "root_size_mb": null,
+    "root_a_size_mb": null,
+    "root_b_size_mb": null,
+    "state_size_mb": null
+  },
+  "resolved_layout": {
+    "mode": "ab",
+    "efi_size_mb": 512,
+    "root_size_mb": null,
+    "root_a_size_mb": 20480,
+    "root_b_size_mb": 20480,
+    "state_size_mb": 113408
+  },
+  "disk": {
+    "path": "/dev/vdy",
+    "size_bytes": 274877906944,
+    "logical_sector_bytes": 512,
+    "physical_sector_bytes": 512
+  },
+  "dry_run": false,
+  "steps": [
+    {
+      "phase": "resize",
+      "command": "ntfsresize --no-action --no-progress-bar --size 107374182400 /dev/vdy3",
+      "program": "ntfsresize",
+      "args": [
+        "--no-action",
+        "--no-progress-bar",
+        "--size",
+        "107374182400",
+        "/dev/vdy3"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "resize",
+      "command": "ntfsresize --no-progress-bar --size 107374182400 /dev/vdy3",
+      "program": "ntfsresize",
+      "args": [
+        "--no-progress-bar",
+        "--size",
+        "107374182400",
+        "/dev/vdy3"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "partition",
+      "command": "sfdisk --wipe never --wipe-partitions never /dev/vdy",
+      "program": "sfdisk",
+      "args": [
+        "--wipe",
+        "never",
+        "--wipe-partitions",
+        "never",
+        "/dev/vdy"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "partition",
+      "command": "udevadm settle --timeout=10",
+      "program": "udevadm",
+      "args": [
+        "settle",
+        "--timeout=10"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "partition",
+      "command": "verify-partitions",
+      "program": "verify-partitions",
+      "args": [],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "format",
+      "command": "mkfs.ext4 -F -L ROOT_A /dev/vdy5",
+      "program": "mkfs.ext4",
+      "args": [
+        "-F",
+        "-L",
+        "ROOT_A",
+        "/dev/vdy5"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "format",
+      "command": "mkfs.ext4 -F -L ROOT_B /dev/vdy6",
+      "program": "mkfs.ext4",
+      "args": [
+        "-F",
+        "-L",
+        "ROOT_B",
+        "/dev/vdy6"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "format",
+      "command": "mkswap -L SWAP /dev/vdy7",
+      "program": "mkswap",
+      "args": [
+        "-L",
+        "SWAP",
+        "/dev/vdy7"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "format",
+      "command": "mkfs.ext4 -F -L STATE /dev/vdy8",
+      "program": "mkfs.ext4",
+      "args": [
+        "-F",
+        "-L",
+        "STATE",
+        "/dev/vdy8"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "mount",
+      "command": "mount /dev/vdy5 /mnt/sysroot",
+      "program": "mount",
+      "args": [
+        "/dev/vdy5",
+        "/mnt/sysroot"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "mount",
+      "command": "mount /dev/vdy1 /mnt/sysroot/boot",
+      "program": "mount",
+      "args": [
+        "/dev/vdy1",
+        "/mnt/sysroot/boot"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "mount",
+      "command": "mount /dev/vdy8 /mnt/sysroot/var",
+      "program": "mount",
+      "args": [
+        "/dev/vdy8",
+        "/mnt/sysroot/var"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "swap",
+      "command": "swapon /dev/vdy7",
+      "program": "swapon",
+      "args": [
+        "/dev/vdy7"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    }
+  ],
+  "partition_map": [
+    {
+      "index": 1,
+      "name": "efi",
+      "filesystem": "vfat",
+      "label": "SYSTEM",
+      "gpt_type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+      "bootable": false,
+      "size_mb": 512,
+      "mountpoint": "/boot"
+    },
+    {
+      "index": 5,
+      "name": "root_a",
+      "filesystem": "ext4",
+      "label": "ROOT_A",
+      "gpt_type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+      "bootable": false,
+      "size_mb": 20480,
+      "mountpoint": "/"
+    },
+    {
+      "index": 6,
+      "name": "root_b",
+      "filesystem": "ext4",
+      "label": "ROOT_B",
+      "gpt_type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+      "bootable": false,
+      "size_mb": 20480,
+      "mountpoint": "none"
+    },
+    {
+      "index": 7,
+      "name": "swap",
+      "filesystem": "swap",
+      "label": "SWAP",
+      "gpt_type": "0657FD6D-A4AB-43C4-84E5-0933C84B4F4F",
+      "bootable": false,
+      "size_mb": 4096,
+      "mountpoint": "none"
+    },
+    {
+      "index": 8,
+      "name": "state",
+      "filesystem": "ext4",
+      "label": "STATE",
+      "gpt_type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+      "bootable": false,
+      "size_mb": 113408,
+      "mountpoint": "/var"
+    }
+  ],
+  "formatted_devices": [
+    "/dev/vdy5",
+    "/dev/vdy6",
+    "/dev/vdy7",
+    "/dev/vdy8"
+  ],
+  "handoff": {
+    "schema_version": 2,
+    "mode": "ab",
+    "install_target": "/mnt/sysroot",
+    "mount_map": [
+      {
+        "path": "/mnt/sysroot",
+        "device": "/dev/vdy5"
+      },
+      {
+        "path": "/mnt/sysroot/boot",
+        "device": "/dev/vdy1"
+      },
+      {
+        "path": "/mnt/sysroot/var",
+        "device": "/dev/vdy8"
+      }
+    ],
+    "mode_context": {
+      "install_target_slot": "A",
+      "inactive_slot_hint": "B",
+      "slot_a_device": "/dev/vdy5",
+      "slot_b_device": "/dev/vdy6"
+    },
+    "swaps": [
+      "/dev/vdy7"
+    ]
+  },
+  "warnings": [],
+  "summary": [
+    {
+      "number": 1,
+      "device": "/dev/vdy1",
+      "change": "untouched",
+      "before": {
+        "start_bytes": 1048576,
+        "size_bytes": 536870912,
+        "filesystem": "vfat",
+        "fs_label": "SYSTEM"
+      },
+      "after": {
+        "start_bytes": 1048576,
+        "size_bytes": 536870912,
+        "filesystem": "vfat",
+        "fs_label": "SYSTEM"
+      },
+      "role": "efi",
+      "mountpoint": "/boot"
+    },
+    {
+      "number": 2,
+      "device": "/dev/vdy2",
+      "change": "untouched",
+      "before": {
+        "start_bytes": 537919488,
+        "size_bytes": 16777216,
+        "filesystem": null,
+        "fs_label": null
+      },
+      "after": {
+        "start_bytes": 537919488,
+        "size_bytes": 16777216,
+        "filesystem": null,
+        "fs_label": null
+      },
+      "role": null,
+      "mountpoint": null
+    },
+    {
+      "number": 3,
+      "device": "/dev/vdy3",
+      "change": "resized",
+      "before": {
+        "start_bytes": 554696704,
+        "size_bytes": 273535729664,
+        "filesystem": "ntfs",
+        "fs_label": "Windows"
+      },
+      "after": {
+        "start_bytes": 554696704,
+        "size_bytes": 107374182400,
+        "filesystem": "ntfs",
+        "fs_label": "Windows"
+      },
+      "role": null,
+      "mountpoint": null
+    },
+    {
+      "number": 4,
+      "device": "/dev/vdy4",
+      "change": "untouched",
+      "before": {
+        "start_bytes": 274090426368,
+        "size_bytes": 786432000,
+        "filesystem": "ntfs",
+        "fs_label": null
+      },
+      "after": {
+        "start_bytes": 274090426368,
+        "size_bytes": 786432000,
+        "filesystem": "ntfs",
+        "fs_label": null
+      },
+      "role": null,
+      "mountpoint": null
+    },
+    {
+      "number": 5,
+      "device": "/dev/vdy5",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 107928879104,
+        "size_bytes": 21474836480,
+        "filesystem": "ext4",
+        "fs_label": "ROOT_A"
+      },
+      "role": "root_a",
+      "mountpoint": "/"
+    },
+    {
+      "number": 6,
+      "device": "/dev/vdy6",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 129403715584,
+        "size_bytes": 21474836480,
+        "filesystem": "ext4",
+        "fs_label": "ROOT_B"
+      },
+      "role": "root_b",
+      "mountpoint": null
+    },
+    {
+      "number": 7,
+      "device": "/dev/vdy7",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 150878552064,
+        "size_bytes": 4294967296,
+        "filesystem": "swap",
+        "fs_label": "SWAP"
+      },
+      "role": "swap",
+      "mountpoint": null
+    },
+    {
+      "number": 8,
+      "device": "/dev/vdy8",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 155173519360,
+        "size_bytes": 118916907008,
+        "filesystem": "ext4",
+        "fs_label": "STATE"
+      },
+      "role": "state",
+      "mountpoint": "/var"
+    }
+  ],
+  "disk_checks_skipped": false
+}

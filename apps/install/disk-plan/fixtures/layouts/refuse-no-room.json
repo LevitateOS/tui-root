@@ -1,0 +1,14 @@
+{
+  "actions": [
+    {
+      "action": "create",
+      "size_mb": 512,
+      "role": "efi"
+    },
+    {
+      "action": "keep",
+      "partition": 1,
+      "role": "home"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "code": "E019",
+  "component": "layout",
+  "expectation": "a new EFI partition is at least 264 MiB (264 MiB of kernels and boot loader for ab)",
+  "observed": "new partition 1 is 128 MiB",
+  "remediation": "Give the EFI partition at least 264 MiB."
+}

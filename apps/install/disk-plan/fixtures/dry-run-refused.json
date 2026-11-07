@@ -74,14 +74,14 @@
     },
     {
       "phase": "format",
-      "command": "mkfs.vfat -F 32 -n EFI /dev/vdzp1",
+      "command": "mkfs.vfat -F 32 -n EFI /dev/vdz1",
       "program": "mkfs.vfat",
       "args": [
         "-F",
         "32",
         "-n",
         "EFI",
-        "/dev/vdzp1"
+        "/dev/vdz1"
       ],
       "status": null,
       "stdout": null,
@@ -90,13 +90,13 @@
     },
     {
       "phase": "format",
-      "command": "mkfs.ext4 -F -L ROOT_A /dev/vdzp2",
+      "command": "mkfs.ext4 -F -L ROOT_A /dev/vdz2",
       "program": "mkfs.ext4",
       "args": [
         "-F",
         "-L",
         "ROOT_A",
-        "/dev/vdzp2"
+        "/dev/vdz2"
       ],
       "status": null,
       "stdout": null,
@@ -105,13 +105,13 @@
     },
     {
       "phase": "format",
-      "command": "mkfs.ext4 -F -L ROOT_B /dev/vdzp3",
+      "command": "mkfs.ext4 -F -L ROOT_B /dev/vdz3",
       "program": "mkfs.ext4",
       "args": [
         "-F",
         "-L",
         "ROOT_B",
-        "/dev/vdzp3"
+        "/dev/vdz3"
       ],
       "status": null,
       "stdout": null,
@@ -120,13 +120,13 @@
     },
     {
       "phase": "format",
-      "command": "mkfs.ext4 -F -L STATE /dev/vdzp4",
+      "command": "mkfs.ext4 -F -L STATE /dev/vdz4",
       "program": "mkfs.ext4",
       "args": [
         "-F",
         "-L",
         "STATE",
-        "/dev/vdzp4"
+        "/dev/vdz4"
       ],
       "status": null,
       "stdout": null,
@@ -135,10 +135,10 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdzp2 /mnt/sysroot",
+      "command": "mount /dev/vdz2 /mnt/sysroot",
       "program": "mount",
       "args": [
-        "/dev/vdzp2",
+        "/dev/vdz2",
         "/mnt/sysroot"
       ],
       "status": null,
@@ -148,10 +148,10 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdzp1 /mnt/sysroot/boot",
+      "command": "mount /dev/vdz1 /mnt/sysroot/boot",
       "program": "mount",
       "args": [
-        "/dev/vdzp1",
+        "/dev/vdz1",
         "/mnt/sysroot/boot"
       ],
       "status": null,
@@ -161,11 +161,11 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdzp4 /mnt/sysroot/state",
+      "command": "mount /dev/vdz4 /mnt/sysroot/var",
       "program": "mount",
       "args": [
-        "/dev/vdzp4",
-        "/mnt/sysroot/state"
+        "/dev/vdz4",
+        "/mnt/sysroot/var"
       ],
       "status": null,
       "stdout": null,
@@ -212,14 +212,14 @@
       "gpt_type": "L",
       "bootable": false,
       "size_mb": null,
-      "mountpoint": "/state"
+      "mountpoint": "/var"
     }
   ],
   "formatted_devices": [
-    "/dev/vdzp1",
-    "/dev/vdzp2",
-    "/dev/vdzp3",
-    "/dev/vdzp4"
+    "/dev/vdz1",
+    "/dev/vdz2",
+    "/dev/vdz3",
+    "/dev/vdz4"
   ],
   "handoff": {
     "schema_version": 2,
@@ -228,25 +228,85 @@
     "mount_map": [
       {
         "path": "/mnt/sysroot",
-        "device": "/dev/vdzp2"
+        "device": "/dev/vdz2"
       },
       {
         "path": "/mnt/sysroot/boot",
-        "device": "/dev/vdzp1"
+        "device": "/dev/vdz1"
       },
       {
-        "path": "/mnt/sysroot/state",
-        "device": "/dev/vdzp4"
+        "path": "/mnt/sysroot/var",
+        "device": "/dev/vdz4"
       }
     ],
     "mode_context": {
       "install_target_slot": "A",
       "inactive_slot_hint": "B",
-      "slot_a_device": "/dev/vdzp2",
-      "slot_b_device": "/dev/vdzp3"
-    }
+      "slot_a_device": "/dev/vdz2",
+      "slot_b_device": "/dev/vdz3"
+    },
+    "swaps": []
   },
   "warnings": [
     "E001: [preflight] expected target disk and child partitions are not mounted, observed mounted points detected: /run/media/old. remediation: Unmount all target disk partitions before destructive apply."
-  ]
+  ],
+  "summary": [
+    {
+      "number": 1,
+      "device": "/dev/vdz1",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 1048576,
+        "size_bytes": 1073741824,
+        "filesystem": "vfat",
+        "fs_label": "EFI"
+      },
+      "role": "efi",
+      "mountpoint": "/boot"
+    },
+    {
+      "number": 2,
+      "device": "/dev/vdz2",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 1074790400,
+        "size_bytes": 21474836480,
+        "filesystem": "ext4",
+        "fs_label": "ROOT_A"
+      },
+      "role": "root_a",
+      "mountpoint": "/"
+    },
+    {
+      "number": 3,
+      "device": "/dev/vdz3",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 22549626880,
+        "size_bytes": 21474836480,
+        "filesystem": "ext4",
+        "fs_label": "ROOT_B"
+      },
+      "role": "root_b",
+      "mountpoint": null
+    },
+    {
+      "number": 4,
+      "device": "/dev/vdz4",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 44024463360,
+        "size_bytes": 24693964800,
+        "filesystem": "ext4",
+        "fs_label": "STATE"
+      },
+      "role": "state",
+      "mountpoint": "/var"
+    }
+  ],
+  "disk_checks_skipped": false
 }

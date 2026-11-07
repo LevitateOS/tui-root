@@ -1,0 +1,15 @@
+{
+  "actions": [
+    {
+      "action": "create",
+      "size_mb": 512,
+      "role": "efi"
+    },
+    {
+      "action": "format",
+      "partition": 1,
+      "filesystem": "ext4",
+      "role": "root"
+    }
+  ]
+}

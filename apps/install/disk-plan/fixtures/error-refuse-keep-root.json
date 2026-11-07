@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "code": "E014",
+  "component": "layout",
+  "expectation": "the install formats its root partition",
+  "observed": "partition 1 (/dev/vdx1) keeps its data",
+  "remediation": "Give it a `format` action (its data is lost), or create a new partition for the role."
+}

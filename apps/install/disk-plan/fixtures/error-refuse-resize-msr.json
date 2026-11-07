@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "code": "E020",
+  "component": "layout",
+  "expectation": "recpart resizes ext4, FAT and NTFS filesystems",
+  "observed": "partition 2 (/dev/vdy2) has filesystem none",
+  "remediation": "Keep this partition at its size, or delete it and create a new one (its data is lost)."
+}

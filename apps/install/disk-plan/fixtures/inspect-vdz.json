@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "disk": {
+    "path": "/dev/vdz",
+    "size_bytes": 68719476736,
+    "logical_sector_bytes": 512,
+    "physical_sector_bytes": 512,
+    "model": "Fixture Disk 64G",
+    "vendor": "unknown",
+    "serial": "FIXTURE0001",
+    "transport": "virtio",
+    "rotational": false,
+    "removable": false,
+    "read_only": false
+  },
+  "table": "none",
+  "table_id": null,
+  "usable_start_bytes": 1048576,
+  "usable_end_bytes": 68719459840,
+  "partitions": [],
+  "free": [
+    {
+      "start_bytes": 1048576,
+      "size_bytes": 68717379584
+    }
+  ]
+}

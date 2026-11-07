@@ -1,0 +1,18 @@
+{
+  "actions": [
+    {
+      "action": "resize",
+      "partition": 1,
+      "size_mb": 16384
+    },
+    {
+      "action": "create",
+      "size_mb": 512,
+      "role": "efi"
+    },
+    {
+      "action": "create",
+      "role": "root"
+    }
+  ]
+}

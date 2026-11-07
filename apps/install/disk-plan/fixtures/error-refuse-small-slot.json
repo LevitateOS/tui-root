@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "code": "E018",
+  "component": "layout",
+  "expectation": "a root_a partition is at least 8192 MiB",
+  "observed": "new partition 2 is 4096 MiB",
+  "remediation": "Give it at least 8192 MiB."
+}

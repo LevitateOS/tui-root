@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "code": "E015",
+  "component": "layout",
+  "expectation": "the new efi partition (512 MiB) fits in free space",
+  "observed": "free gaps (MiB at start+size): none",
+  "remediation": "Make it smaller, or delete or shrink a partition to free space."
+}

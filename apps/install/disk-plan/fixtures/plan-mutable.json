@@ -44,5 +44,38 @@
       "mountpoint": "/"
     }
   ],
-  "sfdisk_script": "label: gpt\n,1024M,U,*\n,,L\n"
+  "sfdisk_script": "label: gpt\n,1024M,U,*\n,,L\n",
+  "manual_layout": null,
+  "wipes_disk": true,
+  "summary": [
+    {
+      "number": 1,
+      "device": "/dev/vdz1",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 1048576,
+        "size_bytes": 1073741824,
+        "filesystem": "vfat",
+        "fs_label": "EFI"
+      },
+      "role": "efi",
+      "mountpoint": "/boot"
+    },
+    {
+      "number": 2,
+      "device": "/dev/vdz2",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 1074790400,
+        "size_bytes": 67643637760,
+        "filesystem": "ext4",
+        "fs_label": "ROOT"
+      },
+      "role": "root",
+      "mountpoint": "/"
+    }
+  ],
+  "swap_file": null
 }

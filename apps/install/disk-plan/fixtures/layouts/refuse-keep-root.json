@@ -1,0 +1,9 @@
+{
+  "actions": [
+    {
+      "action": "keep",
+      "partition": 1,
+      "role": "root"
+    }
+  ]
+}
