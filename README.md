@@ -30,16 +30,10 @@ holds a stand-in for every tool it runs (`fixtures/`), so they never touch a dis
 - `cargo xtask inspect <name>` renders one screen (`--story NAME` opens a story, `--input` types keys).
 - `cargo xtask check tui` checks every TUI package: typecheck, lint, format, renders (including each
   variant's docs pane at the install screen's sizes), snapshots, and every story.
-- `cargo xtask stories` serves a page of live terminals (xterm.js), one per story, each running the
-  real app; it also has each variant's whole install screen. It listens on every address and prints
-  a URL with an access token; open that URL (from another machine, through an SSH tunnel to the
-  port if a firewall is in the way). Without the token, nothing that can start a program answers.
-- `cargo xtask stories --export FILE` records every story instead (the real app in a PTY, its keys
-  typed) and writes one self-contained HTML file that replays them in xterm.js: no server needed.
 
 ## Stories
 
 A story is a named state of an app, declared in its manifest's `levitate.inspect.stories`: the
 arguments and environment to start it with (for example `RECAB_FIXTURE=fail` to make the stand-in
-fail) and the keys that reach the state, each step optionally with text the screen must show. The
-gallery and `check tui` run the same real app with the same stories; there is no separate story UI.
+fail) and the keys that reach the state, each step optionally with text the screen must show.
+`check tui` runs them; `cargo xtask inspect <app> --story NAME` renders one.
