@@ -5,7 +5,7 @@ import {
 	KeyValue,
 	NavList,
 	truncateLines,
-	SegmentedStatusLine,
+	fitFooter,
 	AppShell,
 	UiText,
 	keymapStatusSegments,
@@ -145,27 +145,21 @@ export function RuntimeRecabScreen() {
 		[],
 	);
 
-	const footer = (
-		<SegmentedStatusLine
-			segments={[
-				scopeStatusSegment(appName),
-				running
-					? textStatusSegment("busy", `running: ${running.label}`, "warning")
-					: textStatusSegment(
-							"busy",
-							statusTask.kind === "running" ? "reading status" : "idle",
-							"accent",
-						),
-				...keymapStatusSegments(
-					RECAB_KEYMAP.filter((b) => ["move", "run", "quit"].includes(b.action)),
+	const footer = [
+		scopeStatusSegment(appName),
+		running
+			? textStatusSegment("busy", `running: ${running.label}`, "warning")
+			: textStatusSegment(
+					"busy",
+					statusTask.kind === "running" ? "reading status" : "idle",
+					"accent",
 				),
-				...(statusError ? [textStatusSegment("status", statusError, "error", true)] : []),
-				...(notice ? [textStatusSegment("notice", notice, "warning")] : []),
-			]}
-		/>
-	);
+		...keymapStatusSegments(RECAB_KEYMAP.filter((b) => ["move", "run", "quit"].includes(b.action))),
+		...(statusError ? [textStatusSegment("status", statusError, "error", true)] : []),
+		...(notice ? [textStatusSegment("notice", notice, "warning")] : []),
+	];
 
-	const layout = useShellLayout({ navWidth: 40 });
+	const layout = fitFooter(useShellLayout({ navWidth: 40 }), footer);
 	const sidebar = (
 		<Box flexDirection="column">
 			<NavList
@@ -214,7 +208,6 @@ export function RuntimeRecabScreen() {
 			nav={sidebar}
 			contentTitle="recab"
 			content={body}
-			footer={footer}
 		/>
 	);
 }

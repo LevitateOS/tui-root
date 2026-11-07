@@ -1,16 +1,12 @@
 import {
-	SegmentedStatusLine,
 	keymapStatusSegments,
-	scopeStatusSegment,
 	textStatusSegment,
 	type FocusPlane,
 	type StatusSegment,
-	useAppName,
 } from "@levitate/tui-kit";
-import type { ReactNode } from "react";
 import { CONTENT_KEYS, NAV_KEYS, VIEWER_KEYS } from "../keymap";
 
-type InstallStatusBarProps = {
+type InstallStatus = {
 	page: number;
 	pageCount: number;
 	focus: FocusPlane;
@@ -19,26 +15,25 @@ type InstallStatusBarProps = {
 	note?: string;
 };
 
-export function InstallStatusBar({
+/** The footer: where you are, then every key that works in the focused pane. */
+export function installStatusSegments({
 	page,
 	pageCount,
 	focus,
 	action,
 	note,
-}: InstallStatusBarProps): ReactNode {
+}: InstallStatus): StatusSegment[] {
 	const segments: StatusSegment[] = [
-		scopeStatusSegment(useAppName()),
 		textStatusSegment("focus", focus, focus === "navigation" ? "warning" : "accent"),
 		textStatusSegment("page", `page ${page}/${pageCount}`),
 		...(focus === "content"
 			? [textStatusSegment("action", action ?? "no actions", action ? "accent" : "dimText")]
 			: []),
-		// Keys that always work first, so a narrow footer never cuts off quit.
 		...keymapStatusSegments(VIEWER_KEYS),
 		...keymapStatusSegments(focus === "navigation" ? NAV_KEYS : CONTENT_KEYS),
 	];
 	if (note && note.trim().length > 0) {
 		segments.push(textStatusSegment("note", note.trim(), "warning"));
 	}
-	return <SegmentedStatusLine segments={segments} />;
+	return segments;
 }

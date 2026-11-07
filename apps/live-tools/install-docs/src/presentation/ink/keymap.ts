@@ -23,8 +23,8 @@ export const NAV_KEYS = [
 /** Keys while the page content has focus. */
 export const CONTENT_KEYS = [
 	{ action: "action", keys: ["down", "j", "up", "k"], hint: "j/k", label: "next/prev action" },
-	{ action: "activate", keys: ["enter"], label: "open link / copy command" },
-	{ action: "copy", keys: ["c", "y"], label: "copy action" },
+	{ action: "activate", keys: ["enter"], label: "open link / copy" },
+	{ action: "copy", keys: ["c", "y"], label: "copy" },
 	{
 		action: "pageScroll",
 		keys: ["b", "C-u", "pageup", "space", "C-d", "pagedown"],

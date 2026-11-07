@@ -7,6 +7,7 @@ import {
 	useFocusPlane,
 	useKeymap,
 	useScrollState,
+	fitFooter,
 	useShellLayout,
 	type NavListMode,
 	type RichTextRun,
@@ -15,7 +16,7 @@ import { BACKWARD_KEYS, CONTENT_KEYS, NAV_KEYS, VIEWER_KEYS } from "../keymap";
 import { PAGES, pageContent, resolveDocsLinkTarget } from "../../../docs";
 import { layoutPage, type Line } from "../../../layout/page";
 import { InstallSidebar } from "../components/sidebar";
-import { InstallStatusBar } from "../components/status-bar";
+import { installStatusSegments } from "../components/status-bar";
 import { useInstallNavigation } from "../hooks/use-install-navigation";
 
 type InstallViewerScreenProps = {
@@ -33,22 +34,33 @@ function drawn(line: Line, selected: number | undefined): RichTextRun[] {
 
 export function InstallViewerScreen({ title, initialIndex }: InstallViewerScreenProps) {
 	const { exit } = useApp();
-	const layout = useShellLayout();
+	const shell = useShellLayout();
 	const navigation = useInstallNavigation(initialIndex);
 	const { write } = useStdout();
 	// When only one pane fits (the install screen's docs pane), start on the page itself.
-	const focus = useFocusPlane({ initial: layout.narrow ? "content" : "navigation" });
+	const focus = useFocusPlane({ initial: shell.narrow ? "content" : "navigation" });
 	const [sidebarMode, setSidebarMode] = useState<NavListMode>("focus-section");
 	const [actionIndex, setActionIndex] = useState(0);
 	const [runtimeNote, setRuntimeNote] = useState<string | undefined>(undefined);
 
 	const currentItem = PAGES[navigation.safeIndex]!;
-	const rows = layout.content.textRows;
-	const columns = layout.content.textColumns;
+	const columns = shell.content.textColumns;
 	const content = pageContent(currentItem.slug);
 	const page = useMemo(() => layoutPage(content, columns), [content, columns]);
-	const scroll = useScrollState(page.lines.length - rows);
 	const actions = page.anchors;
+	// The footer wraps onto as many lines as the pane's width needs; the page gets the rest.
+	const layout = fitFooter(
+		shell,
+		installStatusSegments({
+			page: navigation.safeIndex + 1,
+			pageCount: PAGES.length,
+			focus: focus.plane,
+			action: actions.length > 0 ? `${actionIndex + 1}/${actions.length}` : undefined,
+			note: runtimeNote,
+		}),
+	);
+	const rows = layout.content.textRows;
+	const scroll = useScrollState(page.lines.length - rows);
 	const selectedAnchor = focus.isContent && actions.length > 0 ? actionIndex : undefined;
 
 	const showPage = (move: () => void) => {
@@ -157,15 +169,6 @@ export function InstallViewerScreen({ title, initialIndex }: InstallViewerScreen
 						<RichTextLine key={scroll.offset + i} runs={drawn(line, selectedAnchor)} />
 					))}
 				</Box>
-			}
-			footer={
-				<InstallStatusBar
-					page={navigation.safeIndex + 1}
-					pageCount={PAGES.length}
-					focus={focus.plane}
-					action={actions.length > 0 ? `${actionIndex + 1}/${actions.length}` : undefined}
-					note={runtimeNote}
-				/>
 			}
 		/>
 	);

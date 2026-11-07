@@ -1,5 +1,5 @@
-import { RichTextLine } from "../../primitives/display/rich-text";
-import type { RichTextRun } from "../../utils/runs";
+import { runsText, wrapRuns, type RichTextRun } from "../../utils/runs";
+import { textWidth } from "../../utils/strings";
 import { keyHint, type Keymap } from "../../runtime/keymap";
 
 import type { ColorIntent } from "../../theme/tokens";
@@ -9,50 +9,42 @@ export type StatusSegment = {
 	atoms: ReadonlyArray<RichTextRun>;
 };
 
-type FlattenStatusSegmentsOptions = {
-	separator?: string;
-	separatorIntent?: ColorIntent;
-};
+const SEPARATOR = " | ";
 
-function flattenStatusSegments(
+/**
+ * The segments as lines at most `width` cells wide: segments joined by a separator, a new
+ * line where the next one doesn't fit, a segment never split unless it alone is too wide.
+ */
+export function statusLines(
 	segments: ReadonlyArray<StatusSegment>,
-	options: FlattenStatusSegmentsOptions = {},
-): RichTextRun[] {
-	const separator = options.separator ?? " | ";
-	const separatorIntent = options.separatorIntent ?? "dimText";
-	const atoms: RichTextRun[] = [];
-
-	for (const [index, segment] of segments.entries()) {
-		if (index > 0 && separator.length > 0) {
-			atoms.push({
-				text: separator,
-				intent: separatorIntent,
-			});
+	width: number,
+): RichTextRun[][] {
+	const safe = Math.max(1, Math.floor(width));
+	const lines: RichTextRun[][] = [];
+	let line: RichTextRun[] = [];
+	let used = 0;
+	for (const segment of segments) {
+		const atoms = segment.atoms.filter((atom) => atom.text.length > 0);
+		if (atoms.length === 0) continue;
+		const size = textWidth(runsText(atoms));
+		if (line.length > 0 && used + SEPARATOR.length + size <= safe) {
+			line.push({ text: SEPARATOR, intent: "dimText" }, ...atoms);
+			used += SEPARATOR.length + size;
+			continue;
 		}
-		for (const atom of segment.atoms) {
-			if (atom.text.length === 0) {
-				continue;
-			}
-			atoms.push(atom);
+		if (line.length > 0) lines.push(line);
+		if (size <= safe) {
+			line = [...atoms];
+			used = size;
+		} else {
+			const wrapped = wrapRuns(atoms, safe);
+			lines.push(...wrapped.slice(0, -1));
+			line = wrapped.at(-1) ?? [];
+			used = textWidth(runsText(line));
 		}
 	}
-
-	return atoms;
-}
-
-type SegmentedStatusLineProps = {
-	segments: ReadonlyArray<StatusSegment>;
-	separator?: string;
-	separatorIntent?: ColorIntent;
-};
-
-export function SegmentedStatusLine({
-	segments,
-	separator,
-	separatorIntent,
-}: SegmentedStatusLineProps) {
-	const runs = flattenStatusSegments(segments, { separator, separatorIntent });
-	return <RichTextLine runs={runs} fallbackIntent="dimText" />;
+	if (line.length > 0) lines.push(line);
+	return lines;
 }
 
 export function scopeStatusSegment(scope: string, intent: ColorIntent = "accent"): StatusSegment {

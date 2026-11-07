@@ -5,6 +5,9 @@ import { glyphs, inkBorderStyle } from "../chrome/glyphs";
 import type { FocusPlane } from "../hooks/use-focus-plane";
 import { resolveIntentColor } from "../theme/colors";
 import type { ColorIntent, TuiTheme } from "../theme/tokens";
+import { statusLines, type StatusSegment } from "../components/feedback/status-line";
+import { RichTextLine } from "../primitives/display/rich-text";
+import type { RichTextRun } from "../utils/runs";
 import { padRight } from "../utils/strings";
 
 /** Below this the shell shows "Terminal too small" instead of a pane. */
@@ -14,7 +17,10 @@ const MIN_ROWS = 8;
 const TITLE_ROWS = 3;
 const BOTTOM_ROWS = 1;
 const SIDE_COLUMNS = 2;
+/** The footer's rows before `fitFooter`, its side padding, and the share of the terminal it may take. */
 const FOOTER_ROWS = 1;
+const FOOTER_PADDING_X = 1;
+const FOOTER_MAX_SHARE = 1 / 2;
 
 export type PaneLayout = {
 	outerWidth: number;
@@ -34,6 +40,8 @@ export type ShellLayout = {
 	nav?: PaneLayout;
 	content: PaneLayout;
 	gap: number;
+	/** The footer's lines (set by `fitFooter`). */
+	footer: RichTextRun[][];
 };
 
 function pane(theme: TuiTheme, outerWidth: number, outerHeight: number): PaneLayout {
@@ -69,6 +77,32 @@ export function useShellLayout(options: { navWidth?: number } = {}): ShellLayout
 		gap,
 		nav: narrow ? undefined : pane(theme, navWidth, paneHeight),
 		content: pane(theme, narrow ? columns : columns - navWidth - gap, paneHeight),
+		footer: [],
+	};
+}
+
+/**
+ * The layout with this footer: the segments wrapped onto as many lines as the width needs
+ * (up to half the terminal), the panes shorter by the extra lines. Apps size what
+ * they draw from the layout this returns.
+ */
+export function fitFooter(
+	layout: ShellLayout,
+	segments: ReadonlyArray<StatusSegment>,
+): ShellLayout {
+	const most = Math.max(FOOTER_ROWS, Math.floor(layout.rows * FOOTER_MAX_SHARE));
+	const footer = statusLines(segments, layout.columns - 2 * FOOTER_PADDING_X).slice(0, most);
+	const extra = Math.max(FOOTER_ROWS, footer.length) - FOOTER_ROWS;
+	const shorter = (pane: PaneLayout): PaneLayout => ({
+		...pane,
+		outerHeight: Math.max(1, pane.outerHeight - extra),
+		textRows: Math.max(1, pane.textRows - extra),
+	});
+	return {
+		...layout,
+		nav: layout.nav && shorter(layout.nav),
+		content: shorter(layout.content),
+		footer,
 	};
 }
 
@@ -144,19 +178,10 @@ type AppShellProps = {
 	nav: ReactNode;
 	contentTitle: string;
 	content: ReactNode;
-	footer: ReactNode;
 };
 
-/** The two-pane frame every app uses: nav pane, content pane, one footer row. */
-export function AppShell({
-	layout,
-	focus,
-	navTitle,
-	nav,
-	contentTitle,
-	content,
-	footer,
-}: AppShellProps) {
+/** The two-pane frame every app uses: nav pane, content pane, and the footer lines `fitFooter` set. */
+export function AppShell({ layout, focus, navTitle, nav, contentTitle, content }: AppShellProps) {
 	const theme = useTuiTheme();
 	const colors = useTuiColors();
 	if (layout.tooSmall) {
@@ -194,12 +219,15 @@ export function AppShell({
 				{layout.nav || focus === "content" ? contentPane : navPane(layout.content)}
 			</Box>
 			<Box
-				height={FOOTER_ROWS}
+				flexDirection="column"
+				height={Math.max(FOOTER_ROWS, layout.footer.length)}
 				flexShrink={0}
-				paddingX={1}
+				paddingX={FOOTER_PADDING_X}
 				backgroundColor={resolveIntentColor(theme, "footerBackground", colors)}
 			>
-				{footer}
+				{layout.footer.map((line, i) => (
+					<RichTextLine key={i} runs={line} fallbackIntent="dimText" />
+				))}
 			</Box>
 		</Box>
 	);

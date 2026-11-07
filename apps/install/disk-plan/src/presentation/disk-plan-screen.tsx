@@ -4,7 +4,7 @@ import {
 	AppShell,
 	keymapStatusSegments,
 	scopeStatusSegment,
-	SegmentedStatusLine,
+	fitFooter,
 	startCommand,
 	textStatusSegment,
 	UiText,
@@ -74,7 +74,7 @@ type DiskPlanScreenProps = {
 export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskPlanScreenProps) {
 	const { exit } = useApp();
 	const appName = useAppName();
-	const layout = useShellLayout({ navWidth: 38 });
+	const shell = useShellLayout({ navWidth: 38 });
 	const focus = useFocusPlane({ initial: "navigation" });
 	const [pageId, setPageId] = useState<PageId>("welcome");
 	const [showFailure, setShowFailure] = useState(false);
@@ -98,7 +98,7 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 	}, [listing, wanted]);
 	const columns = Math.max(
 		1,
-		Math.min(4, Math.floor(layout.content.textColumns / DISK_CARD_COLUMNS)),
+		Math.min(4, Math.floor(shell.content.textColumns / DISK_CARD_COLUMNS)),
 	);
 	const diskNav = useGridNavigation({ count: choices.length, columns });
 	useEffect(() => {
@@ -240,7 +240,7 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 				choices={choices}
 				selected={diskNav.safeIndex}
 				columns={columns}
-				width={layout.content.textColumns}
+				width={shell.content.textColumns}
 				listing={listingState}
 			/>
 		),
@@ -265,6 +265,17 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 		...(pageId === "mode-selection" ? MODE_KEYS : []),
 		...GLOBAL_KEYS.filter((b) => b.action !== "failure" || lastFailure(session) !== null),
 	];
+	const layout = fitFooter(shell, [
+		scopeStatusSegment(appName),
+		textStatusSegment(
+			"focus",
+			contentFocus ? "content" : "nav",
+			contentFocus ? "accent" : "warning",
+		),
+		textStatusSegment("page", `${view} (${position(view) + 1}/${PAGES.length})`, "accent"),
+		...keymapStatusSegments(keys),
+		...(notice ? [textStatusSegment("notice", notice, "warning")] : []),
+	]);
 	return (
 		<AppShell
 			layout={layout}
@@ -285,21 +296,6 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 			}
 			contentTitle={view}
 			content={body[view]()}
-			footer={
-				<SegmentedStatusLine
-					segments={[
-						scopeStatusSegment(appName),
-						textStatusSegment(
-							"focus",
-							contentFocus ? "content" : "nav",
-							contentFocus ? "accent" : "warning",
-						),
-						textStatusSegment("page", `${view} (${position(view) + 1}/${PAGES.length})`, "accent"),
-						...keymapStatusSegments(keys),
-						...(notice ? [textStatusSegment("notice", notice, "warning")] : []),
-					]}
-				/>
-			}
 		/>
 	);
 }

@@ -1,5 +1,5 @@
 ┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│Docs                          ││Architecture FAQ  lines 1-31/325                                                      │
+│Docs                          ││Architecture FAQ  lines 1-30/325                                                      │
 ├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
 │ ▸ Getting Started            ││ Design decisions and rationale behind LevitateOS components. Each answer explains    │
 │                              ││ why we chose a particular approach over alternatives.                                │
@@ -31,6 +31,6 @@
 │                              ││   minutes. Same philosophy, less waiting.                                            │
 │                              ││   If you want to compile everything yourself, use Arch. If you want the same control │
 │                              ││   without the compilation overhead, use LevitateOS.                                  │
-│                              ││                                                                                      │
 └──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
- [install-docs] | navigation | <masked> | q quit | Tab switch pane | m sidebar mode | h/l prev/next page | [/]
+ navigation | <masked> | q quit | Tab switch pane | m sidebar mode | h/l prev/next page | [/] prev/next section
+ j/k scroll content | space/b scroll a page

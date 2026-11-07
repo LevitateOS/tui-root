@@ -5,7 +5,6 @@ export type { BorderStyle } from "./chrome/glyphs";
 export { KeyValue } from "./components/data/key-value";
 export {
 	keymapStatusSegments,
-	SegmentedStatusLine,
 	scopeStatusSegment,
 	textStatusSegment,
 } from "./components/feedback/status-line";
@@ -21,7 +20,7 @@ export { RichTextLine } from "./primitives/display/rich-text";
 export { NavList } from "./components/navigation/nav-list";
 export type { NavListMode } from "./components/navigation/nav-list";
 export { UiText } from "./primitives/display/text";
-export { AppShell, useShellLayout } from "./surfaces/shell";
+export { AppShell, fitFooter, useShellLayout } from "./surfaces/shell";
 export { parseHexColor, resolveIntentColor } from "./theme/colors";
 export { createTheme } from "./theme/create-theme";
 export type { ColorIntent, ThemeColor, TuiTheme } from "./theme/tokens";
