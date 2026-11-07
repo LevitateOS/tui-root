@@ -52,6 +52,7 @@ export const PICK_FIRST = new Set(["left", "h", "up", "k"]);
 export const PARTITION_KEYS = [
 	{ action: "select", keys: ["up", "k", "down", "j"], hint: "↑/↓", label: "select" },
 	{ action: "setup", keys: ["a"], label: "set up the system in free space" },
+	{ action: "room", keys: ["s"], label: "make room (shrink a partition, keeping its files)" },
 	{ action: "create", keys: ["n"], label: "new partition" },
 	{ action: "remove", keys: ["d"], label: "delete" },
 	{ action: "resize", keys: ["r"], label: "resize" },
@@ -64,6 +65,19 @@ export const PARTITION_KEYS = [
 	{ action: "next", keys: ["enter"], label: "continue" },
 	{ action: "back", keys: ["p"], label: "back" },
 ] as const satisfies Keymap;
+
+/** Keys while making room: the divider between a partition and the space it gives up;
+ * typed text is how much room to make. */
+export const ROOM_KEYS = [
+	{ action: "step", keys: ["left", "h", "right", "l"], hint: "←/→", label: "more/less room" },
+	{ action: "ends", keys: ["home", "end"], hint: "Home/End", label: "most/least room" },
+	{ action: "accept", keys: ["enter"], label: "shrink it" },
+	{ action: "erase", keys: ["backspace", "delete"], label: "erase" },
+	{ action: "cancel", keys: ["escape"], label: "cancel" },
+] as const satisfies Keymap;
+
+/** Of ROOM_KEYS' steps, the ones that make more room. */
+export const MORE_ROOM = new Set(["left", "h"]);
 
 /** Keys while the editor asks to pick one of a list. */
 export const CHOICE_KEYS = [

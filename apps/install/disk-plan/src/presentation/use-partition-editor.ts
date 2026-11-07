@@ -24,12 +24,13 @@ import {
 import {
 	bestShrink,
 	missingRoles,
+	neededMb,
 	quickSetup,
 	ROLE_NAME,
 	ROLE_PURPOSE,
 	type Setup,
 } from "../domain/setup";
-import { CHOICE_KEYS, PARTITION_KEYS, TEXT_KEYS } from "./keymap";
+import { CHOICE_KEYS, MORE_ROOM, PARTITION_KEYS, ROOM_KEYS, TEXT_KEYS } from "./keymap";
 
 type KeyBinding = Keymap[number];
 
@@ -53,6 +54,24 @@ export type Prompt =
 			options: ReadonlyArray<ChoiceOption<unknown>>;
 			index: number;
 			done: (value: unknown) => void;
+	  }
+	| {
+			/** Making room: how big a partition stays, the rest freed for the new system. */
+			kind: "room";
+			title: string;
+			/** What the partition is called on screen. */
+			name: string;
+			/** Its size as chosen, its size now, its bounds and its files (MiB). */
+			sizeMb: number;
+			nowMb: number;
+			minMb: number;
+			maxMb: number;
+			usedMb: number | null;
+			/** The free space the mode needs, for the warning under the bar. */
+			needMb: number;
+			/** How much room was typed, if any. */
+			text: string;
+			done: (mb: number) => void;
 	  }
 	| {
 			kind: "text";
@@ -193,7 +212,63 @@ export function usePartitionEditor({
 		});
 	};
 
+	/** The slider that makes room by shrinking an existing partition, keeping its files. */
+	const openRoom = (target: Extract<Segment, { kind: "existing" }>) => {
+		if (!projection) return;
+		const { part } = target;
+		const entry = editOf(edits, part.number);
+		if (part.min_size_bytes === null)
+			return setNotice(
+				`recpart can't shrink ${part.device} (${part.filesystem ?? "no filesystem"}), so it can't make room`,
+			);
+		if (entry.edit.op === "format" || roleFormats(entry.role))
+			return setNotice(`${part.device} is formatted: delete it and create a new one instead`);
+		const minMb = Math.ceil(part.min_size_bytes / MIB);
+		const maxMb = Math.floor((target.size + spaceAfter(projection, target)) / MIB);
+		const nowMb = Math.floor(target.size / MIB);
+		// Unchanged so far: start halfway between what it holds and all of it, as other
+		// installers do; at least the room the system needs, when there is that much.
+		const spare = maxMb - minMb;
+		const room = Math.min(spare, Math.max(neededMb(mode), Math.floor(spare / 2)));
+		const label = part.fs_label ?? part.label;
+		const name = `${part.device.replace(/^\/dev\//, "")}${label ? ` ("${label}")` : ""}`;
+		const at = segments.indexOf(target);
+		ask({
+			kind: "room",
+			title: `Make room: shrink ${name}`,
+			name: label ?? part.device.replace(/^\/dev\//, ""),
+			sizeMb: entry.edit.op === "resize" ? nowMb : maxMb - room,
+			nowMb: Math.floor(part.size_bytes / MIB),
+			minMb,
+			maxMb,
+			usedMb: part.used_bytes === null ? null : Math.ceil(part.used_bytes / MIB),
+			needMb: neededMb(mode),
+			text: "",
+			done: (mb) => {
+				commit(
+					setExisting(part.number, {
+						...entry,
+						edit: mb * MIB === part.size_bytes ? { op: "keep" } : { op: "resize", sizeMb: mb },
+					}),
+				);
+				// The space it gave up is next to it: select it, ready for a or n.
+				setSelected(at + 1);
+			},
+		});
+	};
+
 	const actions = {
+		// The partition the guide names; r resizes the selected one.
+		room: () => {
+			if (!projection) return;
+			const best = bestShrink(projection);
+			const target = segments.find(
+				(s): s is Extract<Segment, { kind: "existing" }> =>
+					s.kind === "existing" && s.part.number === best?.part.number,
+			);
+			if (target) openRoom(target);
+			else setNotice("no partition here can be shrunk");
+		},
 		select: (key: string) =>
 			setSelected(
 				Math.max(0, Math.min(segments.length - 1, index + (["up", "k"].includes(key) ? -1 : 1))),
@@ -281,29 +356,7 @@ export function usePartitionEditor({
 						commit(setCreated(part.id, (p) => ({ ...p, sizeMb: mb === maxMb ? null : mb }))),
 				});
 			}
-			const { part } = segment;
-			const entry = editOf(edits, part.number);
-			if (part.min_size_bytes === null)
-				return setNotice(
-					`recpart can't resize ${part.device} (${part.filesystem ?? "no filesystem"})`,
-				);
-			if (entry.edit.op === "format" || roleFormats(entry.role))
-				return setNotice(`${part.device} is formatted: delete it and create a new one instead`);
-			ask({
-				kind: "size",
-				title: `New size for ${part.device} (${formatBytes(part.size_bytes)} now)`,
-				text: "",
-				percentOf: maxMb * MIB,
-				minMb: Math.ceil(part.min_size_bytes / MIB),
-				maxMb,
-				done: (mb) =>
-					commit(
-						setExisting(part.number, {
-							...entry,
-							edit: mb * MIB === part.size_bytes ? { op: "keep" } : { op: "resize", sizeMb: mb },
-						}),
-					),
-			});
+			openRoom(segment);
 		},
 		format: () => {
 			if (!segment || segment.kind === "free") return;
@@ -409,6 +462,37 @@ export function usePartitionEditor({
 		},
 		{ active: active && choice !== null },
 	);
+	const room = prompt?.kind === "room" ? prompt : null;
+	const roomSize = (p: Extract<Prompt, { kind: "room" }>, mb: number) =>
+		setPrompt({ ...p, sizeMb: Math.max(p.minMb, Math.min(p.maxMb, mb)) });
+	/** Typed room ("100G", "50%" of what can be freed) sets the divider. */
+	const typeRoom = (p: Extract<Prompt, { kind: "room" }>, text: string) => {
+		const parsed = parseSize(text, (p.maxMb - p.minMb) * MIB);
+		const next = { ...p, text };
+		if (parsed.kind === "mb")
+			next.sizeMb = Math.max(p.minMb, Math.min(p.maxMb, p.maxMb - parsed.mb));
+		else if (parsed.kind === "rest" && text.trim()) next.sizeMb = p.minMb;
+		setPrompt(next);
+	};
+	useKeymap(
+		ROOM_KEYS,
+		{
+			step: (key) => {
+				if (!room) return;
+				const step = Math.max(1024, Math.round((room.maxMb - room.minMb) / 50 / 1024) * 1024);
+				roomSize(room, room.sizeMb + (MORE_ROOM.has(key) ? -step : step));
+			},
+			ends: (key) => room && roomSize(room, key === "home" ? room.minMb : room.maxMb),
+			accept: () => {
+				if (!room) return;
+				close();
+				room.done(room.sizeMb);
+			},
+			erase: () => room && typeRoom(room, room.text.slice(0, -1)),
+			cancel: close,
+		},
+		{ active: active && room !== null, onText: (text) => room && typeRoom(room, room.text + text) },
+	);
 	const typed = prompt?.kind === "size" || prompt?.kind === "text" ? prompt : null;
 	useKeymap(
 		TEXT_KEYS,
@@ -441,13 +525,17 @@ export function usePartitionEditor({
 	const keys: KeyBinding[] = prompt
 		? prompt.kind === "choice"
 			? [...CHOICE_KEYS]
-			: [...TEXT_KEYS]
+			: prompt.kind === "room"
+				? [...ROOM_KEYS]
+				: [...TEXT_KEYS]
 		: PARTITION_KEYS.filter((binding) => {
 				switch (binding.action) {
 					case "create":
 						return segment?.kind === "free";
 					case "setup":
 						return setup?.kind === "ok";
+					case "room":
+						return projection !== null && bestShrink(projection) !== null;
 					case "remove":
 					case "resize":
 					case "format":

@@ -234,15 +234,19 @@
 					"steps": [
 						{
 							"keys": "jjj\\r\\x1b[B\\r",
-							"expect": "Next: make room for A/B"
+							"expect": "Next: press s to make room for A/B"
+						},
+						{
+							"keys": "s",
+							"expect": "Make room: shrink vdy3 (\"Windows\")"
 						},
 						{
 							"keys": "",
-							"expect": "Select vdy3 (\"Windows\") and press r"
+							"expect": "for the new system: 83.3 GB"
 						},
 						{
-							"keys": "jjr150G\\r",
-							"expect": "Next: press a to set up A/B in the 104.8 GB free"
+							"keys": "\\r",
+							"expect": "Next: press a to set up A/B in the 83.3 GB free"
 						},
 						{
 							"keys": "a",
@@ -278,14 +282,14 @@
 						},
 						{
 							"keys": "\\rjjr",
-							"expect": "New size for /dev/vdy3"
+							"expect": "Make room: shrink vdy3"
 						},
 						{
-							"keys": "150G",
-							"expect": "= 150.0 GB"
+							"keys": "107264M",
+							"expect": "Windows: 150.0 GB"
 						},
 						{
-							"keys": "\\rjn30G\\rj\\rjn30G\\rjj\\rjn\\rjjj\\r",
+							"keys": "\\rn30G\\rj\\rjn30G\\rjj\\rjn\\rjjj\\r",
 							"expect": "Ready: recpart accepts this layout"
 						},
 						{

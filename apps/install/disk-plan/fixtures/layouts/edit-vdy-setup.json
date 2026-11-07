@@ -11,14 +11,14 @@
 		{
 			"action": "resize",
 			"partition": 3,
-			"size_mb": 153600,
+			"size_mb": 175520,
 			"role": null,
 			"mountpoint": null
 		},
 		{
 			"action": "create",
 			"size_mb": 20480,
-			"start_mb": 154129,
+			"start_mb": 176049,
 			"filesystem": null,
 			"label": null,
 			"role": "root_a",
@@ -27,7 +27,7 @@
 		{
 			"action": "create",
 			"size_mb": 20480,
-			"start_mb": 174609,
+			"start_mb": 196529,
 			"filesystem": null,
 			"label": null,
 			"role": "root_b",
@@ -36,7 +36,7 @@
 		{
 			"action": "create",
 			"size_mb": null,
-			"start_mb": 195089,
+			"start_mb": 217009,
 			"filesystem": null,
 			"label": null,
 			"role": "state",

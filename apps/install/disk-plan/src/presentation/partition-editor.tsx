@@ -20,7 +20,7 @@ import type { Run } from "../flow";
 import { formatBytes } from "../domain/recpart";
 import { MIB, requiredRoles, type Projection, type Segment } from "../domain/layout";
 import { neededMb, roleLabel, ROLE_NAME, ROLE_PURPOSE } from "../domain/setup";
-import { sizeAnswer, type PartitionEditor } from "./use-partition-editor";
+import { sizeAnswer, type PartitionEditor, type Prompt } from "./use-partition-editor";
 
 function useIntent(intent: ColorIntent): string | undefined {
 	return resolveIntentColor(useTuiTheme(), intent, useTuiColors());
@@ -141,6 +141,7 @@ function PromptBox({ editor }: { editor: PartitionEditor }): ReactNode {
 			</Callout>
 		);
 	}
+	if (prompt.kind === "room") return <RoomSlider prompt={prompt} />;
 	const answer = prompt.kind === "size" ? sizeAnswer(prompt) : null;
 	return (
 		<Callout tone="info" title={prompt.title}>
@@ -159,6 +160,70 @@ function PromptBox({ editor }: { editor: PartitionEditor }): ReactNode {
 					? `20G, 512M, 50% or rest (a bare number is GiB) · ${formatBytes(prompt.minMb * MIB)} to ${formatBytes(prompt.maxMb * MIB)} · Enter accept · Esc cancel`
 					: `${prompt.hint} · Enter accept · Esc cancel`}
 			</UiText>
+		</Callout>
+	);
+}
+
+/** Making room: the partition and the space it gives up as one bar with a divider, its
+ * files drawn solid, and both sizes under it. */
+function RoomSlider({ prompt }: { prompt: Extract<Prompt, { kind: "room" }> }): ReactNode {
+	const width = Math.max(10, useContext(ContentWidth) - 4);
+	const files = useIntent("accent");
+	const dim = useIntent("dimText");
+	const free = useIntent("success");
+	const bad = useIntent("warning");
+	const room = prompt.maxMb - prompt.sizeMb;
+	const cells = (mb: number) => Math.round((mb / Math.max(1, prompt.maxMb)) * (width - 1));
+	const keep = Math.max(1, cells(prompt.sizeMb));
+	const used = Math.min(keep, prompt.usedMb === null ? 0 : Math.max(1, cells(prompt.usedMb)));
+	const left = `${prompt.name}: ${formatBytes(prompt.sizeMb * MIB)}`;
+	const right = `for the new system: ${formatBytes(room * MIB)}`;
+	const gap = Math.max(1, width - left.length - right.length);
+	return (
+		<Callout tone="info" title={prompt.title}>
+			<UiText>Its files stay where they are; only space it doesn't use is given up.</UiText>
+			<Box marginTop={1} flexDirection="column">
+				<Text>
+					<Text color={files}>{"█".repeat(used)}</Text>
+					<Text color={files}>{"▒".repeat(keep - used)}</Text>
+					<Text bold>│</Text>
+					<Text color={free}>{"·".repeat(Math.max(0, width - 1 - keep))}</Text>
+				</Text>
+				{left.length + right.length + 1 <= width ? (
+					<Text>
+						<Text bold>{left}</Text>
+						{" ".repeat(gap)}
+						<Text bold color={room < prompt.needMb ? bad : free}>
+							{right}
+						</Text>
+					</Text>
+				) : (
+					<>
+						<Text bold>{left}</Text>
+						<Text bold color={room < prompt.needMb ? bad : free}>
+							{right}
+						</Text>
+					</>
+				)}
+			</Box>
+			{prompt.text ? (
+				<Text>
+					<Text color={dim}>room › </Text>
+					<Text bold>{prompt.text}</Text>
+					<Text color={dim}>_</Text>
+				</Text>
+			) : null}
+			<Box marginTop={1} flexDirection="column">
+				{room < prompt.needMb ? (
+					<UiText intent="warning">{`The new system needs at least ${formatBytes(prompt.needMb * MIB)}: move left.`}</UiText>
+				) : null}
+				<UiText intent="dimText">
+					{"← more room · → less · or type how much room (100G) · Enter shrinks · Esc cancels"}
+				</UiText>
+				<UiText intent="dimText">
+					{`${prompt.name} can't go below ${formatBytes(prompt.minMb * MIB)}${prompt.usedMb !== null ? `: ${formatBytes(prompt.usedMb * MIB)} of files plus a margin` : ""}. It is ${formatBytes(prompt.nowMb * MIB)} now.`}
+				</UiText>
+			</Box>
 		</Callout>
 	);
 }
@@ -216,15 +281,13 @@ function guide(editor: PartitionEditor, mode: InstallMode, plan: Run<PartitionPl
 		const label = shrink.part.fs_label ?? shrink.part.label;
 		return {
 			tone: "info",
-			title: `Next: make room for ${name}`,
+			title: `Next: press s to make room for ${name}`,
 			lines: [
-				`${mode === "ab" ? "A/B" : "The system"} needs at least ${need} of free space in one place (more is better).`,
+				`There isn't ${need} of free space in one place, which ${mode === "ab" ? "A/B" : "the system"} needs.`,
 				<Text key="s">
-					{"Select "}
-					<Text bold>{short(shrink.part.device)}</Text>
-					{`${label ? ` ("${label}")` : ""} and press `}
-					<Text bold>r</Text>
-					{` to shrink it: it can give up ${formatBytes(shrink.spareMb * MIB)}.`}
+					{"s shrinks "}
+					<Text bold>{`${short(shrink.part.device)}${label ? ` ("${label}")` : ""}`}</Text>
+					{` without touching its files: it can give up to ${formatBytes(shrink.spareMb * MIB)}. You choose how much with ← and →.`}
 				</Text>,
 			],
 		};
@@ -297,7 +360,7 @@ function Selected({
 				? [
 						{
 							hotkey: "r",
-							label: `Shrink or grow (down to ${formatBytes(part.min_size_bytes!)})`,
+							label: "Make smaller or bigger (keeps its files)",
 						},
 					]
 				: []),

@@ -5,7 +5,7 @@
 		{
 			"action": "resize",
 			"partition": 3,
-			"size_mb": 153600,
+			"size_mb": 175520,
 			"role": null,
 			"mountpoint": null
 		}

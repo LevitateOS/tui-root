@@ -14,7 +14,7 @@
     "root_size_mb": null,
     "root_a_size_mb": 20480,
     "root_b_size_mb": 20480,
-    "state_size_mb": 66304
+    "state_size_mb": 44384
   },
   "disk": {
     "path": "/dev/vdy",
@@ -26,13 +26,13 @@
   "steps": [
     {
       "phase": "resize",
-      "command": "ntfsresize --no-action --no-progress-bar --size 161061273600 /dev/vdy3",
+      "command": "ntfsresize --no-action --no-progress-bar --size 184046059520 /dev/vdy3",
       "program": "ntfsresize",
       "args": [
         "--no-action",
         "--no-progress-bar",
         "--size",
-        "161061273600",
+        "184046059520",
         "/dev/vdy3"
       ],
       "status": null,
@@ -42,12 +42,12 @@
     },
     {
       "phase": "resize",
-      "command": "ntfsresize --no-progress-bar --size 161061273600 /dev/vdy3",
+      "command": "ntfsresize --no-progress-bar --size 184046059520 /dev/vdy3",
       "program": "ntfsresize",
       "args": [
         "--no-progress-bar",
         "--size",
-        "161061273600",
+        "184046059520",
         "/dev/vdy3"
       ],
       "status": null,
@@ -217,7 +217,7 @@
       "label": "STATE",
       "gpt_type": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
       "bootable": false,
-      "size_mb": 66304,
+      "size_mb": 44384,
       "mountpoint": "/var"
     }
   ],
@@ -304,7 +304,7 @@
       },
       "after": {
         "start_bytes": 554696704,
-        "size_bytes": 161061273600,
+        "size_bytes": 184046059520,
         "filesystem": "ntfs",
         "fs_label": "Windows"
       },
@@ -336,7 +336,7 @@
       "change": "created",
       "before": null,
       "after": {
-        "start_bytes": 161615970304,
+        "start_bytes": 184600756224,
         "size_bytes": 21474836480,
         "filesystem": "ext4",
         "fs_label": "ROOT_A"
@@ -350,7 +350,7 @@
       "change": "created",
       "before": null,
       "after": {
-        "start_bytes": 183090806784,
+        "start_bytes": 206075592704,
         "size_bytes": 21474836480,
         "filesystem": "ext4",
         "fs_label": "ROOT_B"
@@ -364,8 +364,8 @@
       "change": "created",
       "before": null,
       "after": {
-        "start_bytes": 204565643264,
-        "size_bytes": 69524783104,
+        "start_bytes": 227550429184,
+        "size_bytes": 46539997184,
         "filesystem": "ext4",
         "fs_label": "STATE"
       },
