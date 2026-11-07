@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "code": "E016",
+  "component": "layout",
+  "expectation": "a ab layout has exactly one partition with role efi (roles needed: efi, root_a, root_b, state)",
+  "observed": "0 with role efi",
+  "remediation": "Give one partition role efi."
+}

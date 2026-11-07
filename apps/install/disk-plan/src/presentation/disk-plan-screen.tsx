@@ -86,6 +86,9 @@ import {
 } from "./pages";
 import { useRecpartRun } from "./use-recpart";
 
+/** The editor's keys the footer shows (the rest are beside the selected row). */
+const EDITOR_FOOTER: ReadonlySet<string> = new Set(["select", "setup", "undo", "next", "back"]);
+
 /** About this many columns show a disk card's path, size and model. */
 const DISK_CARD_COLUMNS = 40;
 
@@ -336,11 +339,16 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 		"failure-diagnostics": () => <FailureDiagnostics session={session} />,
 	};
 
+	// A page taller than its pane scrolls.
+	const pageHeight = usePageHeight(view);
+	const pageScrolls = pageHeight.height > shell.content.textRows - 2;
 	const keys = [
 		...(pageId === "destructive-confirm"
 			? CONFIRM_KEYS
 			: contentFocus && pageId === "partitions"
-				? editor.keys
+				? // The selected row's actions are on the page; the footer keeps the rest.
+					// (or below the fold, when the page scrolls).
+					editor.keys.filter((b) => editor.prompt || pageScrolls || EDITOR_FOOTER.has(b.action))
 				: contentFocus
 					? [
 							...CONTENT_KEYS,
@@ -352,10 +360,8 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 			? []
 			: GLOBAL_KEYS.filter((b) => b.action !== "failure" || lastFailure(session) !== null)),
 	];
-	// A page taller than its pane scrolls.
-	const pageHeight = usePageHeight(view);
 	const typing = (pageId === "destructive-confirm" && !showFailure) || prompting;
-	const scrollable = !typing && pageHeight.height > shell.content.textRows - 2;
+	const scrollable = !typing && pageScrolls;
 	const railPages = shownPages(session).filter((p) => p.phase);
 	const step = railPages.findIndex((p) => p.id === view);
 	const layout = fitFooter(shell, [
@@ -365,15 +371,7 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 			contentFocus ? "accent" : "warning",
 		),
 		...keymapStatusSegments(scrollable ? [...keys, ...PAGE_SCROLL_KEYS] : keys),
-		...((notice ?? (pageId === "partitions" ? editor.notice : null))
-			? [
-					textStatusSegment(
-						"notice",
-						(notice ?? (pageId === "partitions" ? editor.notice : null))!,
-						"warning",
-					),
-				]
-			: []),
+		...(notice ? [textStatusSegment("notice", notice, "warning")] : []),
 	]);
 	const scroll = usePageScroll(pageHeight, layout.content.textRows, !typing);
 	return (

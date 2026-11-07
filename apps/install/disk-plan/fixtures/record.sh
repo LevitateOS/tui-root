@@ -66,4 +66,8 @@ refuse-misaligned vdw mutable
 refuse-disk-changed vdy ab
 edit-empty vdz ab
 edit-dualboot vdy ab
+edit-vdy-none vdy ab
+edit-vdy-shrunk vdy ab
+edit-vdy-setup vdy ab
+edit-vdz-setup vdz ab
 LAYOUTS

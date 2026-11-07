@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useKeymap, type Keymap } from "@levitate/tui-kit";
 import {
-	ROLE_HELP,
 	type Filesystem,
 	type InspectResult,
 	type InstallMode,
@@ -22,6 +21,14 @@ import {
 	type Projection,
 	type Segment,
 } from "../domain/layout";
+import {
+	bestShrink,
+	missingRoles,
+	quickSetup,
+	ROLE_NAME,
+	ROLE_PURPOSE,
+	type Setup,
+} from "../domain/setup";
 import { CHOICE_KEYS, PARTITION_KEYS, TEXT_KEYS } from "./keymap";
 
 type KeyBinding = Keymap[number];
@@ -82,8 +89,16 @@ export type PartitionEditor = {
 	selected: number;
 	prompt: Prompt | null;
 	notice: string | null;
-	/** The keys that do something right now, for the footer. */
+	/** The keys that do something right now. */
 	keys: readonly KeyBinding[];
+	/** Roles the mode needs that nothing holds yet. */
+	missing: readonly Role[];
+	/** What the quick setup would do in the largest free space. */
+	setup: Setup | null;
+	/** The partition that would give the most room if shrunk. */
+	shrink: ReturnType<typeof bestShrink>;
+	/** Undo has something to undo. */
+	changed: boolean;
 };
 
 /** The partition editor's state and keys. `active` while its page has the keyboard. */
@@ -159,10 +174,10 @@ export function usePartitionEditor({
 			options: [
 				...rolesFor(mode).map((role) => ({
 					value: role as Role | null,
-					label: role,
-					help: `${role === "other" ? "mounted where you say (you're asked next)" : ROLE_HELP[role]}${holders(role).length ? ` · now ${holders(role).join(", ")}` : ""}`,
+					label: ROLE_NAME[role],
+					help: `${ROLE_PURPOSE[role]}${holders(role).length ? ` · now ${holders(role).join(", ")}` : ""}`,
 				})),
-				{ value: null, label: "none", help: "not used by the installed system" },
+				{ value: null, label: "Nothing", help: "the installed system doesn't use it" },
 			],
 			done: (value) => {
 				const role = value as Role | null;
@@ -183,19 +198,38 @@ export function usePartitionEditor({
 			setSelected(
 				Math.max(0, Math.min(segments.length - 1, index + (["up", "k"].includes(key) ? -1 : 1))),
 			),
+		setup: () => {
+			if (!inspect) return;
+			const result = quickSetup(
+				inspect,
+				edits,
+				mode,
+				segment?.kind === "free" ? segment.start : null,
+			);
+			if (result.kind === "no-room")
+				return setNotice(
+					`not enough free space in one place: ${formatBytes(result.needMb * MIB)} needed, ${formatBytes(result.freeMb * MIB)} there`,
+				);
+			if (result.steps.length === 0)
+				return setNotice("the system already has every partition it needs");
+			commit(
+				() => result.edits,
+				`set up ${mode === "ab" ? "A/B" : "the system"} in the free space (u undoes it)`,
+			);
+		},
 		create: () => {
 			if (segment?.kind !== "free") return;
 			const gap = segment;
 			ask({
 				kind: "size",
-				title: `New partition in the ${formatBytes(gap.size)} free at ${formatBytes(gap.start)}`,
+				title: `How big should the new partition be? (${formatBytes(gap.size)} free here)`,
 				text: "",
 				percentOf: gap.size,
 				minMb: 1,
 				maxMb: Math.floor(gap.size / MIB),
 				done: (mb) => {
 					const rest = mb === Math.floor(gap.size / MIB);
-					askRole("What the new partition is for", ({ role, mountpoint }) =>
+					askRole("What is the new partition for?", ({ role, mountpoint }) =>
 						commit((e) => ({
 							...e,
 							created: [
@@ -238,7 +272,7 @@ export function usePartitionEditor({
 				const part = segment.part;
 				return ask({
 					kind: "size",
-					title: `Size of the new ${part.role ?? "partition"}`,
+					title: `New size for the new ${part.role ? ROLE_NAME[part.role] : "partition"}`,
 					text: "",
 					percentOf: maxMb * MIB,
 					minMb: 1,
@@ -257,7 +291,7 @@ export function usePartitionEditor({
 				return setNotice(`${part.device} is formatted: delete it and create a new one instead`);
 			ask({
 				kind: "size",
-				title: `Resize ${part.device} (${formatBytes(part.size_bytes)} now)`,
+				title: `New size for ${part.device} (${formatBytes(part.size_bytes)} now)`,
 				text: "",
 				percentOf: maxMb * MIB,
 				minMb: Math.ceil(part.min_size_bytes / MIB),
@@ -306,7 +340,7 @@ export function usePartitionEditor({
 		role: () => {
 			if (!segment || segment.kind === "free") return;
 			askRole(
-				`What ${segment.kind === "existing" ? segment.part.device : "the new partition"} is for`,
+				`What is ${segment.kind === "existing" ? segment.part.device : "the new partition"} for?`,
 				(assignment) => {
 					if (segment.kind === "new")
 						return commit(setCreated(segment.part.id, (p) => ({ ...p, ...assignment })));
@@ -399,6 +433,11 @@ export function usePartitionEditor({
 		},
 	);
 
+	const missing = projection ? missingRoles(projection, mode) : [];
+	const setup = useMemo(
+		() => (inspect && missing.length ? quickSetup(inspect, edits, mode) : null),
+		[inspect, edits, mode, missing.length],
+	);
 	const keys: KeyBinding[] = prompt
 		? prompt.kind === "choice"
 			? [...CHOICE_KEYS]
@@ -407,6 +446,8 @@ export function usePartitionEditor({
 				switch (binding.action) {
 					case "create":
 						return segment?.kind === "free";
+					case "setup":
+						return setup?.kind === "ok";
 					case "remove":
 					case "resize":
 					case "format":
@@ -424,5 +465,16 @@ export function usePartitionEditor({
 						return true;
 				}
 			});
-	return { projection, edits, selected: index, prompt, notice, keys };
+	return {
+		projection,
+		edits,
+		selected: index,
+		prompt,
+		notice,
+		keys,
+		missing,
+		setup,
+		shrink: projection ? bestShrink(projection) : null,
+		changed: history.length > 1,
+	};
 }

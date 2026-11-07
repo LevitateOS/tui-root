@@ -199,7 +199,7 @@
 					]
 				},
 				{
-					"name": "edit: incomplete layout",
+					"name": "edit: empty disk with quick setup",
 					"args": [
 						"--disk",
 						"/dev/vdz"
@@ -210,16 +210,56 @@
 					"steps": [
 						{
 							"keys": "jjj\\r\\x1b[B\\r",
-							"expect": "Not a valid ab layout yet"
+							"expect": "Next: press a to set up A/B in the 64.0 GB free"
 						},
 						{
 							"keys": "",
-							"expect": "Give one partition role efi."
+							"expect": "new EFI partition: 1.0 GB"
+						},
+						{
+							"keys": "a",
+							"expect": "Ready: recpart accepts this layout"
 						}
 					]
 				},
 				{
-					"name": "edit: dual boot",
+					"name": "edit: dual boot with quick setup",
+					"args": [
+						"--disk",
+						"/dev/vdy"
+					],
+					"env": {
+						"RECPART_FIXTURE_DISKS": "all"
+					},
+					"steps": [
+						{
+							"keys": "jjj\\r\\x1b[B\\r",
+							"expect": "Next: make room for A/B"
+						},
+						{
+							"keys": "",
+							"expect": "Select vdy3 (\"Windows\") and press r"
+						},
+						{
+							"keys": "jjr150G\\r",
+							"expect": "Next: press a to set up A/B in the 104.8 GB free"
+						},
+						{
+							"keys": "a",
+							"expect": "Ready: recpart accepts this layout"
+						},
+						{
+							"keys": "",
+							"expect": "System slot A  new"
+						},
+						{
+							"keys": "\\rjjj",
+							"expect": "Nothing on /dev/vdy is erased: this resizes 1 partition and creates 3"
+						}
+					]
+				},
+				{
+					"name": "edit: dual boot by hand",
 					"args": [
 						"--disk",
 						"/dev/vdy"
@@ -234,11 +274,11 @@
 						},
 						{
 							"keys": "m",
-							"expect": "What /dev/vdy1 is for"
+							"expect": "What is /dev/vdy1 for?"
 						},
 						{
 							"keys": "\\rjjr",
-							"expect": "Resize /dev/vdy3"
+							"expect": "New size for /dev/vdy3"
 						},
 						{
 							"keys": "150G",
@@ -246,11 +286,11 @@
 						},
 						{
 							"keys": "\\rjn30G\\rj\\rjn30G\\rjj\\rjn\\rjjj\\r",
-							"expect": "recpart accepts this ab layout"
+							"expect": "Ready: recpart accepts this layout"
 						},
 						{
 							"keys": "",
-							"expect": "shrink"
+							"expect": "shrunk"
 						},
 						{
 							"keys": "\\rjjj",

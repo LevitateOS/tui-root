@@ -1,0 +1,14 @@
+{
+	"new_table": false,
+	"table_id": "7D3B1C5E-2A4F-4E8B-9C61-0F2E8A4D5B10",
+	"actions": [
+		{
+			"action": "resize",
+			"partition": 3,
+			"size_mb": 153600,
+			"role": null,
+			"mountpoint": null
+		}
+	],
+	"swap_file": null
+}

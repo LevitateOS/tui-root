@@ -1,5 +1,5 @@
-/** The partition editor page: the disk as the edits leave it, what the mode still needs,
- * recpart's verdict on the layout, and the question being asked. */
+/** The partition editor page: the next step to take, the disk as the edits leave it, what
+ * the selected partition can do, and what the system still needs. */
 import { Box, Text } from "ink";
 import { useContext, type ReactNode } from "react";
 import {
@@ -13,12 +13,24 @@ import {
 	useTuiColors,
 	useTuiTheme,
 	type ColorIntent,
+	type Tone,
 } from "@levitate/tui-kit";
 import type { InspectResult, InstallMode, PartitionPlan } from "../generated/recpart";
 import type { Run } from "../flow";
 import { formatBytes } from "../domain/recpart";
-import { requiredRoles, type Projection, type Segment } from "../domain/layout";
+import { MIB, requiredRoles, type Projection, type Segment } from "../domain/layout";
+import { neededMb, roleLabel, ROLE_NAME, ROLE_PURPOSE } from "../domain/setup";
 import { sizeAnswer, type PartitionEditor } from "./use-partition-editor";
+
+function useIntent(intent: ColorIntent): string | undefined {
+	return resolveIntentColor(useTuiTheme(), intent, useTuiColors());
+}
+
+const MODE_NAME: Record<InstallMode, string> = { ab: "A/B", mutable: "the system" };
+
+function short(device: string): string {
+	return device.replace(/^\/dev\//, "");
+}
 
 /** What the Change column says, and how loudly. */
 function change(segment: Segment): { text: string; tone: ColorIntent | null } {
@@ -28,50 +40,33 @@ function change(segment: Segment): { text: string; tone: ColorIntent | null } {
 	switch (segment.edit.op) {
 		case "resize":
 			return {
-				text: segment.size < segment.part.size_bytes ? "shrink" : "grow",
+				text: segment.size < segment.part.size_bytes ? "shrunk" : "grown",
 				tone: "warning",
 			};
 		case "format":
-			return { text: "format (erases)", tone: "error" };
+			return { text: "erased (formatted)", tone: "error" };
 		default:
-			return { text: segment.role ? "keep" : "untouched", tone: null };
+			return segment.role ? { text: "kept", tone: null } : { text: "untouched", tone: "dimText" };
 	}
 }
 
-function use(segment: Segment): string {
-	if (segment.kind === "free") return "";
-	if (!segment.role) return "";
-	return segment.role === "other" ? (segment.mountpoint ?? "other") : segment.role;
+function name(segment: Segment): string {
+	if (segment.kind === "free") return "free space";
+	if (segment.kind === "new") return "(new)";
+	return short(segment.part.device);
 }
 
-function filesystem(segment: Segment): string {
+/** What is on it: filesystem and label. */
+function holds(segment: Segment): string {
 	if (segment.kind === "free") return "";
 	if (segment.kind === "new")
 		return (
 			segment.part.filesystem ??
 			(segment.role === "efi" ? "vfat" : segment.role === "swap" ? "swap" : "ext4")
 		);
-	if (segment.edit.op === "format") return segment.edit.filesystem;
-	return segment.part.filesystem ?? "";
-}
-
-function name(segment: Segment): string {
-	if (segment.kind === "free") return "free space";
-	if (segment.kind === "new") return "(new)";
-	return segment.part.device.replace(/^\/dev\//, "");
-}
-
-function detail(segment: Segment): string {
-	if (segment.kind !== "existing") return "";
-	const { part } = segment;
-	return [
-		segment.edit.op === "resize" ? `was ${formatBytes(part.size_bytes)}` : null,
-		part.fs_label ?? part.label,
-		part.used_bytes !== null ? `${formatBytes(part.used_bytes)} used` : null,
-		part.mountpoints.length ? `mounted ${part.mountpoints.join(", ")}` : null,
-	]
-		.filter(Boolean)
-		.join(" · ");
+	const fs = segment.edit.op === "format" ? segment.edit.filesystem : segment.part.filesystem;
+	const label = segment.edit.op === "format" ? null : (segment.part.fs_label ?? segment.part.label);
+	return [fs, label ? `"${label}"` : null].filter(Boolean).join(" ");
 }
 
 const SEGMENT_INTENTS: readonly ColorIntent[] = ["accent", "success", "warning", "info", "link"];
@@ -118,21 +113,21 @@ function SegmentBar({
 
 /** The question being asked, with what an answer may be. */
 function PromptBox({ editor }: { editor: PartitionEditor }): ReactNode {
-	const theme = useTuiTheme();
-	const colors = useTuiColors();
+	const dim = useIntent("dimText");
+	const accent = useIntent("accent");
+	const text = useIntent("text");
+	const ok = useIntent("success");
+	const bad = useIntent("warning");
 	const prompt = editor.prompt;
 	if (!prompt) return null;
-	const dim = resolveIntentColor(theme, "dimText", colors);
-	if (prompt.kind === "choice")
+	if (prompt.kind === "choice") {
+		const labelWidth = Math.max(...prompt.options.map((o) => o.label.length)) + 4;
 		return (
 			<Callout tone="info" title={prompt.title}>
 				{prompt.options.map((option, i) => (
 					<Box key={option.label} flexDirection="row">
-						<Box width={11} flexShrink={0}>
-							<Text
-								bold={i === prompt.index}
-								color={resolveIntentColor(theme, i === prompt.index ? "accent" : "text", colors)}
-							>
+						<Box width={labelWidth} flexShrink={0}>
+							<Text bold={i === prompt.index} color={i === prompt.index ? accent : text}>
 								{i === prompt.index ? "▸ " : "  "}
 								{option.label}
 							</Text>
@@ -142,8 +137,10 @@ function PromptBox({ editor }: { editor: PartitionEditor }): ReactNode {
 						</Box>
 					</Box>
 				))}
+				<Text color={dim}>↑/↓ choose · Enter accept · Esc cancel</Text>
 			</Callout>
 		);
+	}
 	const answer = prompt.kind === "size" ? sizeAnswer(prompt) : null;
 	return (
 		<Callout tone="info" title={prompt.title}>
@@ -152,50 +149,182 @@ function PromptBox({ editor }: { editor: PartitionEditor }): ReactNode {
 				<Text bold>{prompt.text}</Text>
 				<Text color={dim}>_</Text>
 				{answer ? (
-					<Text
-						color={resolveIntentColor(theme, answer.kind === "ok" ? "success" : "warning", colors)}
-					>
-						{answer.kind === "ok"
-							? `   = ${formatBytes(answer.mb * 1024 * 1024)}`
-							: `   ${answer.message}`}
+					<Text color={answer.kind === "ok" ? ok : bad}>
+						{answer.kind === "ok" ? `   = ${formatBytes(answer.mb * MIB)}` : `   ${answer.message}`}
 					</Text>
 				) : null}
 			</Text>
 			<UiText intent="dimText">
 				{prompt.kind === "size"
-					? `20G, 512M, 1.5T, 50% or rest (a bare number is GiB) · ${formatBytes(prompt.minMb * 1024 * 1024)} to ${formatBytes(prompt.maxMb * 1024 * 1024)}`
-					: prompt.hint}
+					? `20G, 512M, 50% or rest (a bare number is GiB) · ${formatBytes(prompt.minMb * MIB)} to ${formatBytes(prompt.maxMb * MIB)} · Enter accept · Esc cancel`
+					: `${prompt.hint} · Enter accept · Esc cancel`}
 			</UiText>
 		</Callout>
 	);
 }
 
-/** recpart's verdict on the layout as it stands. */
-function Check({ plan, mode }: { plan: Run<PartitionPlan>; mode: InstallMode }): ReactNode {
-	if (plan.kind === "idle" || plan.kind === "running")
-		return <UiText intent="dimText">Checking the layout with recpart …</UiText>;
-	if (plan.kind === "failed")
-		return plan.error ? (
-			<Callout tone="warning" title={`Not a valid ${mode} layout yet`}>
-				<UiText bold>{plan.error.remediation}</UiText>
-				<UiText intent="dimText">{`recpart: expected ${plan.error.expectation}; found ${plan.error.observed} (${plan.error.code})`}</UiText>
-			</Callout>
-		) : (
-			<Callout tone="danger" title="recpart couldn't check the layout">
-				<UiText>{plan.output}</UiText>
-			</Callout>
-		);
-	const counts = new Map<string, number>();
-	for (const entry of plan.value.summary)
-		counts.set(entry.change, (counts.get(entry.change) ?? 0) + 1);
-	const text = ["erased", "formatted", "resized", "created", "untouched"]
-		.filter((kind) => counts.get(kind))
-		.map((kind) => `${counts.get(kind)} ${kind}`)
-		.join(" · ");
+type Guide = { tone: Tone; title: string; lines: ReactNode[] };
+
+/** The one next step: make room, fill the free space, fix what recpart refuses, or go on. */
+function guide(editor: PartitionEditor, mode: InstallMode, plan: Run<PartitionPlan>): Guide {
+	const name = MODE_NAME[mode];
+	if (editor.missing.length === 0) {
+		if (plan.kind === "ok")
+			return {
+				tone: "success",
+				title: "Ready: recpart accepts this layout",
+				lines: ["Enter continues to the plan. Nothing is written until the Confirm step."],
+			};
+		if (plan.kind === "failed")
+			return plan.error
+				? {
+						tone: "warning",
+						title: "recpart doesn't accept this yet",
+						lines: [
+							<UiText key="r" bold>
+								{plan.error.remediation}
+							</UiText>,
+							<UiText key="d" intent="dimText">
+								{`${plan.error.observed} (${plan.error.code})`}
+							</UiText>,
+						],
+					}
+				: { tone: "danger", title: "recpart couldn't check the layout", lines: [plan.output] };
+		return { tone: "info", title: "Checking the layout with recpart …", lines: [] };
+	}
+	const setup = editor.setup;
+	if (setup?.kind === "ok")
+		return {
+			tone: "info",
+			title: `Next: press a to set up ${name} in the ${formatBytes(setup.freeMb * MIB)} free`,
+			lines: [
+				...setup.steps.map((step) => (
+					<Text key={step.what}>
+						{"• "}
+						<Text bold>{step.what}</Text>
+						{`: ${step.detail}`}
+					</Text>
+				)),
+				<UiText key="own" intent="dimText">
+					Or place them yourself: select free space, n makes a partition, m says what it is for.
+				</UiText>,
+			],
+		};
+	const need = formatBytes(neededMb(mode) * MIB);
+	const shrink = editor.shrink;
+	if (shrink) {
+		const label = shrink.part.fs_label ?? shrink.part.label;
+		return {
+			tone: "info",
+			title: `Next: make room for ${name}`,
+			lines: [
+				`${mode === "ab" ? "A/B" : "The system"} needs at least ${need} of free space in one place (more is better).`,
+				<Text key="s">
+					{"Select "}
+					<Text bold>{short(shrink.part.device)}</Text>
+					{`${label ? ` ("${label}")` : ""} and press `}
+					<Text bold>r</Text>
+					{` to shrink it: it can give up ${formatBytes(shrink.spareMb * MIB)}.`}
+				</Text>,
+			],
+		};
+	}
+	return {
+		tone: "warning",
+		title: `There's no room for ${name}`,
+		lines: [
+			`It needs at least ${need} of free space in one place.`,
+			"Delete a partition (d) to free its space, or W starts over with an empty partition table, erasing everything.",
+		],
+	};
+}
+
+/** A key and what it does, as on a button. */
+function KeyChip({ hotkey, label, tone }: { hotkey: string; label: string; tone?: ColorIntent }) {
+	const accent = useIntent("accent");
+	const color = useIntent(tone ?? "text");
 	return (
-		<Callout tone="success" title={`recpart accepts this ${mode} layout`}>
-			<UiText intent="dimText">{text}</UiText>
-		</Callout>
+		<Text>
+			<Text inverse bold color={accent}>{` ${hotkey} `}</Text>
+			<Text color={color}>{` ${label}`}</Text>
+		</Text>
+	);
+}
+
+/** The selected row: what it is, and what can be done to it. */
+function Selected({
+	segment,
+	editor,
+	mode,
+}: {
+	segment: Segment;
+	editor: PartitionEditor;
+	mode: InstallMode;
+}): ReactNode {
+	const has = (action: string) => editor.keys.some((binding) => binding.action === action);
+	let what: string;
+	let chips: Array<{ hotkey: string; label: string; tone?: ColorIntent }>;
+	if (segment.kind === "free") {
+		what = `${formatBytes(segment.size)} of free space`;
+		chips = [
+			...(has("setup") ? [{ hotkey: "a", label: `Set up ${MODE_NAME[mode]} here` }] : []),
+			{ hotkey: "n", label: "New partition here" },
+		];
+	} else if (segment.kind === "new") {
+		what = `A new ${formatBytes(segment.size)} partition${segment.role ? `: ${roleLabel(segment.role, segment.mountpoint)}` : ""}`;
+		chips = [
+			{ hotkey: "m", label: "Use as…" },
+			{ hotkey: "r", label: "Change size" },
+			{ hotkey: "f", label: "Filesystem" },
+			{ hotkey: "d", label: "Remove" },
+		];
+	} else {
+		const part = segment.part;
+		const label = part.fs_label ?? part.label;
+		what = [
+			`${short(part.device)}: ${formatBytes(part.size_bytes)} now`,
+			part.filesystem ?? "no filesystem",
+			label ? `"${label}"` : null,
+			part.used_bytes !== null ? `${formatBytes(part.used_bytes)} used` : null,
+			part.mountpoints.length ? `mounted at ${part.mountpoints.join(", ")}` : null,
+		]
+			.filter(Boolean)
+			.join(" · ");
+		const resizable = part.min_size_bytes !== null;
+		chips = [
+			{ hotkey: "m", label: "Use as…" },
+			...(resizable
+				? [
+						{
+							hotkey: "r",
+							label: `Shrink or grow (down to ${formatBytes(part.min_size_bytes!)})`,
+						},
+					]
+				: []),
+			{ hotkey: "f", label: "Format (erases it)", tone: "warning" as const },
+			{ hotkey: "d", label: "Delete (erases it)", tone: "warning" as const },
+			...(has("clear") ? [{ hotkey: "x", label: "Leave as it is" }] : []),
+		];
+	}
+	return (
+		<Section title="Selected" trailing="↑/↓ moves">
+			<UiText>{what}</UiText>
+			{segment.kind === "existing" && segment.edit.op !== "keep" ? (
+				<UiText intent="warning">
+					{segment.edit.op === "resize"
+						? `Change: ${change(segment).text} to ${formatBytes(segment.size)}`
+						: `Change: ${change(segment).text}`}
+				</UiText>
+			) : null}
+			{segment.kind !== "free" && segment.role ? (
+				<UiText intent="dimText">{`Used as ${roleLabel(segment.role, segment.mountpoint)}: ${ROLE_PURPOSE[segment.role]}`}</UiText>
+			) : null}
+			<Box flexDirection="row" flexWrap="wrap" columnGap={2} marginTop={1}>
+				{chips.map((chip) => (
+					<KeyChip key={chip.hotkey} {...chip} />
+				))}
+			</Box>
+		</Section>
 	);
 }
 
@@ -210,14 +339,13 @@ export function PartitionEditorPage({
 	mode: InstallMode;
 	plan: Run<PartitionPlan>;
 }): ReactNode {
+	const okColor = useIntent("success");
 	const heading = (
 		<Box flexDirection="column" marginBottom={1}>
 			<UiText bold intent="heading">
 				Edit the partitions
 			</UiText>
-			<UiText intent="dimText">
-				Nothing is written until the Confirm step. recpart checks the layout after every change.
-			</UiText>
+			<UiText intent="dimText">Nothing is written until the Confirm step.</UiText>
 		</Box>
 	);
 	if (inspect.kind === "failed")
@@ -239,23 +367,32 @@ export function PartitionEditorPage({
 			</Box>
 		);
 	const { disk, table } = inspect.value;
-	const holders = (role: string) =>
-		projection.segments.filter((s) => s.kind !== "free" && s.role === role).map(name);
-	const rows = projection.segments.map((segment) => [
-		name(segment),
-		formatBytes(segment.size),
-		filesystem(segment),
-		use(segment),
-		change(segment).text,
-		detail(segment),
-	]);
+	const step = guide(editor, mode, plan);
+	const segment = projection.segments[editor.selected];
+	const holdersOf = (role: string) =>
+		projection.segments.flatMap((s) =>
+			s.kind !== "free" && s.role === role
+				? [
+						s.kind === "new"
+							? `new, ${formatBytes(s.size)}`
+							: `${short(s.part.device)}, ${change(s).text}`,
+					]
+				: [],
+		);
 	return (
 		<Box flexDirection="column">
 			{heading}
 			<PromptBox editor={editor} />
+			{editor.prompt ? null : (
+				<Callout tone={step.tone} title={step.title}>
+					{step.lines.map((line, i) =>
+						typeof line === "string" ? <UiText key={i}>{line}</UiText> : line,
+					)}
+				</Callout>
+			)}
 			<Section
 				title={disk.path}
-				trailing={`${formatBytes(disk.size_bytes)} · ${editor.edits.newTable ? "new GPT table" : `${table} table`}`}
+				trailing={`${formatBytes(disk.size_bytes)} · ${editor.edits.newTable ? "new partition table" : `${table} table`}`}
 			>
 				<SegmentBar projection={projection} selected={editor.selected} />
 				<Box marginTop={1}>
@@ -265,39 +402,55 @@ export function PartitionEditorPage({
 						columns={[
 							{ title: "Partition" },
 							{ title: "Size", align: "right" },
-							{ title: "FS", optional: true },
-							{ title: "Use" },
+							{ title: "Holds", optional: true },
+							{ title: "Used as" },
 							{ title: "Change" },
-							{ title: "Details", optional: true },
 						]}
-						rows={rows}
+						rows={projection.segments.map((s) => [
+							name(s),
+							formatBytes(s.size),
+							holds(s),
+							s.kind === "free" ? "" : roleLabel(s.role, s.mountpoint),
+							change(s).text,
+						])}
 					/>
 				</Box>
 			</Section>
+			{segment && !editor.prompt ? (
+				<Selected segment={segment} editor={editor} mode={mode} />
+			) : null}
+			{editor.notice ? (
+				<Box marginBottom={1}>
+					<UiText intent="warning">{editor.notice}</UiText>
+				</Box>
+			) : null}
 			{projection.erased.length ? (
 				<Section title="Erased" trailing={`${projection.erased.length}`}>
 					<UiText intent="error">
 						{projection.erased
 							.map(
 								(p) =>
-									`${p.device} ${formatBytes(p.size_bytes)}${p.filesystem ? ` ${p.filesystem}` : ""}`,
+									`${short(p.device)} ${formatBytes(p.size_bytes)}${p.filesystem ? ` ${p.filesystem}` : ""}`,
 							)
 							.join(" · ")}
 					</UiText>
 				</Section>
 			) : null}
-			<Section title={`The ${mode} layout needs`}>
+			<Section title={`${mode === "ab" ? "A/B" : "The system"} needs`}>
 				<Facts
 					rows={requiredRoles(mode).map((role) => {
-						const held = holders(role);
+						const held = holdersOf(role);
 						return [
-							role,
-							held.length ? `✓ ${held.join(", ")}` : "○ not assigned (m on a partition)",
+							ROLE_NAME[role],
+							held.length ? (
+								<Text key={role} color={okColor}>{`✓ ${held.join("; ")}`}</Text>
+							) : (
+								`○ not yet: ${ROLE_PURPOSE[role]}`
+							),
 						];
 					})}
 				/>
 			</Section>
-			<Check plan={plan} mode={mode} />
 		</Box>
 	);
 }

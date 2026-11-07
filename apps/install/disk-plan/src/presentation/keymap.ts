@@ -51,6 +51,7 @@ export const PICK_FIRST = new Set(["left", "h", "up", "k"]);
 /** Keys on the partition editor page. */
 export const PARTITION_KEYS = [
 	{ action: "select", keys: ["up", "k", "down", "j"], hint: "↑/↓", label: "select" },
+	{ action: "setup", keys: ["a"], label: "set up the system in free space" },
 	{ action: "create", keys: ["n"], label: "new partition" },
 	{ action: "remove", keys: ["d"], label: "delete" },
 	{ action: "resize", keys: ["r"], label: "resize" },
