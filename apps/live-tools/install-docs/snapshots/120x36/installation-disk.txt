@@ -33,4 +33,4 @@
 │                              ││ don't need network access.                                                           │
 │                              ││                                                                                      │
 └──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
- [install-docs] | navigation | <masked> | h/l prev/next page | [/] prev/next section | j/k scroll content | q quit |
+ [install-docs] | navigation | <masked> | q quit | Tab switch pane | m sidebar mode | h/l prev/next page | [/]

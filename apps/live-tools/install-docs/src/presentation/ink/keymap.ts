@@ -12,6 +12,12 @@ export const NAV_KEYS = [
 	{ action: "page", keys: ["left", "h", "right", "l"], hint: "h/l", label: "prev/next page" },
 	{ action: "section", keys: ["[", "{", "]", "}"], hint: "[/]", label: "prev/next section" },
 	{ action: "scroll", keys: ["up", "k", "down", "j"], hint: "j/k", label: "scroll content" },
+	{
+		action: "pageScroll",
+		keys: ["b", "C-u", "pageup", "space", "C-d", "pagedown"],
+		hint: "space/b",
+		label: "scroll a page",
+	},
 ] as const satisfies Keymap;
 
 /** Keys while the page content has focus. */
@@ -21,8 +27,8 @@ export const CONTENT_KEYS = [
 	{ action: "copy", keys: ["c", "y"], label: "copy action" },
 	{
 		action: "pageScroll",
-		keys: ["pageup", "b", "pagedown", "space"],
-		hint: "PgUp/PgDn",
+		keys: ["b", "C-u", "pageup", "space", "C-d", "pagedown"],
+		hint: "space/b",
 		label: "scroll a page",
 	},
 	{ action: "top", keys: ["g", "home"], label: "top" },
@@ -30,4 +36,4 @@ export const CONTENT_KEYS = [
 ] as const satisfies Keymap;
 
 /** Backward keys of the two-way bindings above. */
-export const BACKWARD_KEYS = new Set(["left", "h", "[", "{", "up", "k", "pageup", "b"]);
+export const BACKWARD_KEYS = new Set(["left", "h", "[", "{", "up", "k", "pageup", "b", "C-u"]);

@@ -114,6 +114,7 @@ export function InstallViewerScreen({ title, initialIndex }: InstallViewerScreen
 			page: (key) => showPage(() => navigation.movePage(BACKWARD_KEYS.has(key) ? -1 : 1)),
 			section: (key) => showPage(() => navigation.moveSection(BACKWARD_KEYS.has(key) ? -1 : 1)),
 			scroll: (key) => scroll.scrollBy(BACKWARD_KEYS.has(key) ? -1 : 1),
+			pageScroll: (key) => scroll.scrollBy(BACKWARD_KEYS.has(key) ? -pageJump : pageJump),
 		},
 		{ active: focus.isNavigation },
 	);

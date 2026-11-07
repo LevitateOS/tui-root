@@ -33,8 +33,9 @@ export function InstallStatusBar({
 		...(focus === "content"
 			? [textStatusSegment("action", action ?? "no actions", action ? "accent" : "dimText")]
 			: []),
-		...keymapStatusSegments(focus === "navigation" ? NAV_KEYS : CONTENT_KEYS),
+		// Keys that always work first, so a narrow footer never cuts off quit.
 		...keymapStatusSegments(VIEWER_KEYS),
+		...keymapStatusSegments(focus === "navigation" ? NAV_KEYS : CONTENT_KEYS),
 	];
 	if (note && note.trim().length > 0) {
 		segments.push(textStatusSegment("note", note.trim(), "warning"));
