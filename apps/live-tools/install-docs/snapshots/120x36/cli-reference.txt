@@ -1,10 +1,10 @@
 ┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│Docs                          ││CLI Reference  lines 1-30/88                                                          │
+│Docs                          ││CLI Reference  lines 1-30/95                                                          │
 ├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
 │ ▸ Getting Started            ││ The Recipe CLI executes build-time Rhai recipes inside a configured Ginux domain and │
 │                              ││ returns named published products. Prepare the launcher, verified image and worker    │
 │ ▾ Package Manager            ││ first using the Recipe README                                                        │
-│  ▸ CLI Reference             ││ (https://github.com/LevitateOS/recipe/blob/main/README.md).                          │
+│  ▸ CLI Reference             ││ (https://github.com/LevitateOS/recipe/blob/master/README.md).                        │
 │    Recipe Format             ││                                                                                      │
 │                              ││ ◆ Commands                                                                           │
 │ ▸ Helpers                    ││                                                                                      │

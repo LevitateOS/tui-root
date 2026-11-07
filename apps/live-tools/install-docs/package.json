@@ -55,7 +55,37 @@
 						},
 						{
 							"keys": "h",
-							"expect": "││ Download a LevitateOS variant"
+							"expect": "││ Download the LevitateOS live ISO"
+						}
+					]
+				},
+				{
+					"name": "acorn pages",
+					"about": "On AcornOS (--product acorn, or ID=acornos in /etc/os-release) the guide is AcornOS's.",
+					"args": [
+						"--product",
+						"acorn"
+					],
+					"steps": [
+						{
+							"keys": "l",
+							"expect": "││ Step-by-step guide to installing AcornOS"
+						}
+					]
+				},
+				{
+					"name": "acorn counterpart",
+					"about": "A LevitateOS page's slug opens its AcornOS counterpart, so other apps' links work on both.",
+					"args": [
+						"--product",
+						"acorn",
+						"--slug",
+						"installation-disk"
+					],
+					"steps": [
+						{
+							"keys": "j",
+							"expect": "││AcornOS Disk Preparation  lines 2-"
 						}
 					]
 				},
@@ -69,7 +99,7 @@
 					"steps": [
 						{
 							"keys": "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
-							"expect": "│ 5 │UUID=ABCD-1234  /boot   vfat    fmask=0022,dmask=0022"
+							"expect": "│ 5 │UUID=ABCD-1234  /boot   vfat    relatime,fmask=0022,dmask=0022"
 						}
 					]
 				},

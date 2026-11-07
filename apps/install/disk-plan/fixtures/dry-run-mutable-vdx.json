@@ -105,11 +105,11 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdx2 /mnt/sysroot",
+      "command": "mount /dev/vdx2 /mnt",
       "program": "mount",
       "args": [
         "/dev/vdx2",
-        "/mnt/sysroot"
+        "/mnt"
       ],
       "status": null,
       "stdout": null,
@@ -118,11 +118,11 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdx1 /mnt/sysroot/boot",
+      "command": "mount /dev/vdx1 /mnt/boot",
       "program": "mount",
       "args": [
         "/dev/vdx1",
-        "/mnt/sysroot/boot"
+        "/mnt/boot"
       ],
       "status": null,
       "stdout": null,
@@ -159,14 +159,14 @@
   "handoff": {
     "schema_version": 2,
     "mode": "mutable",
-    "install_target": "/mnt/sysroot",
+    "install_target": "/mnt",
     "mount_map": [
       {
-        "path": "/mnt/sysroot",
+        "path": "/mnt",
         "device": "/dev/vdx2"
       },
       {
-        "path": "/mnt/sysroot/boot",
+        "path": "/mnt/boot",
         "device": "/dev/vdx1"
       }
     ],

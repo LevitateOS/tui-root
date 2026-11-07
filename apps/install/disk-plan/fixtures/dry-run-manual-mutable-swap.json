@@ -119,11 +119,11 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdz3 /mnt/sysroot",
+      "command": "mount /dev/vdz3 /mnt",
       "program": "mount",
       "args": [
         "/dev/vdz3",
-        "/mnt/sysroot"
+        "/mnt"
       ],
       "status": null,
       "stdout": null,
@@ -132,11 +132,11 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdz1 /mnt/sysroot/boot",
+      "command": "mount /dev/vdz1 /mnt/boot",
       "program": "mount",
       "args": [
         "/dev/vdz1",
-        "/mnt/sysroot/boot"
+        "/mnt/boot"
       ],
       "status": null,
       "stdout": null,
@@ -196,14 +196,14 @@
   "handoff": {
     "schema_version": 2,
     "mode": "mutable",
-    "install_target": "/mnt/sysroot",
+    "install_target": "/mnt",
     "mount_map": [
       {
-        "path": "/mnt/sysroot",
+        "path": "/mnt",
         "device": "/dev/vdz3"
       },
       {
-        "path": "/mnt/sysroot/boot",
+        "path": "/mnt/boot",
         "device": "/dev/vdz1"
       }
     ],

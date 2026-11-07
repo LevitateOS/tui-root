@@ -150,11 +150,11 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdz2 /mnt/sysroot",
+      "command": "mount /dev/vdz2 /mnt",
       "program": "mount",
       "args": [
         "/dev/vdz2",
-        "/mnt/sysroot"
+        "/mnt"
       ],
       "status": 0,
       "stdout": null,
@@ -163,11 +163,11 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdz1 /mnt/sysroot/boot",
+      "command": "mount /dev/vdz1 /mnt/boot",
       "program": "mount",
       "args": [
         "/dev/vdz1",
-        "/mnt/sysroot/boot"
+        "/mnt/boot"
       ],
       "status": 0,
       "stdout": null,
@@ -176,11 +176,11 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdz4 /mnt/sysroot/var",
+      "command": "mount /dev/vdz4 /mnt/var",
       "program": "mount",
       "args": [
         "/dev/vdz4",
-        "/mnt/sysroot/var"
+        "/mnt/var"
       ],
       "status": 0,
       "stdout": null,
@@ -189,11 +189,11 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdz5 /mnt/sysroot/home",
+      "command": "mount /dev/vdz5 /mnt/home",
       "program": "mount",
       "args": [
         "/dev/vdz5",
-        "/mnt/sysroot/home"
+        "/mnt/home"
       ],
       "status": 0,
       "stdout": null,
@@ -202,12 +202,12 @@
     },
     {
       "phase": "swap",
-      "command": "fallocate -l 2048MiB /mnt/sysroot/var/swapfile",
+      "command": "fallocate -l 2048MiB /mnt/var/swapfile",
       "program": "fallocate",
       "args": [
         "-l",
         "2048MiB",
-        "/mnt/sysroot/var/swapfile"
+        "/mnt/var/swapfile"
       ],
       "status": 0,
       "stdout": null,
@@ -216,11 +216,11 @@
     },
     {
       "phase": "swap",
-      "command": "chmod 600 /mnt/sysroot/var/swapfile",
+      "command": "chmod 600 /mnt/var/swapfile",
       "program": "chmod",
       "args": [
         "600",
-        "/mnt/sysroot/var/swapfile"
+        "/mnt/var/swapfile"
       ],
       "status": 0,
       "stdout": null,
@@ -229,10 +229,10 @@
     },
     {
       "phase": "swap",
-      "command": "mkswap /mnt/sysroot/var/swapfile",
+      "command": "mkswap /mnt/var/swapfile",
       "program": "mkswap",
       "args": [
-        "/mnt/sysroot/var/swapfile"
+        "/mnt/var/swapfile"
       ],
       "status": 0,
       "stdout": null,
@@ -241,10 +241,10 @@
     },
     {
       "phase": "swap",
-      "command": "swapon /mnt/sysroot/var/swapfile",
+      "command": "swapon /mnt/var/swapfile",
       "program": "swapon",
       "args": [
-        "/mnt/sysroot/var/swapfile"
+        "/mnt/var/swapfile"
       ],
       "status": 0,
       "stdout": null,
@@ -314,22 +314,22 @@
   "handoff": {
     "schema_version": 2,
     "mode": "ab",
-    "install_target": "/mnt/sysroot",
+    "install_target": "/mnt",
     "mount_map": [
       {
-        "path": "/mnt/sysroot",
+        "path": "/mnt",
         "device": "/dev/vdz2"
       },
       {
-        "path": "/mnt/sysroot/boot",
+        "path": "/mnt/boot",
         "device": "/dev/vdz1"
       },
       {
-        "path": "/mnt/sysroot/var",
+        "path": "/mnt/var",
         "device": "/dev/vdz4"
       },
       {
-        "path": "/mnt/sysroot/home",
+        "path": "/mnt/home",
         "device": "/dev/vdz5"
       }
     ],
@@ -340,7 +340,7 @@
       "slot_b_device": "/dev/vdz3"
     },
     "swaps": [
-      "/mnt/sysroot/var/swapfile"
+      "/mnt/var/swapfile"
     ]
   },
   "warnings": [],

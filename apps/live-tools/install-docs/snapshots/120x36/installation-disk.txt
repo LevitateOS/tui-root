@@ -1,18 +1,18 @@
 ┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│Docs                          ││Disk Preparation  lines 1-30/173                                                      │
+│Docs                          ││Disk Preparation  lines 1-30/192                                                      │
 ├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
 │ ▾ Getting Started            ││ Installation steps 1-5: Boot the live environment and prepare your disk. See         │
 │    Getting Started           ││ Installation (/docs/installation) for an overview.                                   │
 │    Installation              ││                                                                                      │
 │  ▸ Disk Preparation          ││ ◆ 1. Boot the Live Environment                                                       │
 │    Base System               ││                                                                                      │
-│    Configuration             ││ Boot from the LevitateOS ISO (see Getting Started (/docs/getting-started)). You'll   │
-│    Bootloader & Finish       ││ be dropped into a root shell.                                                        │
+│    Configuration             ││ Boot from the LevitateOS ISO (see Getting Started (/docs/getting-started)). The      │
+│    Bootloader & Finish       ││ install screen opens: a root shell beside this guide.                                │
 │    Post-Installation         ││                                                                                      │
 │    Troubleshooting           ││ ╭──────────────────────────────────────────────────────────────────────────────────╮ │
 │                              ││ │ INFO                                                                             │ │
-│ ▸ Package Manager            ││ │ Secure Boot: If your system won't boot, disable Secure Boot in your UEFI         │ │
-│                              ││ │ firmware settings. LevitateOS does not currently ship with signed bootloaders.   │ │
+│ ▸ Package Manager            ││ │ Secure Boot: LevitateOS's boot files are unsigned. If your system won't boot the │ │
+│                              ││ │ ISO, disable Secure Boot in your UEFI firmware settings.                         │ │
 │ ▸ Helpers                    ││ ╰──────────────────────────────────────────────────────────────────────────────────╯ │
 │                              ││                                                                                      │
 │ ▸ Architecture               ││ Verify you booted in UEFI mode                                                       │

@@ -1,36 +1,36 @@
 ┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│Docs                          ││Command Helpers  lines 1-30/92                                                        │
+│Docs                          ││Command Helpers  lines 1-30/75                                                        │
 ├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
-│ ▸ Getting Started            ││ Functions for executing shell commands with different return types and behaviors.    │
+│ ▸ Getting Started            ││ Functions for running programs and shell commands inside the recipe's domain.        │
 │                              ││                                                                                      │
 │ ▸ Package Manager            ││ ◆ Overview                                                                           │
 │                              ││                                                                                      │
-│ ▾ Helpers                    ││ These functions have PREFIX and BUILD_DIR environment variables set automatically.   │
-│    Helpers Overview          ││ The shell_in() variants run commands in a specific directory.                        │
-│    Acquire Helpers           ││                                                                                      │
-│    Build Helpers             ││ ◆ shell                                                                              │
+│ ▾ Helpers                    ││ Commands run inside Ginux and need their binaries in the selected image or in        │
+│    Helpers Overview          ││ dependency tools, whose executables are on PATH. Prefer the exec family: arguments   │
+│    Acquire Helpers           ││ are an array, so nothing is reparsed by a shell. Their output goes to stderr with    │
+│    Build Helpers             ││ the rest of the diagnostics.                                                         │
 │    Install Helpers           ││                                                                                      │
-│    Filesystem Helpers        ││ Run a shell command. Throws an error if the command fails (non-zero exit).           │
-│    Environment Helpers       ││                                                                                      │
-│  ▸ Command Helpers           ││ ┌ RHAI ────────────────────────────────────────────────────────────────────────────┐ │
-│    HTTP Helpers              ││ │ 1 │shell("make -j" + NPROC);                                                     │ │
-│    Path Helpers              ││ │ 2 │shell("install -Dm755 myapp " + join_path(PREFIX, "bin/myapp"));              │ │
-│    LLM Helpers               ││ └──────────────────────────────────────────────────────────────────────────────────┘ │
+│    Filesystem Helpers        ││ Helper                         │ On nonzero exit   │ Returns                         │
+│    Environment Helpers       ││ ───────────────────────────────┼───────────────────┼───────────────────────────────  │
+│  ▸ Command Helpers           ││ exec_checked(cmd, args[,       │ Throws            │ ()                              │
+│    HTTP Helpers              ││ options])                      │                   │                                 │
+│    Path Helpers              ││ exec_output(cmd, args[,        │ Throws            │ stdout as a string              │
+│                              ││ options])                      │                   │                                 │
+│ ▸ Architecture               ││ exec(cmd, args[, options])     │ Returns the       │ exit status (int)               │
+│                              ││                                │ status            │                                 │
+│ ▸ Rec Tooling                ││ shell(cmd) / shell_in(dir,     │ Throws            │ ()                              │
+│                              ││ cmd)                           │                   │                                 │
+│                              ││ shell_output(cmd) /            │ Throws            │ stdout as a string              │
+│                              ││ shell_output_in(dir, cmd)      │                   │                                 │
+│                              ││ shell_status(cmd) /            │ Returns the       │ exit status, or -1 if it could  │
+│                              ││ shell_status_in(dir, cmd)      │ status            │ not run                         │
 │                              ││                                                                                      │
-│ ▸ Architecture               ││ ◆ shell_in                                                                           │
+│                              ││ ◆ exec_checked                                                                       │
 │                              ││                                                                                      │
-│ ▸ Rec Tooling                ││ Run a shell command in a specific directory. This is the recommended way to run      │
-│                              ││ commands in a source directory instead of changing directories.                      │
+│                              ││ Run a program and throw if it exits nonzero. The optional map sets cwd and env for   │
+│                              ││ this command only; the worker's own directory and environment don't change.          │
 │                              ││                                                                                      │
 │                              ││ ┌ RHAI ────────────────────────────────────────────────────────────────────────────┐ │
-│                              ││ │ 1 │// Run configure and make in the source directory                             │ │
-│                              ││ │ 2 │shell_in(ctx.source_dir, "./configure --prefix=" + PREFIX);                   │ │
-│                              ││ │ 3 │shell_in(ctx.source_dir, "make -j" + NPROC);                                  │ │
-│                              ││ │ 4 │shell_in(ctx.source_dir, "make install");                                     │ │
-│                              ││ └──────────────────────────────────────────────────────────────────────────────────┘ │
-│                              ││                                                                                      │
-│                              ││ ◆ shell_output                                                                       │
-│                              ││                                                                                      │
 └──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
  navigation | <masked> | q quit | Tab switch pane | m sidebar mode | h/l prev/next page | [/] prev/next section
  j/k scroll content | space/b scroll a page

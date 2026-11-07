@@ -135,11 +135,11 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdu2 /mnt/sysroot",
+      "command": "mount /dev/vdu2 /mnt",
       "program": "mount",
       "args": [
         "/dev/vdu2",
-        "/mnt/sysroot"
+        "/mnt"
       ],
       "status": 0,
       "stdout": null,
@@ -148,11 +148,11 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdu1 /mnt/sysroot/boot",
+      "command": "mount /dev/vdu1 /mnt/boot",
       "program": "mount",
       "args": [
         "/dev/vdu1",
-        "/mnt/sysroot/boot"
+        "/mnt/boot"
       ],
       "status": 0,
       "stdout": null,
@@ -161,11 +161,11 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdu4 /mnt/sysroot/var",
+      "command": "mount /dev/vdu4 /mnt/var",
       "program": "mount",
       "args": [
         "/dev/vdu4",
-        "/mnt/sysroot/var"
+        "/mnt/var"
       ],
       "status": 0,
       "stdout": null,
@@ -224,18 +224,18 @@
   "handoff": {
     "schema_version": 2,
     "mode": "ab",
-    "install_target": "/mnt/sysroot",
+    "install_target": "/mnt",
     "mount_map": [
       {
-        "path": "/mnt/sysroot",
+        "path": "/mnt",
         "device": "/dev/vdu2"
       },
       {
-        "path": "/mnt/sysroot/boot",
+        "path": "/mnt/boot",
         "device": "/dev/vdu1"
       },
       {
-        "path": "/mnt/sysroot/var",
+        "path": "/mnt/var",
         "device": "/dev/vdu4"
       }
     ],

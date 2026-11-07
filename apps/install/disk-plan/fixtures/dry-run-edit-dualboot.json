@@ -141,11 +141,11 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdy5 /mnt/sysroot",
+      "command": "mount /dev/vdy5 /mnt",
       "program": "mount",
       "args": [
         "/dev/vdy5",
-        "/mnt/sysroot"
+        "/mnt"
       ],
       "status": null,
       "stdout": null,
@@ -154,11 +154,11 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdy1 /mnt/sysroot/boot",
+      "command": "mount /dev/vdy1 /mnt/boot",
       "program": "mount",
       "args": [
         "/dev/vdy1",
-        "/mnt/sysroot/boot"
+        "/mnt/boot"
       ],
       "status": null,
       "stdout": null,
@@ -167,11 +167,11 @@
     },
     {
       "phase": "mount",
-      "command": "mount /dev/vdy7 /mnt/sysroot/var",
+      "command": "mount /dev/vdy7 /mnt/var",
       "program": "mount",
       "args": [
         "/dev/vdy7",
-        "/mnt/sysroot/var"
+        "/mnt/var"
       ],
       "status": null,
       "stdout": null,
@@ -229,18 +229,18 @@
   "handoff": {
     "schema_version": 2,
     "mode": "ab",
-    "install_target": "/mnt/sysroot",
+    "install_target": "/mnt",
     "mount_map": [
       {
-        "path": "/mnt/sysroot",
+        "path": "/mnt",
         "device": "/dev/vdy5"
       },
       {
-        "path": "/mnt/sysroot/boot",
+        "path": "/mnt/boot",
         "device": "/dev/vdy1"
       },
       {
-        "path": "/mnt/sysroot/var",
+        "path": "/mnt/var",
         "device": "/dev/vdy7"
       }
     ],

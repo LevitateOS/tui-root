@@ -1,5 +1,5 @@
 ┌────────────────────────────────────┐
-│Installation  lines 1-11/64         │
+│Installation  lines 1-11/71         │
 ├────────────────────────────────────┤
 │ Step-by-step guide to installing   │
 │ LevitateOS from the live           │
@@ -8,10 +8,10 @@
 │ ◆ Overview                         │
 │                                    │
 │ Installing LevitateOS follows the  │
-│ same process as Arch Linux. You'll │
-│ boot from a live environment,      │
-│ prepare your disk, extract the     │
-│ system with recstrap, and          │
+│ same process as Arch Linux. You    │
+│ boot the live ISO, partition the   │
+│ disk with recpart, extract the     │
+│ system with recstrap, configure it │
 └────────────────────────────────────┘
  content | <masked> | 1/5 | q quit
  Tab switch pane | m sidebar mode
