@@ -219,7 +219,7 @@ export function usePartitionEditor({
 		const entry = editOf(edits, part.number);
 		if (part.min_size_bytes === null)
 			return setNotice(
-				`recpart can't shrink ${part.device} (${part.filesystem ?? "no filesystem"}), so it can't make room`,
+				`${part.device} can't be resized: ${part.resize_blocker ?? "recpart can't resize it"}`,
 			);
 		if (entry.edit.op === "format" || roleFormats(entry.role))
 			return setNotice(`${part.device} is formatted: delete it and create a new one instead`);
@@ -536,8 +536,12 @@ export function usePartitionEditor({
 						return setup?.kind === "ok";
 					case "room":
 						return projection !== null && bestShrink(projection) !== null;
-					case "remove":
 					case "resize":
+						return (
+							segment?.kind === "new" ||
+							(segment?.kind === "existing" && segment.part.min_size_bytes !== null)
+						);
+					case "remove":
 					case "format":
 					case "role":
 						return segment !== undefined && segment.kind !== "free";

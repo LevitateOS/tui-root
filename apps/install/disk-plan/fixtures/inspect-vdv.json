@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "disk": {
+    "path": "/dev/vdv",
+    "size_bytes": 512110190592,
+    "logical_sector_bytes": 512,
+    "physical_sector_bytes": 512,
+    "model": "Fixture Running System 512G",
+    "vendor": "unknown",
+    "serial": "FIXTURE0005",
+    "transport": "nvme",
+    "rotational": false,
+    "removable": false,
+    "read_only": false
+  },
+  "table": "gpt",
+  "table_id": "5E6F7A8B-9C0D-4E1F-A2B3-C4D5E6F70819",
+  "usable_start_bytes": 1048576,
+  "usable_end_bytes": 512110173696,
+  "partitions": [
+    {
+      "number": 1,
+      "device": "/dev/vdv1",
+      "start_bytes": 1048576,
+      "size_bytes": 629145600,
+      "type_guid": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
+      "label": "EFI System Partition",
+      "part_uuid": "D4C3B2A1-0000-4000-8000-000000000001",
+      "attrs": null,
+      "filesystem": "vfat",
+      "fs_label": null,
+      "fs_uuid": "00000001-1111-4222-8333-444455556666",
+      "used_bytes": 20971520,
+      "mountpoints": [
+        "/boot/efi"
+      ],
+      "min_size_bytes": null,
+      "max_size_bytes": null,
+      "resize_blocker": "it is in use, mounted at /boot/efi, and recpart resizes only unmounted filesystems"
+    },
+    {
+      "number": 2,
+      "device": "/dev/vdv2",
+      "start_bytes": 630194176,
+      "size_bytes": 1073741824,
+      "type_guid": "0FC63DAF-8483-4772-8E79-3D69D8477DE4",
+      "label": null,
+      "part_uuid": "D4C3B2A1-0000-4000-8000-000000000002",
+      "attrs": null,
+      "filesystem": "xfs",
+      "fs_label": null,
+      "fs_uuid": "00000002-1111-4222-8333-444455556666",
+      "used_bytes": 314572800,
+      "mountpoints": [
+        "/boot"
+      ],
+      "min_size_bytes": null,
+      "max_size_bytes": null,
+      "resize_blocker": "XFS can only grow, never shrink; it is in use, mounted at /boot, and recpart resizes only unmounted filesystems"
+    },
+    {
+      "number": 3,
+      "device": "/dev/vdv3",
+      "start_bytes": 1703936000,
+      "size_bytes": 8589934592,
+      "type_guid": "0657FD6D-A4AB-43C4-84E5-0933C84B4F4F",
+      "label": null,
+      "part_uuid": "D4C3B2A1-0000-4000-8000-000000000003",
+      "attrs": null,
+      "filesystem": "swap",
+      "fs_label": null,
+      "fs_uuid": "00000003-1111-4222-8333-444455556666",
+      "used_bytes": null,
+      "mountpoints": [
+        "[SWAP]"
+      ],
+      "min_size_bytes": null,
+      "max_size_bytes": null,
+      "resize_blocker": "swap holds nothing to keep: delete it and make a smaller one; it is in use as swap now"
+    },
+    {
+      "number": 4,
+      "device": "/dev/vdv4",
+      "start_bytes": 10293870592,
+      "size_bytes": 501815967744,
+      "type_guid": "4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709",
+      "label": null,
+      "part_uuid": "D4C3B2A1-0000-4000-8000-000000000004",
+      "attrs": null,
+      "filesystem": "xfs",
+      "fs_label": null,
+      "fs_uuid": "00000004-1111-4222-8333-444455556666",
+      "used_bytes": 71403831296,
+      "mountpoints": [
+        "/"
+      ],
+      "min_size_bytes": null,
+      "max_size_bytes": null,
+      "resize_blocker": "XFS can only grow, never shrink; it is in use, mounted at /, and recpart resizes only unmounted filesystems"
+    }
+  ],
+  "free": []
+}

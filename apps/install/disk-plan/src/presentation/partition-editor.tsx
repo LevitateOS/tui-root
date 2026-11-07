@@ -292,12 +292,37 @@ function guide(editor: PartitionEditor, mode: InstallMode, plan: Run<PartitionPl
 			],
 		};
 	}
+	// Nothing can shrink: say why for the partitions big enough to have helped, then what
+	// is left to do.
+	const stuck = (editor.projection?.segments ?? []).flatMap((s) =>
+		s.kind === "existing" && s.edit.op === "keep" && s.part.resize_blocker ? [s.part] : [],
+	);
+	const big = stuck.filter((part) => part.size_bytes >= neededMb(mode) * MIB);
+	const root = stuck.find((part) => part.mountpoints.includes("/"));
 	return {
 		tone: "warning",
-		title: `There's no room for ${name}`,
+		title: "No partition here can be made smaller",
 		lines: [
-			`It needs at least ${need} of free space in one place.`,
-			"Delete a partition (d) to free its space, or W starts over with an empty partition table, erasing everything.",
+			`${mode === "ab" ? "A/B" : "The system"} needs ${need} of free space, and there is none.`,
+			...(big.length ? big : stuck).map((part) => (
+				<Text key={part.device}>
+					{"• "}
+					<Text bold>{short(part.device)}</Text>
+					{` (${[part.filesystem, formatBytes(part.size_bytes), part.used_bytes !== null ? `${formatBytes(part.used_bytes)} used` : null].filter(Boolean).join(", ")}): ${part.resize_blocker!.split("; ")[0]}`}
+				</Text>
+			)),
+			...(root
+				? [
+						<UiText key="root" intent="dimText">
+							{`This disk holds the system running now (/ is ${short(root.device)}), so its partitions are in use. From the live ISO they aren't, but XFS still can't shrink.`}
+						</UiText>,
+					]
+				: []),
+			<Text key="do">
+				<Text bold>What you can do: </Text>
+				delete a partition you don't need (select it, d; what is on it is lost), install on another
+				disk, or go back (p) and erase this one.
+			</Text>,
 		],
 	};
 }
@@ -378,6 +403,9 @@ function Selected({
 						? `Change: ${change(segment).text} to ${formatBytes(segment.size)}`
 						: `Change: ${change(segment).text}`}
 				</UiText>
+			) : null}
+			{segment.kind === "existing" && segment.part.resize_blocker ? (
+				<UiText intent="dimText">{`Can't be made smaller: ${segment.part.resize_blocker}.`}</UiText>
 			) : null}
 			{segment.kind !== "free" && segment.role ? (
 				<UiText intent="dimText">{`Used as ${roleLabel(segment.role, segment.mountpoint)}: ${ROLE_PURPOSE[segment.role]}`}</UiText>

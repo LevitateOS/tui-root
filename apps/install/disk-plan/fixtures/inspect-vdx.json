@@ -33,7 +33,8 @@
       "used_bytes": 32212254720,
       "mountpoints": [],
       "min_size_bytes": 34357641216,
-      "max_size_bytes": 34357641216
+      "max_size_bytes": 34357641216,
+      "resize_blocker": null
     }
   ],
   "free": []

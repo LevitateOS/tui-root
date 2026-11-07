@@ -19,10 +19,6 @@ export type DiskInventory = {
 
 export type DiskListResult = { schema_version: number; disks: Array<DiskInventory> };
 
-export type TableType = "gpt" | "mbr" | "none";
-
-export type FreeGap = { start_bytes: number; size_bytes: number };
-
 export type PartitionInfo = {
 	number: number;
 	device: string;
@@ -63,7 +59,16 @@ export type PartitionInfo = {
 	 */
 	min_size_bytes: number | null;
 	max_size_bytes: number | null;
+	/**
+	 * Why recpart cannot resize it, in words for a person (`XFS can only
+	 * grow, never shrink`); `None` when it can.
+	 */
+	resize_blocker: string | null;
 };
+
+export type FreeGap = { start_bytes: number; size_bytes: number };
+
+export type TableType = "gpt" | "mbr" | "none";
 
 export type InspectResult = {
 	schema_version: number;
@@ -144,6 +149,24 @@ export type ManualLayout = {
 	swap_file: SwapFileRequest | null;
 };
 
+export type DiskTarget = {
+	path: string;
+	size_bytes: number;
+	logical_sector_bytes: number;
+	physical_sector_bytes: number;
+};
+
+export type InstallMode = "ab" | "mutable";
+
+export type ResolvedLayout = {
+	mode: InstallMode;
+	efi_size_mb: number;
+	root_size_mb: number | null;
+	root_a_size_mb: number | null;
+	root_b_size_mb: number | null;
+	state_size_mb: number | null;
+};
+
 export type PartitionTemplate = {
 	index: number;
 	name: string;
@@ -158,7 +181,33 @@ export type PartitionTemplate = {
 	mountpoint: string;
 };
 
-export type InstallMode = "ab" | "mutable";
+export type ChangeKind = "erased" | "created" | "resized" | "formatted" | "untouched";
+
+export type PartitionState = {
+	start_bytes: number;
+	size_bytes: number;
+	filesystem: string | null;
+	fs_label: string | null;
+};
+
+export type PartitionChange = {
+	number: number;
+	device: string;
+	change: ChangeKind;
+	/**
+	 * The partition on the disk now (`None` when it is created).
+	 */
+	before: PartitionState | null;
+	/**
+	 * The partition after apply (`None` when it is erased).
+	 */
+	after: PartitionState | null;
+	role: Role | null;
+	/**
+	 * Where the installed system mounts it (`None`: not mounted).
+	 */
+	mountpoint: string | null;
+};
 
 export type LayoutRequest = {
 	/**
@@ -181,50 +230,6 @@ export type LayoutRequest = {
 	 * A/B state partition size in MB (ab mode only). Omit to use remaining space.
 	 */
 	state_size_mb: number | null;
-};
-
-export type PartitionState = {
-	start_bytes: number;
-	size_bytes: number;
-	filesystem: string | null;
-	fs_label: string | null;
-};
-
-export type ChangeKind = "erased" | "created" | "resized" | "formatted" | "untouched";
-
-export type PartitionChange = {
-	number: number;
-	device: string;
-	change: ChangeKind;
-	/**
-	 * The partition on the disk now (`None` when it is created).
-	 */
-	before: PartitionState | null;
-	/**
-	 * The partition after apply (`None` when it is erased).
-	 */
-	after: PartitionState | null;
-	role: Role | null;
-	/**
-	 * Where the installed system mounts it (`None`: not mounted).
-	 */
-	mountpoint: string | null;
-};
-
-export type ResolvedLayout = {
-	mode: InstallMode;
-	efi_size_mb: number;
-	root_size_mb: number | null;
-	root_a_size_mb: number | null;
-	root_b_size_mb: number | null;
-	state_size_mb: number | null;
-};
-
-export type DiskTarget = {
-	path: string;
-	size_bytes: number;
-	logical_sector_bytes: number;
-	physical_sector_bytes: number;
 };
 
 export type SwapFilePlan = {
@@ -279,14 +284,14 @@ export type CommandRecord = {
 	dry_run: boolean;
 };
 
+export type MountMapping = { path: string; device: string };
+
 export type ModeContext = {
 	install_target_slot: string | null;
 	inactive_slot_hint: string | null;
 	slot_a_device: string | null;
 	slot_b_device: string | null;
 };
-
-export type MountMapping = { path: string; device: string };
 
 export type HandoffPayload = {
 	schema_version: number;

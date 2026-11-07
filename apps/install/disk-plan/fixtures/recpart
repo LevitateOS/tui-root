@@ -3,7 +3,8 @@
 # from documents recorded from the real recpart (./record.sh) for fixture disks and
 # never touches a device. The disks: /dev/vdz empty 64G (the only one listed unless
 # RECPART_FIXTURE_DISKS=all), /dev/vdy Windows with its EFI partition, /dev/vdx one
-# nearly full ext4 partition, /dev/vdw a partition off 4 KiB alignment.
+# nearly full ext4 partition, /dev/vdw a partition off 4 KiB alignment, /dev/vdv a running
+# system on XFS whose partitions can't shrink.
 # A template plan answers plan-<mode>.json on vdz, plan-<mode>-<disk>.json elsewhere;
 # --layout FILE answers by FILE's name (layouts/<name>.json), or by the recorded layout
 # with the same content (the editor names its files by hash): plan-<name>.json, or

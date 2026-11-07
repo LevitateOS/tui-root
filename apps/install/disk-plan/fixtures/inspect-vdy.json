@@ -33,7 +33,8 @@
       "used_bytes": 125829120,
       "mountpoints": [],
       "min_size_bytes": 205520896,
-      "max_size_bytes": 536870912
+      "max_size_bytes": 536870912,
+      "resize_blocker": null
     },
     {
       "number": 2,
@@ -50,7 +51,8 @@
       "used_bytes": null,
       "mountpoints": [],
       "min_size_bytes": null,
-      "max_size_bytes": null
+      "max_size_bytes": null,
+      "resize_blocker": "it has no filesystem recpart can read"
     },
     {
       "number": 3,
@@ -67,7 +69,8 @@
       "used_bytes": 85899345920,
       "mountpoints": [],
       "min_size_bytes": 94556389376,
-      "max_size_bytes": 273535729664
+      "max_size_bytes": 273535729664,
+      "resize_blocker": null
     },
     {
       "number": 4,
@@ -84,7 +87,8 @@
       "used_bytes": 681574400,
       "mountpoints": [],
       "min_size_bytes": 786432000,
-      "max_size_bytes": 786432000
+      "max_size_bytes": 786432000,
+      "resize_blocker": null
     }
   ],
   "free": []

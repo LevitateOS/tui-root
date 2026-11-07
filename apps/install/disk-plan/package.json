@@ -303,6 +303,30 @@
 					]
 				},
 				{
+					"name": "edit: nothing can shrink",
+					"args": [
+						"--disk",
+						"/dev/vdv"
+					],
+					"env": {
+						"RECPART_FIXTURE_DISKS": "all"
+					},
+					"steps": [
+						{
+							"keys": "jjj\\r\\x1b[B\\r",
+							"expect": "No partition here can be made smaller"
+						},
+						{
+							"keys": "",
+							"expect": "vdv4 (xfs, 467.4 GB, 66.5 GB used): XFS can only grow, never shrink"
+						},
+						{
+							"keys": "",
+							"expect": "This disk holds the system running now"
+						}
+					]
+				},
+				{
 					"name": "disk use: what erasing loses",
 					"args": [
 						"--disk",

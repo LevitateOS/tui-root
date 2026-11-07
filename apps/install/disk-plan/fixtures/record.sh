@@ -10,13 +10,14 @@ cd "$(dirname "$0")"
 recpart() { ${RECPART:-cargo run -q -p recpart --} "$@"; }
 
 # The fixture disks: vdz empty (the template stories' disk), vdy Windows with its EFI
-# partition, vdx one nearly full ext4 partition, vdw a partition off 4 KiB alignment.
-for disk in vdw vdx vdy vdz; do
+# partition, vdx one nearly full ext4 partition, vdw a partition off 4 KiB alignment, vdv
+# a running Fedora-style system (XFS root mounted at /, XFS /boot, swap): nothing shrinks.
+for disk in vdv vdw vdx vdy vdz; do
 	recpart inspect --disk "/dev/$disk" --inventory "inspect-$disk.json" --json >inspect.tmp
 	mv inspect.tmp "inspect-$disk.json"
 done
 jq -s '{schema_version: 1, disks: [.[0].disk]}' inspect-vdz.json >list-disks.json
-jq -s '{schema_version: 1, disks: [.[].disk]}' inspect-vdw.json inspect-vdx.json inspect-vdy.json inspect-vdz.json >list-disks-all.json
+jq -s '{schema_version: 1, disks: [.[].disk]}' inspect-vdv.json inspect-vdw.json inspect-vdx.json inspect-vdy.json inspect-vdz.json >list-disks-all.json
 
 as_applied='.dry_run = false | .disk_checks_skipped = false | .steps |= map(.dry_run = false | .status = 0)'
 
@@ -70,4 +71,5 @@ edit-vdy-none vdy ab
 edit-vdy-shrunk vdy ab
 edit-vdy-setup vdy ab
 edit-vdz-setup vdz ab
+edit-vdv-none vdv ab
 LAYOUTS

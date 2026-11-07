@@ -2,6 +2,19 @@
   "schema_version": 1,
   "disks": [
     {
+      "path": "/dev/vdv",
+      "size_bytes": 512110190592,
+      "logical_sector_bytes": 512,
+      "physical_sector_bytes": 512,
+      "model": "Fixture Running System 512G",
+      "vendor": "unknown",
+      "serial": "FIXTURE0005",
+      "transport": "nvme",
+      "rotational": false,
+      "removable": false,
+      "read_only": false
+    },
+    {
       "path": "/dev/vdw",
       "size_bytes": 17179869184,
       "logical_sector_bytes": 512,
