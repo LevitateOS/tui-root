@@ -1,7 +1,8 @@
-import { Box, measureElement, Text, useApp, type DOMElement } from "ink";
+import { Box, Text, useApp } from "ink";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
 	AppShell,
+	ContentWidth,
 	fitFooter,
 	keymapStatusSegments,
 	resolveIntentColor,
@@ -11,10 +12,13 @@ import {
 	useFocusPlane,
 	useGridNavigation,
 	useKeymap,
+	usePageHeight,
+	usePageScroll,
 	useShellLayout,
 	useTuiColors,
 	useTuiTheme,
 	useTuiViewport,
+	PAGE_SCROLL_KEYS,
 	type ColorIntent,
 	type RunningCommand,
 } from "@levitate/tui-kit";
@@ -55,7 +59,6 @@ import {
 	type Session,
 	type StepState,
 } from "../flow";
-import { ContentWidth } from "./blocks";
 import {
 	CONFIRM_KEYS,
 	CONTENT_KEYS,
@@ -63,8 +66,6 @@ import {
 	GLOBAL_KEYS,
 	LAYOUT_KEYS,
 	NAV_KEYS,
-	SCROLL_KEYS,
-	SCROLL_UP,
 } from "./keymap";
 import { PartitionEditorPage } from "./partition-editor";
 import { usePartitionEditor } from "./use-partition-editor";
@@ -357,19 +358,10 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 			? []
 			: GLOBAL_KEYS.filter((b) => b.action !== "failure" || lastFailure(session) !== null)),
 	];
-	// A page taller than its pane scrolls; it is measured after each render.
-	const pageBox = useRef<DOMElement>(null);
-	const [pageRows, setPageRows] = useState(0);
-	const [offset, setOffset] = useState(0);
-	useEffect(() => setOffset(0), [view]);
-	useEffect(() => {
-		if (pageBox.current) {
-			const { height } = measureElement(pageBox.current);
-			if (height !== pageRows) setPageRows(height);
-		}
-	});
+	// A page taller than its pane scrolls.
+	const pageHeight = usePageHeight(view);
 	const typing = (pageId === "destructive-confirm" && !showFailure) || prompting;
-	const scrollable = !typing && pageRows > shell.content.textRows - 2;
+	const scrollable = !typing && pageHeight.height > shell.content.textRows - 2;
 	const railPages = shownPages(session).filter((p) => p.phase);
 	const step = railPages.findIndex((p) => p.id === view);
 	const layout = fitFooter(shell, [
@@ -378,7 +370,7 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 			contentFocus ? "content" : "steps",
 			contentFocus ? "accent" : "warning",
 		),
-		...keymapStatusSegments(scrollable ? [...keys, ...SCROLL_KEYS] : keys),
+		...keymapStatusSegments(scrollable ? [...keys, ...PAGE_SCROLL_KEYS] : keys),
 		...((notice ?? (pageId === "partitions" ? editor.notice : null))
 			? [
 					textStatusSegment(
@@ -389,23 +381,7 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 				]
 			: []),
 	]);
-	const rows = layout.content.textRows;
-	const maxOffset = Math.max(0, pageRows - rows);
-	const shownOffset = Math.min(offset, maxOffset);
-	useKeymap(
-		SCROLL_KEYS,
-		{
-			scroll: (key) =>
-				setOffset((value) =>
-					Math.max(
-						0,
-						Math.min(maxOffset, value + (SCROLL_UP.has(key) ? -1 : 1) * Math.max(1, rows - 2)),
-					),
-				),
-		},
-		{ active: !typing && maxOffset > 0 },
-	);
-	const more = `${shownOffset > 0 ? " ↑" : ""}${shownOffset < maxOffset ? " ↓" : ""}`;
+	const scroll = usePageScroll(pageHeight, layout.content.textRows, !typing);
 	return (
 		<ContentWidth.Provider value={layout.content.textColumns}>
 			<AppShell
@@ -417,9 +393,14 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 					step >= 0
 						? `Step ${step + 1} of ${railPages.length} · ${page(view).title}`
 						: page(view).title
-				}${more}`}
+				}${scroll.more}`}
 				content={
-					<Box ref={pageBox} flexDirection="column" flexShrink={0} marginTop={-shownOffset}>
+					<Box
+						ref={pageHeight.ref}
+						flexDirection="column"
+						flexShrink={0}
+						marginTop={-scroll.offset}
+					>
 						{body[view]()}
 					</Box>
 				}

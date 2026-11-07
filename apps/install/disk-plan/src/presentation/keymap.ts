@@ -80,16 +80,3 @@ export const CONFIRM_KEYS = [
 	{ action: "apply", keys: ["enter"], label: `apply (after typing ${CONFIRM_TOKEN})` },
 	{ action: "erase", keys: ["backspace", "delete"], label: "erase" },
 ] as const satisfies Keymap;
-
-/** Scrolls a page taller than its pane, from either pane (not while typing the token). */
-export const SCROLL_KEYS = [
-	{
-		action: "scroll",
-		keys: ["b", "C-u", "pageup", "space", "C-d", "pagedown"],
-		hint: "space/b",
-		label: "scroll page",
-	},
-] as const satisfies Keymap;
-
-/** Of the two-way SCROLL_KEYS, the ones that scroll up. */
-export const SCROLL_UP = new Set(["b", "C-u", "pageup"]);

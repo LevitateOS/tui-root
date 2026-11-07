@@ -1,9 +1,17 @@
 import { Box, Text } from "ink";
 import type { ReactNode } from "react";
 import {
+	Callout,
+	Commands,
+	Facts,
+	Heading,
 	inkBorderStyle,
 	resolveIntentColor,
+	Section,
 	SelectableGrid,
+	StepList,
+	type StepStatus,
+	Table,
 	truncateLines,
 	UiText,
 	useTuiColors,
@@ -31,18 +39,7 @@ import {
 } from "../flow";
 import { formatBytes, known } from "../domain/recpart";
 import { DOCS, type DocsRef } from "../docs";
-import {
-	Callout,
-	Commands,
-	DiskBar,
-	Facts,
-	Heading,
-	Section,
-	StepList,
-	Table,
-	type BarPart,
-	type StepStatus,
-} from "./blocks";
+import { DiskBar, type BarPart } from "./disk-bar";
 
 const MB = 1024 * 1024;
 

@@ -15,7 +15,7 @@ Rust tools it runs from PATH and its `inspect` arguments.
 
 - `install-docs`: the install guide shown in the right pane of the live ISO's install screen.
 - `disk-plan`: interactive disk planning on top of `recpart`.
-- `recab-tui`: A/B slot status and switching on top of `recab`.
+- `recab-tui`: the A/B slots at a glance (which runs, boots next, is known-good, and how the last trial ended) and `recab`'s changes (try the other slot, commit, roll back, write a new system, reboot), each shown before and after it runs.
 
 Each manifest's `description` is the app's one-line summary, for `tui list` and the app's `--help`.
 

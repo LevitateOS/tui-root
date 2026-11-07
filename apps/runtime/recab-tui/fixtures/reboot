@@ -1,0 +1,3 @@
+#!/bin/sh
+# Stand-in for reboot in headless runs: it reboots nothing.
+echo "fixture reboot: not rebooting"

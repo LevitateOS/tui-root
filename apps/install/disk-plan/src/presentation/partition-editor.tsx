@@ -3,7 +3,12 @@
 import { Box, Text } from "ink";
 import { useContext, type ReactNode } from "react";
 import {
+	Callout,
+	ContentWidth,
+	Facts,
 	resolveIntentColor,
+	Section,
+	Table,
 	UiText,
 	useTuiColors,
 	useTuiTheme,
@@ -13,7 +18,6 @@ import type { InspectResult, InstallMode, PartitionPlan } from "../generated/rec
 import type { Run } from "../flow";
 import { formatBytes } from "../domain/recpart";
 import { requiredRoles, type Projection, type Segment } from "../domain/layout";
-import { Callout, ContentWidth, Facts, Section, Table } from "./blocks";
 import { sizeAnswer, type PartitionEditor } from "./use-partition-editor";
 
 /** What the Change column says, and how loudly. */

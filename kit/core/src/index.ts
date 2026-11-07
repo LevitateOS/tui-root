@@ -2,7 +2,19 @@
 export { useAppName, useTuiColors, useTuiTheme, useTuiViewport } from "./app/app-provider";
 export { glyphs, inkBorderStyle } from "./chrome/glyphs";
 export type { BorderStyle } from "./chrome/glyphs";
-export { KeyValue } from "./components/data/key-value";
+export {
+	Callout,
+	Commands,
+	ContentWidth,
+	Facts,
+	Heading,
+	Section,
+	StepList,
+	Table,
+} from "./components/page/blocks";
+export type { Column, StepStatus, Tone } from "./components/page/blocks";
+export { PAGE_SCROLL_KEYS, usePageHeight, usePageScroll } from "./components/page/page-scroll";
+export type { PageHeight } from "./components/page/page-scroll";
 export {
 	keymapStatusSegments,
 	scopeStatusSegment,
