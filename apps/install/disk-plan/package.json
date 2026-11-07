@@ -14,6 +14,7 @@
 		"format:check": "oxfmt --config ../../../../.oxfmtrc.json --check src package.json tsconfig.json"
 	},
 	"dependencies": {
+		"@levitate/docs-content": "workspace:*",
 		"@levitate/tui-kit": "workspace:*",
 		"ink": "^6.8.0",
 		"react": "^19.2.0"
@@ -170,6 +171,22 @@
 						{
 							"keys": "k",
 							"expect": "│Step 7 of 8 · Apply"
+						}
+					]
+				},
+				{
+					"name": "disk refused",
+					"env": {
+						"RECPART_FIXTURE_DRY_RUN": "refuse"
+					},
+					"steps": [
+						{
+							"keys": "jjjjj",
+							"expect": "recpart would refuse this disk"
+						},
+						{
+							"keys": " ",
+							"expect": "Disk Preparation › 2. Identify Target Disk"
 						}
 					]
 				}

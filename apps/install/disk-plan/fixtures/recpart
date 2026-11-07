@@ -1,7 +1,8 @@
 #!/bin/sh
 # Stand-in for recpart in headless runs (cargo xtask inspect, check tui): it answers
 # from documents recorded from the real recpart for a fake 64G disk (/dev/vdz) and
-# never touches a device. RECPART_FIXTURE_APPLY=fail makes the real apply fail.
+# never touches a device. RECPART_FIXTURE_APPLY=fail makes the real apply fail;
+# RECPART_FIXTURE_DRY_RUN=refuse makes the dry run report a disk apply would refuse.
 # Re-record the JSON when recpart's output schema changes (the TUI reports a schema mismatch).
 dir=$(dirname "$0")
 mode=ab
@@ -16,7 +17,9 @@ case "$1" in
 list-disks) cat "$dir/list-disks.json" ;;
 plan) cat "$dir/plan-$mode.json" ;;
 apply)
-	if [ "$dry" = 1 ]; then
+	if [ "$dry" = 1 ] && [ "${RECPART_FIXTURE_DRY_RUN:-}" = refuse ]; then
+		cat "$dir/dry-run-refused.json"
+	elif [ "$dry" = 1 ]; then
 		cat "$dir/dry-run-$mode.json"
 	elif [ "${RECPART_FIXTURE_APPLY:-}" = fail ]; then
 		cat "$dir/apply-fail.json" >&2

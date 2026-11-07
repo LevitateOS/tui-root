@@ -28,6 +28,7 @@ import {
 	type Session,
 } from "../flow";
 import { formatBytes, known } from "../domain/recpart";
+import { DOCS, type DocsRef } from "../docs";
 import {
 	Callout,
 	Commands,
@@ -55,6 +56,48 @@ function Pending({ run, what }: { run: Run<unknown>; what: string }): ReactNode 
 	);
 }
 
+/** One refusal from the dry run, split into what recpart found, what to do and its code
+ * (recpart writes `E001: [component] expected …, observed …. remediation: …`). */
+function Refusal({ text }: { text: string }): ReactNode {
+	const parts = /^(E\d+): \[[^\]]*\] expected (.*), observed (.*)\. remediation: (.*)$/s.exec(text);
+	if (!parts) return <UiText>✗ {text}</UiText>;
+	const [, code, expected, observed, remediation] = parts;
+	return (
+		<Box flexDirection="column" marginBottom={1}>
+			<UiText bold>✗ {observed}</UiText>
+			<Box paddingLeft={2}>
+				<UiText intent="warning">{`${remediation}`}</UiText>
+			</Box>
+			<Box paddingLeft={2}>
+				<UiText intent="dimText">{`${code} · expected ${expected}`}</UiText>
+			</Box>
+		</Box>
+	);
+}
+
+/** Where to read more, with the command that opens each page (the install screen's docs
+ * pane, or install-docs on its own). */
+function ReadDocs({ refs }: { refs: readonly DocsRef[] }): ReactNode {
+	return (
+		<Box flexDirection="column" marginTop={1}>
+			<UiText bold intent="info">
+				Read in the docs
+			</UiText>
+			{refs.map((ref) => (
+				<Box key={`${ref.slug}-${ref.section ?? ""}`} flexDirection="column">
+					<UiText>
+						{ref.page}
+						{ref.section ? ` › ${ref.section}` : ""}
+					</UiText>
+					<Box paddingLeft={2}>
+						<UiText intent="dimText">{`install-docs --slug ${ref.slug}`}</UiText>
+					</Box>
+				</Box>
+			))}
+		</Box>
+	);
+}
+
 /** A recpart run that failed: what ran, what it saw, and what to do about it. */
 function Failed({
 	title,
@@ -70,6 +113,7 @@ function Failed({
 			</UiText>
 			<UiText>{truncateLines(run.error ? run.error.observed : run.output, 12)}</UiText>
 			{run.error ? <UiText intent="warning">{run.error.remediation}</UiText> : null}
+			<ReadDocs refs={[DOCS.recpartErrors]} />
 		</Callout>
 	);
 }
@@ -173,6 +217,7 @@ export function TargetDisk({
 			{listing.kind === "error" ? (
 				<Callout tone="danger" title="recpart couldn't list the disks">
 					<UiText>{listing.message}</UiText>
+					<ReadDocs refs={[DOCS.recpartErrors]} />
 				</Callout>
 			) : null}
 			{listing.kind === "done" && choices.length === 0 ? (
@@ -409,11 +454,12 @@ export function PreflightChecks({ session }: { session: Session }): ReactNode {
 			) : (
 				<Callout tone="danger" title="recpart would refuse this disk">
 					{refused.map((reason) => (
-						<UiText key={reason}>✗ {reason}</UiText>
+						<Refusal key={reason} text={reason} />
 					))}
 					<UiText intent="dimText">
 						Fix these, then go back to Commands to run the dry run again.
 					</UiText>
+					<ReadDocs refs={[DOCS.chooseDisk, DOCS.recpart]} />
 				</Callout>
 			)}
 		</Page>
@@ -575,8 +621,9 @@ export function FailureDiagnostics({ session }: { session: Session }): ReactNode
 			<Page title={title} subtitle={subtitle}>
 				<Callout tone="danger" title="Safety checks: recpart would refuse this disk">
 					{failure.refusals.map((reason) => (
-						<UiText key={reason}>✗ {reason}</UiText>
+						<Refusal key={reason} text={reason} />
 					))}
+					<ReadDocs refs={[DOCS.chooseDisk, DOCS.recpart]} />
 				</Callout>
 			</Page>
 		);
