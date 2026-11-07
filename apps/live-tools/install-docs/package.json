@@ -55,6 +55,19 @@
 							"expect": "││ Download a LevitateOS variant"
 						}
 					]
+				},
+				{
+					"name": "tabs in code",
+					"args": [
+						"--slug",
+						"recfstab"
+					],
+					"steps": [
+						{
+							"keys": "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+							"expect": "│ 5 │UUID=ABCD-1234  /boot   vfat    fmask=0022,dmask=0022"
+						}
+					]
 				}
 			]
 		}

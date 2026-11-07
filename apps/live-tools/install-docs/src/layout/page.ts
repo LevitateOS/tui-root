@@ -131,17 +131,44 @@ function hardWrap(runs: readonly Run[], width: number): Line[] {
 	return rows;
 }
 
+/** Tab stops in code, as in a terminal. */
+const TAB_WIDTH = 8;
+
+/**
+ * Tabs as spaces up to the next tab stop, counted from the start of the line. A tab is
+ * zero cells wide to Ink, and the terminal's own tab stops don't line up with the block.
+ */
+function expandTabs(runs: Run[]): Run[] {
+	let column = 0;
+	return runs.map((run) => {
+		let text = "";
+		for (const char of run.text) {
+			if (char === "\t") {
+				const spaces = TAB_WIDTH - (column % TAB_WIDTH);
+				text += " ".repeat(spaces);
+				column += spaces;
+			} else {
+				text += char;
+				column += textWidth(char);
+			}
+		}
+		return { ...run, text };
+	});
+}
+
 /** `[[fg=…]]` markup when the docs build highlighted it, else the plain text. */
 function codeRuns(
 	highlighted: string | undefined,
 	plain: string,
 	color: ThemeColor | undefined,
 ): Run[] {
-	if (highlighted === undefined) return [{ text: plain, color }];
-	return parseSyntaxTokenLine(highlighted).map((token) => ({
-		text: token.text,
-		color: token.color ?? color,
-	}));
+	if (highlighted === undefined) return expandTabs([{ text: plain, color }]);
+	return expandTabs(
+		parseSyntaxTokenLine(highlighted).map((token) => ({
+			text: token.text,
+			color: token.color ?? color,
+		})),
+	);
 }
 
 function commandLines(
