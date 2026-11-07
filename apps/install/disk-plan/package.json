@@ -15,6 +15,7 @@
 	},
 	"dependencies": {
 		"@levitate/docs-content": "workspace:*",
+		"@levitate/install-state": "workspace:*",
 		"@levitate/tui-kit": "workspace:*",
 		"ink": "^6.8.0",
 		"react": "^19.2.0"
@@ -35,7 +36,7 @@
 			"stories": [
 				{
 					"name": "apply succeeds",
-					"about": "The whole erase-the-disk flow on the empty 64 GB disk: every page, typing DESTROY, the apply, and the hand-off to recstrap.",
+					"about": "The whole erase-the-disk flow on the empty 64 GB disk: every page, typing DESTROY, the apply, the result saved to the install state file, and the hand-off to recstrap.",
 					"steps": [
 						{
 							"keys": "",
@@ -104,8 +105,15 @@
 						{
 							"keys": "",
 							"expect": "recstrap /mnt"
+						},
+						{
+							"keys": "",
+							"expect": "Saved for the next install steps in /tmp/levitate-disk-plan-story/state.json."
 						}
-					]
+					],
+					"env": {
+						"LEVITATE_INSTALL_STATE": "/tmp/levitate-disk-plan-story/state.json"
+					}
 				},
 				{
 					"name": "apply fails",

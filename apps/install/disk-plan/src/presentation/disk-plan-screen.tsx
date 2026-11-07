@@ -44,6 +44,7 @@ import {
 	writeDocument,
 	writeLayout,
 } from "../app/plan-runner";
+import { saveDiskStep, type Saved } from "../app/install-state";
 import { toLayout } from "../domain/layout";
 import {
 	canApply,
@@ -111,6 +112,7 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 	const [showFailure, setShowFailure] = useState(false);
 	const [token, setToken] = useState("");
 	const [apply, setApply] = useState<Run<ApplyResult>>({ kind: "idle" });
+	const [saved, setSaved] = useState<Saved | null>(null);
 	const [notice, setNotice] = useState<string | null>(null);
 	// The one destructive apply of this session, held so it cannot start twice.
 	const applyRun = useRef<RunningCommand | null>(null);
@@ -224,9 +226,11 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 		applyRun.current = running;
 		setApply({ kind: "running", argv });
 		go("apply-progress");
-		void running.result.then((result) =>
-			setApply(toRun<ApplyResult>(result, APPLY_SCHEMA_VERSION)),
-		);
+		void running.result.then((result) => {
+			const applied = toRun<ApplyResult>(result, APPLY_SCHEMA_VERSION);
+			if (applied.kind === "ok") setSaved(saveDiskStep(path, mode, applied.value));
+			setApply(applied);
+		});
 	};
 
 	useKeymap(
@@ -341,7 +345,7 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 		"preflight-checks": () => <PreflightChecks session={session} />,
 		"destructive-confirm": () => <DestructiveConfirm session={session} />,
 		"apply-progress": () => <ApplyProgress apply={apply} dryRun={dryRun} />,
-		"result-handoff": () => <ResultHandoff apply={apply} />,
+		"result-handoff": () => <ResultHandoff apply={apply} saved={saved} />,
 		"failure-diagnostics": () => <FailureDiagnostics session={session} />,
 	};
 

@@ -40,6 +40,7 @@ import {
 } from "../flow";
 import { describeSignature, formatBytes, known } from "../domain/recpart";
 import { DOCS, type DocsRef } from "../docs";
+import type { Saved } from "../app/install-state";
 import { DiskBar, type BarPart } from "./disk-bar";
 
 const MB = 1024 * 1024;
@@ -850,12 +851,22 @@ export function ApplyProgress({
 	);
 }
 
-/** What the user runs after the disk is ready: this installer's guidance. */
+/** What the user runs after the disk is ready: the install guide's next steps. */
 function nextInstallSteps(target: string): string[] {
-	return [`recstrap ${target}`, `recfstab ${target} >> ${target}/etc/fstab`, `recchroot ${target}`];
+	return [
+		`recstrap ${target}`,
+		`recfstab ${target} >> ${target}/etc/fstab`,
+		`recsetup inspect --root ${target}`,
+	];
 }
 
-export function ResultHandoff({ apply }: { apply: Run<ApplyResult> }): ReactNode {
+export function ResultHandoff({
+	apply,
+	saved,
+}: {
+	apply: Run<ApplyResult>;
+	saved: Saved | null;
+}): ReactNode {
 	if (apply.kind !== "ok")
 		return (
 			<Page title="Disk ready">
@@ -880,10 +891,20 @@ export function ResultHandoff({ apply }: { apply: Run<ApplyResult> }): ReactNode
 					rows={handoff.mount_map.map((entry) => [entry.path, entry.device])}
 				/>
 			</Section>
+			{saved?.kind === "ok" ? (
+				<UiText intent="dimText">Saved for the next install steps in {saved.path}.</UiText>
+			) : saved?.kind === "failed" ? (
+				<Callout tone="warning" title={`Couldn't save the result to ${saved.path}`}>
+					<UiText intent="dimText">
+						{saved.message}. The next steps will ask for the target and the slots again.
+					</UiText>
+				</Callout>
+			) : null}
 			<Section title="Next">
 				<Commands lines={nextInstallSteps(handoff.install_target)} />
 				<UiText intent="dimText">
-					Inside recchroot, set a root password and install the bootloader.
+					Then configure the system and install the bootloader with recsetup, from this shell. The
+					install guide has each step.
 				</UiText>
 			</Section>
 		</Page>
