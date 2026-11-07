@@ -64,4 +64,6 @@ refuse-resize-msr vdy ab
 refuse-shrink-below-used vdx mutable
 refuse-misaligned vdw mutable
 refuse-disk-changed vdy ab
+edit-empty vdz ab
+edit-dualboot vdy ab
 LAYOUTS

@@ -15,15 +15,17 @@ import {
 	INSTALL_MODES,
 	type ApplyResult,
 	type InstallMode,
+	type PartitionChange,
 	type PartitionPlan,
 } from "../generated/recpart";
 import {
 	canApply,
 	diskPath,
 	lastFailure,
-	PAGES,
 	refusals,
+	shownPages,
 	type DiskChoice,
+	type Method,
 	type Run,
 	type Session,
 } from "../flow";
@@ -38,6 +40,7 @@ import {
 	Section,
 	StepList,
 	Table,
+	type BarPart,
 	type StepStatus,
 } from "./blocks";
 
@@ -144,13 +147,14 @@ function diskSummary(choice: DiskChoice | null): string {
 }
 
 const PHASE_SUMMARY: Record<string, string> = {
-	Choose: "pick the disk and how to divide it",
+	Choose: "pick the disk, the layout, and whether to erase the disk or edit its partitions",
 	Review: "see the plan, the exact commands, and whether recpart would refuse the disk",
 	Apply: `type ${CONFIRM_TOKEN} to erase and lay out the disk, then get the next steps`,
 };
 
 export function Welcome({ session }: { session: Session }): ReactNode {
-	const phases = [...new Set(PAGES.flatMap((p) => (p.phase ? [p.phase] : [])))];
+	const pages = shownPages(session);
+	const phases = [...new Set(pages.flatMap((p) => (p.phase ? [p.phase] : [])))];
 	return (
 		<Page
 			title="Prepare a disk for LevitateOS"
@@ -163,7 +167,8 @@ export function Welcome({ session }: { session: Session }): ReactNode {
 							<Text bold>{`${i + 1}. ${phase}`}</Text>
 							<Text>
 								{"   "}
-								{PAGES.filter((p) => p.phase === phase)
+								{pages
+									.filter((p) => p.phase === phase)
 									.map((p) => p.title)
 									.join(" › ")}
 							</Text>
@@ -178,7 +183,7 @@ export function Welcome({ session }: { session: Session }): ReactNode {
 				<Facts
 					rows={[
 						["Disk", diskSummary(session.disk)],
-						["Layout", session.mode],
+						["Layout", `${session.mode} · ${METHOD_TITLE[session.method]}`],
 					]}
 				/>
 			</Section>
@@ -209,7 +214,7 @@ export function TargetDisk({
 	return (
 		<Page
 			title="Choose a disk"
-			subtitle="Everything on the disk you choose is erased at the Confirm step."
+			subtitle="Next you choose whether to erase it or edit its partitions. Nothing is written before the Confirm step."
 		>
 			{listing.kind === "running" ? (
 				<UiText intent="dimText">Running recpart list-disks --json …</UiText>
@@ -283,53 +288,130 @@ function DiskFacts({ disk }: { disk: Extract<DiskChoice, { kind: "listed" }>["di
 	);
 }
 
+const METHOD_TITLE: Record<Method, string> = {
+	erase: "erase the disk",
+	edit: "edit the partitions",
+};
+
+const METHOD_HELP: Record<Method, string> = {
+	erase: "recpart's layout over the whole disk; everything on it is erased",
+	edit: "keep, resize, delete and create partitions yourself (dual boot, keeping data)",
+};
+
 export function ModeSelection({
-	mode,
+	choices,
+	selected,
 	defaultMode,
+	width,
 }: {
-	mode: InstallMode;
+	choices: ReadonlyArray<{ mode: InstallMode; method: Method }>;
+	selected: number;
 	defaultMode: InstallMode;
+	width: number;
 }): ReactNode {
 	const theme = useTuiTheme();
 	const colors = useTuiColors();
+	const dim = resolveIntentColor(theme, "dimText", colors);
 	return (
 		<Page
 			title="Choose a layout"
-			subtitle={`How recpart divides the disk. ${defaultMode} is the layout this system was started with.`}
+			subtitle={`A layout (A/B or mutable), and whether recpart lays it over the whole disk or you edit the partitions. ${defaultMode} is the layout this system was started with.`}
 		>
-			<Box flexDirection="row" gap={1}>
-				{INSTALL_MODES.map((option) => {
-					const chosen = option === mode;
-					return (
-						<Box
-							key={option}
-							flexDirection="column"
-							paddingX={1}
-							width={`${Math.floor(100 / INSTALL_MODES.length)}%`}
-							borderStyle={inkBorderStyle(theme.chrome.borderGlyphSet)}
-							borderColor={resolveIntentColor(theme, chosen ? "accent" : "panelBorder", colors)}
-						>
-							<Text>
-								<Text bold color={resolveIntentColor(theme, chosen ? "accent" : "text", colors)}>
-									{chosen ? "● " : "○ "}
-									{option}
-								</Text>
-								{option === defaultMode ? (
-									<Text color={resolveIntentColor(theme, "dimText", colors)}> default</Text>
-								) : null}
+			<SelectableGrid
+				items={choices}
+				selectedIndex={selected}
+				columns={INSTALL_MODES.length}
+				width={width}
+				renderItem={(choice, { selected: isSelected }) => (
+					<Box
+						width="100%"
+						flexDirection="column"
+						paddingX={1}
+						borderStyle={inkBorderStyle(theme.chrome.borderGlyphSet)}
+						borderColor={resolveIntentColor(theme, isSelected ? "accent" : "panelBorder", colors)}
+					>
+						<Text>
+							<Text bold color={resolveIntentColor(theme, isSelected ? "accent" : "text", colors)}>
+								{isSelected ? "● " : "○ "}
+								{choice.mode} · {METHOD_TITLE[choice.method]}
 							</Text>
-							<UiText>{INSTALL_MODE_HELP[option]}</UiText>
-						</Box>
-					);
-				})}
-			</Box>
+							{choice.mode === defaultMode && choice.method === "erase" ? (
+								<Text color={dim}> default</Text>
+							) : null}
+						</Text>
+						<UiText>{INSTALL_MODE_HELP[choice.mode]}</UiText>
+						<UiText intent="dimText">{METHOD_HELP[choice.method]}</UiText>
+					</Box>
+				)}
+			/>
 		</Page>
 	);
 }
 
+const CHANGE_TONE: Record<PartitionChange["change"], "error" | "warning" | "success" | null> = {
+	erased: "error",
+	formatted: "error",
+	resized: "warning",
+	created: "success",
+	untouched: null,
+};
+
+/** recpart's per-partition summary: what each partition was and becomes. */
+function ChangeTable({ summary }: { summary: readonly PartitionChange[] }): ReactNode {
+	const state = (s: PartitionChange["before"]) =>
+		s ? `${formatBytes(s.size_bytes)}${s.filesystem ? ` ${s.filesystem}` : ""}` : "";
+	return (
+		<Table
+			tones={summary.map((entry) => CHANGE_TONE[entry.change])}
+			columns={[
+				{ title: "Partition" },
+				{ title: "Change" },
+				{ title: "Before" },
+				{ title: "After" },
+				{ title: "Use" },
+			]}
+			rows={summary.map((entry) => [
+				entry.device,
+				entry.change,
+				state(entry.before),
+				state(entry.after),
+				entry.role === "other" ? (entry.mountpoint ?? "") : (entry.role ?? entry.mountpoint ?? ""),
+			])}
+		/>
+	);
+}
+
+/** The disk after the plan, in disk order: every partition on it (its role, or its device)
+ * and the free space between them. */
+function barParts(plan: PartitionPlan): BarPart[] {
+	const placed = plan.summary
+		.flatMap((entry) => (entry.after ? [{ entry, after: entry.after }] : []))
+		.sort((a, b) => a.after.start_bytes - b.after.start_bytes);
+	const parts: BarPart[] = [];
+	const minimum = plan.disk.size_bytes / 100;
+	const free = (size: number) => {
+		if (size > minimum) parts.push({ label: "free", detail: formatBytes(size), size });
+	};
+	let cursor = 0;
+	for (const { entry, after } of placed) {
+		free(after.start_bytes - cursor);
+		parts.push({
+			label:
+				entry.role === "other"
+					? (entry.mountpoint ?? entry.device)
+					: (entry.role ?? entry.device.replace(/^\/dev\//, "")),
+			detail: formatBytes(after.size_bytes),
+			size: after.size_bytes,
+		});
+		cursor = after.start_bytes + after.size_bytes;
+	}
+	free(plan.disk.size_bytes - cursor);
+	return parts;
+}
+
 export function PlanPreview({ plan }: { plan: Run<PartitionPlan> }): ReactNode {
 	const title = "Partition plan";
-	const subtitle = "What recpart would create. Nothing has been written yet.";
+	const subtitle = "What recpart would do to the disk. Nothing has been written yet.";
 	if (plan.kind === "failed")
 		return (
 			<Page title={title} subtitle={subtitle}>
@@ -346,18 +428,14 @@ export function PlanPreview({ plan }: { plan: Run<PartitionPlan> }): ReactNode {
 	const size = (mb: number | null) => (mb === null ? "rest of disk" : formatBytes(mb * MB));
 	return (
 		<Page title={title} subtitle={subtitle}>
+			<Section title="Changes" trailing={value.wipes_disk ? "the whole disk is erased" : undefined}>
+				<ChangeTable summary={value.summary} />
+			</Section>
 			<Section
 				title={value.disk.path}
 				trailing={`${formatBytes(value.disk.size_bytes)} · layout ${value.mode}`}
 			>
-				<DiskBar
-					total={value.disk.size_bytes}
-					parts={value.partitions.map((p) => ({
-						label: p.name,
-						detail: size(p.size_mb),
-						size: p.size_mb === null ? null : p.size_mb * MB,
-					}))}
-				/>
+				<DiskBar total={value.disk.size_bytes} parts={barParts(value)} />
 			</Section>
 			<Section title="Partitions">
 				<Table
@@ -474,12 +552,27 @@ export function DestructiveConfirm({ session }: { session: Session }): ReactNode
 	const colors = useTuiColors();
 	const dim = resolveIntentColor(theme, "dimText", colors);
 	const rest = CONFIRM_TOKEN.length - session.token.length;
+	const plan = session.plan.kind === "ok" ? session.plan.value : null;
+	const lost = plan?.summary.filter((e) => e.change === "erased" || e.change === "formatted") ?? [];
+	const path = disk ? diskPath(disk) : "(no disk)";
+	const count = (change: PartitionChange["change"]) =>
+		plan?.summary.filter((e) => e.change === change).length ?? 0;
+	const partitions = (n: number) => `${n} partition${n === 1 ? "" : "s"}`;
+	const other = [
+		count("resized") ? `resizes ${partitions(count("resized"))}` : null,
+		count("created") ? `creates ${partitions(count("created"))}` : null,
+	]
+		.filter(Boolean)
+		.join(" and ");
+	const title =
+		!plan || plan.wipes_disk
+			? `This erases everything on ${path}`
+			: lost.length
+				? `This erases ${partitions(lost.length)} on ${path}${other ? ` and ${other}` : ""}`
+				: `Nothing on ${path} is erased: this ${other || "changes no partition"}`;
 	return (
-		<Page title="Erase the disk?" subtitle="The last step before recpart writes to the disk.">
-			<Callout
-				tone="danger"
-				title={`This erases everything on ${disk ? diskPath(disk) : "(no disk)"}`}
-			>
+		<Page title="Write to the disk?" subtitle="The last step before recpart writes to the disk.">
+			<Callout tone="danger" title={title}>
 				<Facts
 					rows={[
 						...(listed
@@ -489,10 +582,15 @@ export function DestructiveConfirm({ session }: { session: Session }): ReactNode
 									["Serial", known(listed.serial) ?? "(unknown)"],
 								] as [string, string][])
 							: []),
-						["Layout", session.mode],
+						["Layout", `${session.mode} · ${METHOD_TITLE[session.method]}`],
 					]}
 				/>
 			</Callout>
+			{plan ? (
+				<Section title="What happens to each partition">
+					<ChangeTable summary={plan.summary} />
+				</Section>
+			) : null}
 			<Section title={`Type ${CONFIRM_TOKEN} to unlock`}>
 				<Text>
 					<Text color={dim}>› </Text>

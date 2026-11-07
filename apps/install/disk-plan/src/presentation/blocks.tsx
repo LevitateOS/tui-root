@@ -124,15 +124,24 @@ export type Column = {
 	optional?: boolean;
 };
 
-/** A table with a dim header; cells are cut to fit the pane. */
+/** A table with a dim header; cells are cut to fit the pane. With `selected`, every row
+ * gets a marker column and the selected row (an index into `rows`) stands out; `tones`
+ * colours rows by intent. */
 export function Table({
 	columns,
 	rows,
+	selected,
+	tones,
 }: {
 	columns: readonly Column[];
 	rows: ReadonlyArray<ReadonlyArray<string>>;
+	selected?: number;
+	tones?: ReadonlyArray<ColorIntent | null>;
 }): ReactNode {
-	const width = useContext(ContentWidth);
+	const marker = selected === undefined ? 0 : 2;
+	const width = useContext(ContentWidth) - marker;
+	const theme = useTuiTheme();
+	const colors = useTuiColors();
 	const natural = columns.map((column, c) =>
 		Math.max(textWidth(column.title), ...rows.map((row) => textWidth(row[c] ?? ""))),
 	);
@@ -151,12 +160,25 @@ export function Table({
 		truncateLine(shown.map((c) => cell(cells[c] ?? "", c)).join("  "), width);
 	return (
 		<Box flexDirection="column">
-			<Text color={useIntent("dimText")} bold>
+			<Text color={resolveIntentColor(theme, "dimText", colors)} bold>
+				{" ".repeat(marker)}
 				{line(columns.map((column) => column.title))}
 			</Text>
-			{rows.map((row, r) => (
-				<UiText key={r}>{line(row)}</UiText>
-			))}
+			{rows.map((row, r) => {
+				const isSelected = r === selected;
+				const tone = isSelected ? "accent" : (tones?.[r] ?? null);
+				return (
+					<Text
+						key={r}
+						bold={isSelected}
+						inverse={isSelected}
+						color={tone ? resolveIntentColor(theme, tone, colors) : undefined}
+					>
+						{marker ? (isSelected ? "▸ " : "  ") : ""}
+						{line(row)}
+					</Text>
+				);
+			})}
 		</Box>
 	);
 }

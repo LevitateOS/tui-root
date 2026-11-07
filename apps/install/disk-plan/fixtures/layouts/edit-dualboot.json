@@ -1,0 +1,47 @@
+{
+	"new_table": false,
+	"table_id": "7D3B1C5E-2A4F-4E8B-9C61-0F2E8A4D5B10",
+	"actions": [
+		{
+			"action": "keep",
+			"partition": 1,
+			"role": "efi",
+			"mountpoint": null
+		},
+		{
+			"action": "resize",
+			"partition": 3,
+			"size_mb": 153600,
+			"role": null,
+			"mountpoint": null
+		},
+		{
+			"action": "create",
+			"size_mb": 30720,
+			"start_mb": 154129,
+			"filesystem": null,
+			"label": null,
+			"role": "root_a",
+			"mountpoint": null
+		},
+		{
+			"action": "create",
+			"size_mb": 30720,
+			"start_mb": 184849,
+			"filesystem": null,
+			"label": null,
+			"role": "root_b",
+			"mountpoint": null
+		},
+		{
+			"action": "create",
+			"size_mb": null,
+			"start_mb": 215569,
+			"filesystem": null,
+			"label": null,
+			"role": "state",
+			"mountpoint": null
+		}
+	],
+	"swap_file": null
+}

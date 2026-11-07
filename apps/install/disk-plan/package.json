@@ -189,6 +189,66 @@
 							"expect": "Disk Preparation › 2. Identify Target Disk"
 						}
 					]
+				},
+				{
+					"name": "edit: incomplete layout",
+					"args": [
+						"--disk",
+						"/dev/vdz"
+					],
+					"env": {
+						"RECPART_FIXTURE_DISKS": "all"
+					},
+					"steps": [
+						{
+							"keys": "jj\\r\\x1b[B\\r",
+							"expect": "Not a valid ab layout yet"
+						},
+						{
+							"keys": "",
+							"expect": "Give one partition role efi."
+						}
+					]
+				},
+				{
+					"name": "edit: dual boot",
+					"args": [
+						"--disk",
+						"/dev/vdy"
+					],
+					"env": {
+						"RECPART_FIXTURE_DISKS": "all"
+					},
+					"steps": [
+						{
+							"keys": "jj\\r\\x1b[B\\r",
+							"expect": "│Step 3 of 9 · Partitions"
+						},
+						{
+							"keys": "m",
+							"expect": "What /dev/vdy1 is for"
+						},
+						{
+							"keys": "\\rjjr",
+							"expect": "Resize /dev/vdy3"
+						},
+						{
+							"keys": "150G",
+							"expect": "= 150.0 GB"
+						},
+						{
+							"keys": "\\rjn30G\\rj\\rjn30G\\rjj\\rjn\\rjjj\\r",
+							"expect": "recpart accepts this ab layout"
+						},
+						{
+							"keys": "",
+							"expect": "shrink"
+						},
+						{
+							"keys": "\\rjjj",
+							"expect": "Nothing on /dev/vdy is erased: this resizes 1 partition and creates 3"
+						}
+					]
 				}
 			]
 		}

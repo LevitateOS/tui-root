@@ -8,7 +8,10 @@ import {
 	CONTENT_KEYS,
 	DISK_KEYS,
 	GLOBAL_KEYS,
-	MODE_KEYS,
+	CHOICE_KEYS,
+	LAYOUT_KEYS,
+	PARTITION_KEYS,
+	TEXT_KEYS,
 	NAV_KEYS,
 } from "./presentation/keymap";
 
@@ -27,7 +30,13 @@ runApp({
 	keys: [
 		{ title: "Keys (every page)", keymap: GLOBAL_KEYS },
 		{ title: "Keys (page list focused)", keymap: NAV_KEYS },
-		{ title: "Keys (page content focused)", keymap: [...CONTENT_KEYS, ...DISK_KEYS, ...MODE_KEYS] },
+		{
+			title: "Keys (page content focused)",
+			keymap: [...CONTENT_KEYS, ...DISK_KEYS, ...LAYOUT_KEYS],
+		},
+		{ title: "Keys (partition editor)", keymap: PARTITION_KEYS },
+		{ title: "Keys (editor asks to choose)", keymap: CHOICE_KEYS },
+		{ title: "Keys (editor asks for a size or name)", keymap: TEXT_KEYS },
 		{
 			title: "Keys (destructive-confirm page; other typing goes into the token)",
 			keymap: CONFIRM_KEYS,

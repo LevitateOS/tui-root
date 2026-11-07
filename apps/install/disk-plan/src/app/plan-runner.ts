@@ -1,4 +1,6 @@
-import { realpathSync } from "node:fs";
+import { mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { runCommand, type CommandResult } from "@levitate/tui-kit";
 import {
 	CONFIRM_TOKEN,
@@ -7,16 +9,27 @@ import {
 	type DiskInventory,
 	type DiskListResult,
 	type InstallMode,
+	type ManualLayout,
 } from "../generated/recpart";
 import type { Run } from "../flow";
 
 export const LIST_DISKS = ["recpart", "list-disks", "--json"] as const;
 
-export function planCommand(disk: string, mode: InstallMode): string[] {
-	return ["recpart", "plan", "--disk", disk, "--mode", mode, "--json"];
+export function inspectCommand(disk: string): string[] {
+	return ["recpart", "inspect", "--disk", disk, "--json"];
 }
 
-export function applyCommand(disk: string, mode: InstallMode, dryRun: boolean): string[] {
+/** `layout` is an explicit layout's file (see `writeLayout`); without one, the mode's template. */
+export function planCommand(disk: string, mode: InstallMode, layout: string | null): string[] {
+	return ["recpart", "plan", "--disk", disk, "--mode", mode, ...layoutArgs(layout), "--json"];
+}
+
+export function applyCommand(
+	disk: string,
+	mode: InstallMode,
+	layout: string | null,
+	dryRun: boolean,
+): string[] {
 	return [
 		"recpart",
 		"apply",
@@ -24,9 +37,32 @@ export function applyCommand(disk: string, mode: InstallMode, dryRun: boolean): 
 		disk,
 		"--mode",
 		mode,
+		...layoutArgs(layout),
 		"--json",
 		...(dryRun ? ["--dry-run"] : ["--confirm", CONFIRM_TOKEN]),
 	];
+}
+
+function layoutArgs(layout: string | null): string[] {
+	return layout ? ["--layout", layout] : [];
+}
+
+let layoutDirMade = false;
+
+/** Writes `layout` where recpart can read it (a directory of this process's, removed when
+ * it exits). The name is the content's hash, so a changed
+ * layout is a changed command and the plan runs again. */
+export function writeLayout(layout: ManualLayout): string {
+	const text = `${JSON.stringify(layout, null, "\t")}\n`;
+	const dir = join(tmpdir(), `disk-plan-${process.pid}`);
+	if (!layoutDirMade) {
+		mkdirSync(dir, { recursive: true });
+		process.on("exit", () => rmSync(dir, { recursive: true, force: true }));
+		layoutDirMade = true;
+	}
+	const path = join(dir, `layout-${Bun.hash(text).toString(16)}.json`);
+	writeFileSync(path, text);
+	return path;
 }
 
 /** A finished recpart run as the flow's `Run`: its document, or what went wrong. */

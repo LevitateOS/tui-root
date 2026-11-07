@@ -14,33 +14,40 @@ import {
 	useShellLayout,
 	useTuiColors,
 	useTuiTheme,
+	useTuiViewport,
 	type ColorIntent,
 	type RunningCommand,
 } from "@levitate/tui-kit";
 import {
 	APPLY_SCHEMA_VERSION,
 	CONFIRM_TOKEN,
+	INSPECT_SCHEMA_VERSION,
 	INSTALL_MODES,
 	PLAN_SCHEMA_VERSION,
 	type ApplyResult,
+	type InspectResult,
 	type InstallMode,
 	type PartitionPlan,
 } from "../generated/recpart";
 import {
 	applyCommand,
+	inspectCommand,
 	LIST_DISKS,
 	listDisks,
 	planCommand,
 	resolveDiskPath,
 	toRun,
+	writeLayout,
 } from "../app/plan-runner";
+import { toLayout } from "../domain/layout";
 import {
 	canApply,
 	diskPath,
 	lastFailure,
+	METHODS,
 	page,
-	PAGES,
 	position,
+	shownPages,
 	stepState,
 	type DiskChoice,
 	type PageId,
@@ -54,11 +61,13 @@ import {
 	CONTENT_KEYS,
 	DISK_KEYS,
 	GLOBAL_KEYS,
-	MODE_KEYS,
+	LAYOUT_KEYS,
 	NAV_KEYS,
 	SCROLL_KEYS,
 	SCROLL_UP,
 } from "./keymap";
+import { PartitionEditorPage } from "./partition-editor";
+import { usePartitionEditor } from "./use-partition-editor";
 import {
 	ApplyProgress,
 	CommandPreview,
@@ -85,11 +94,13 @@ type DiskPlanScreenProps = {
 
 export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskPlanScreenProps) {
 	const { exit } = useApp();
-	const shell = useShellLayout({ navWidth: 38 });
+	// The rail gives way on a narrow terminal (the install screen's half), so pages keep
+	// room for their tables.
+	const { columns: terminalColumns } = useTuiViewport();
+	const shell = useShellLayout({ navWidth: terminalColumns < 110 ? 28 : 38 });
 	const focus = useFocusPlane({ initial: "navigation" });
 	const [pageId, setPageId] = useState<PageId>("welcome");
 	const [showFailure, setShowFailure] = useState(false);
-	const [mode, setMode] = useState<InstallMode>(defaultMode);
 	const [token, setToken] = useState("");
 	const [apply, setApply] = useState<Run<ApplyResult>>({ kind: "idle" });
 	const [notice, setNotice] = useState<string | null>(null);
@@ -127,23 +138,63 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 	const disk = choices[diskNav.safeIndex] ?? null;
 	const path = disk ? diskPath(disk) : null;
 	const reached = (id: PageId) => position(pageId) >= position(id);
-	const plan = useRecpartRun<PartitionPlan>(
-		path && reached("plan-preview") ? planCommand(path, mode) : null,
-		PLAN_SCHEMA_VERSION,
+
+	// The layout page's four choices: each method, for each mode.
+	const layoutChoices = METHODS.flatMap((method) =>
+		INSTALL_MODES.map((mode) => ({ method, mode })),
 	);
-	const dryRun = useRecpartRun<ApplyResult>(
-		path && reached("command-preview") && plan.kind === "ok"
-			? applyCommand(path, mode, true)
-			: null,
-		APPLY_SCHEMA_VERSION,
-	);
-	const session: Session = { disk, mode, plan, dryRun, apply, token };
-	// The token confirms one disk and mode.
-	useEffect(() => setToken(""), [path, mode]);
+	const layoutNav = useGridNavigation({
+		count: layoutChoices.length,
+		columns: INSTALL_MODES.length,
+		initialIndex: Math.max(0, INSTALL_MODES.indexOf(defaultMode)),
+	});
+	const { mode, method } = layoutChoices[layoutNav.safeIndex]!;
 
 	const current = page(pageId);
 	const view: PageId = showFailure ? "failure-diagnostics" : pageId;
 	const contentFocus = focus.isContent && current.interactive && !showFailure;
+
+	const inspect = useRecpartRun<InspectResult>(
+		path && method === "edit" && reached("partitions") ? inspectCommand(path) : null,
+		INSPECT_SCHEMA_VERSION,
+	);
+	const inspected = inspect.kind === "ok" ? inspect.value : null;
+	const editor = usePartitionEditor({
+		inspect: inspected,
+		mode,
+		active: contentFocus && pageId === "partitions",
+		next: () => next(),
+		back: () => back(),
+	});
+	const manualLayout = method === "edit" && inspected ? toLayout(inspected, editor.edits) : null;
+	const layoutJson = manualLayout ? JSON.stringify(manualLayout) : null;
+	const layoutFile = useMemo(() => (manualLayout ? writeLayout(manualLayout) : null), [layoutJson]);
+	const plan = useRecpartRun<PartitionPlan>(
+		path && (method === "edit" ? reached("partitions") && layoutFile : reached("plan-preview"))
+			? planCommand(path, mode, layoutFile)
+			: null,
+		PLAN_SCHEMA_VERSION,
+	);
+	const dryRun = useRecpartRun<ApplyResult>(
+		path && reached("command-preview") && plan.kind === "ok"
+			? applyCommand(path, mode, layoutFile, true)
+			: null,
+		APPLY_SCHEMA_VERSION,
+	);
+	const session: Session = {
+		disk,
+		mode,
+		method,
+		inspect,
+		layout: manualLayout,
+		plan,
+		dryRun,
+		apply,
+		token,
+	};
+	// The token confirms one disk and one layout.
+	useEffect(() => setToken(""), [path, mode, method, layoutFile]);
+	const prompting = editor.prompt !== null && pageId === "partitions";
 	useEffect(() => {
 		if (focus.isContent && !current.interactive) focus.setPlane("navigation");
 	}, [pageId]);
@@ -163,7 +214,7 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 	const back = () => (showFailure ? setShowFailure(false) : go(current.back(session)));
 	const startApply = () => {
 		if (!canApply(session) || applyRun.current || !path) return;
-		const argv = applyCommand(path, mode, false);
+		const argv = applyCommand(path, mode, layoutFile, false);
 		const running = startCommand(argv);
 		applyRun.current = running;
 		setApply({ kind: "running", argv });
@@ -173,13 +224,18 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 		);
 	};
 
-	useKeymap(GLOBAL_KEYS, {
-		quit: () =>
-			apply.kind === "running" ? setNotice("can't quit while recpart apply is running") : exit(),
-		focus: () => (current.interactive ? focus.togglePlane() : focus.setPlane("navigation")),
-		failure: () =>
-			lastFailure(session) ? setShowFailure((shown) => !shown) : setNotice("nothing has failed"),
-	});
+	useKeymap(
+		GLOBAL_KEYS,
+		{
+			quit: () =>
+				apply.kind === "running" ? setNotice("can't quit while recpart apply is running") : exit(),
+			focus: () => (current.interactive ? focus.togglePlane() : focus.setPlane("navigation")),
+			failure: () =>
+				lastFailure(session) ? setShowFailure((shown) => !shown) : setNotice("nothing has failed"),
+		},
+		// Escape cancels the editor's question, and typed text goes into it.
+		{ active: !prompting },
+	);
 	useKeymap(
 		NAV_KEYS,
 		{
@@ -191,7 +247,7 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 	useKeymap(
 		CONTENT_KEYS,
 		{ next, back },
-		{ active: contentFocus && pageId !== "destructive-confirm" },
+		{ active: contentFocus && pageId !== "destructive-confirm" && pageId !== "partitions" },
 	);
 	useKeymap(
 		DISK_KEYS,
@@ -210,12 +266,20 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 		{ active: contentFocus && pageId === "target-disk" },
 	);
 	useKeymap(
-		MODE_KEYS,
+		LAYOUT_KEYS,
 		{
-			toggle: () =>
-				setMode(INSTALL_MODES[(INSTALL_MODES.indexOf(mode) + 1) % INSTALL_MODES.length]!),
+			move: (key) =>
+				layoutNav.move(
+					["up", "k"].includes(key)
+						? "up"
+						: ["down", "j"].includes(key)
+							? "down"
+							: ["left", "h"].includes(key)
+								? "left"
+								: "right",
+				),
 		},
-		{ active: pageId === "mode-selection" && !showFailure },
+		{ active: pageId === "mode-selection" && contentFocus },
 	);
 	useKeymap(
 		CONFIRM_KEYS,
@@ -255,7 +319,17 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 				listing={listingState}
 			/>
 		),
-		"mode-selection": () => <ModeSelection mode={mode} defaultMode={defaultMode} />,
+		"mode-selection": () => (
+			<ModeSelection
+				choices={layoutChoices}
+				selected={layoutNav.safeIndex}
+				defaultMode={defaultMode}
+				width={shell.content.textColumns}
+			/>
+		),
+		partitions: () => (
+			<PartitionEditorPage inspect={inspect} editor={editor} mode={mode} plan={plan} />
+		),
 		"plan-preview": () => <PlanPreview plan={plan} />,
 		"command-preview": () => (
 			<CommandPreview log={[listRun, plan, dryRun, apply]} dryRun={dryRun} />
@@ -270,11 +344,18 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 	const keys = [
 		...(pageId === "destructive-confirm"
 			? CONFIRM_KEYS
-			: contentFocus
-				? [...CONTENT_KEYS, ...(pageId === "target-disk" ? DISK_KEYS : [])]
-				: NAV_KEYS),
-		...(pageId === "mode-selection" ? MODE_KEYS : []),
-		...GLOBAL_KEYS.filter((b) => b.action !== "failure" || lastFailure(session) !== null),
+			: contentFocus && pageId === "partitions"
+				? editor.keys
+				: contentFocus
+					? [
+							...CONTENT_KEYS,
+							...(pageId === "target-disk" ? DISK_KEYS : []),
+							...(pageId === "mode-selection" ? LAYOUT_KEYS : []),
+						]
+					: NAV_KEYS),
+		...(prompting
+			? []
+			: GLOBAL_KEYS.filter((b) => b.action !== "failure" || lastFailure(session) !== null)),
 	];
 	// A page taller than its pane scrolls; it is measured after each render.
 	const pageBox = useRef<DOMElement>(null);
@@ -287,9 +368,9 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 			if (height !== pageRows) setPageRows(height);
 		}
 	});
-	const typing = pageId === "destructive-confirm" && !showFailure;
+	const typing = (pageId === "destructive-confirm" && !showFailure) || prompting;
 	const scrollable = !typing && pageRows > shell.content.textRows - 2;
-	const railPages = PAGES.filter((p) => p.phase);
+	const railPages = shownPages(session).filter((p) => p.phase);
 	const step = railPages.findIndex((p) => p.id === view);
 	const layout = fitFooter(shell, [
 		textStatusSegment(
@@ -298,7 +379,15 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 			contentFocus ? "accent" : "warning",
 		),
 		...keymapStatusSegments(scrollable ? [...keys, ...SCROLL_KEYS] : keys),
-		...(notice ? [textStatusSegment("notice", notice, "warning")] : []),
+		...((notice ?? (pageId === "partitions" ? editor.notice : null))
+			? [
+					textStatusSegment(
+						"notice",
+						(notice ?? (pageId === "partitions" ? editor.notice : null))!,
+						"warning",
+					),
+				]
+			: []),
 	]);
 	const rows = layout.content.textRows;
 	const maxOffset = Math.max(0, pageRows - rows);
@@ -351,10 +440,17 @@ const STATE_MARK: Record<StepState, { mark: string; intent: ColorIntent }> = {
 function Rail({ view, session }: { view: PageId; session: Session }): ReactNode {
 	const theme = useTuiTheme();
 	const colors = useTuiColors();
-	const phases = [...new Set(PAGES.flatMap((p) => (p.phase ? [p.phase] : [])))];
+	const pages = shownPages(session);
+	const phases = [...new Set(pages.flatMap((p) => (p.phase ? [p.phase] : [])))];
+	const changes = session.layout?.actions.length ?? 0;
 	const choice: Partial<Record<PageId, string>> = {
 		"target-disk": session.disk ? diskPath(session.disk) : undefined,
-		"mode-selection": session.mode,
+		"mode-selection": `${session.mode} · ${session.method}`,
+		partitions: session.layout
+			? session.layout.new_table
+				? "new table"
+				: `${changes} change${changes === 1 ? "" : "s"}`
+			: undefined,
 	};
 	const color = (intent: ColorIntent) => resolveIntentColor(theme, intent, colors);
 	return (
@@ -367,24 +463,28 @@ function Rail({ view, session }: { view: PageId; session: Session }): ReactNode 
 					<Text bold color={color("navHeading")}>
 						{phase.toUpperCase()}
 					</Text>
-					{PAGES.filter((p) => p.phase === phase).map((p) => {
-						const state = stepState(p.id, view, session);
-						const { mark, intent } = STATE_MARK[state];
-						return (
-							<Text key={p.id}>
-								<Text color={color(intent)}>{mark} </Text>
-								<Text
-									bold={state === "current"}
-									color={color(
-										state === "current" ? "accent" : state === "pending" ? "dimText" : "navItem",
-									)}
-								>
-									{p.title}
+					{pages
+						.filter((p) => p.phase === phase)
+						.map((p) => {
+							const state = stepState(p.id, view, session);
+							const { mark, intent } = STATE_MARK[state];
+							return (
+								<Text key={p.id}>
+									<Text color={color(intent)}>{mark} </Text>
+									<Text
+										bold={state === "current"}
+										color={color(
+											state === "current" ? "accent" : state === "pending" ? "dimText" : "navItem",
+										)}
+									>
+										{p.title}
+									</Text>
+									{choice[p.id] ? (
+										<Text color={color("dimText")}>{`  ${choice[p.id]}`}</Text>
+									) : null}
 								</Text>
-								{choice[p.id] ? <Text color={color("dimText")}>{`  ${choice[p.id]}`}</Text> : null}
-							</Text>
-						);
-					})}
+							);
+						})}
 				</Box>
 			))}
 			{view === "failure-diagnostics" ? (

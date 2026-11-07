@@ -1,5 +1,5 @@
 // The kit's public surface: exactly what the apps import.
-export { useAppName, useTuiColors, useTuiTheme } from "./app/app-provider";
+export { useAppName, useTuiColors, useTuiTheme, useTuiViewport } from "./app/app-provider";
 export { glyphs, inkBorderStyle } from "./chrome/glyphs";
 export type { BorderStyle } from "./chrome/glyphs";
 export { KeyValue } from "./components/data/key-value";

@@ -35,14 +35,44 @@ export const DISK_KEYS = [
 	},
 ] as const satisfies Keymap;
 
-/** Keys on the mode-selection page. */
-export const MODE_KEYS = [
+/** Keys on the layout page: four choices, a layout and a way to lay it out. */
+export const LAYOUT_KEYS = [
 	{
-		action: "toggle",
-		keys: ["m", "left", "h", "right", "l", "up", "k", "down", "j"],
-		hint: "m/arrows",
-		label: "switch mode",
+		action: "move",
+		keys: ["left", "h", "right", "l", "up", "k", "down", "j"],
+		hint: "arrows/hjkl",
+		label: "choose",
 	},
+] as const satisfies Keymap;
+
+/** Keys on the partition editor page. */
+export const PARTITION_KEYS = [
+	{ action: "select", keys: ["up", "k", "down", "j"], hint: "↑/↓", label: "select" },
+	{ action: "create", keys: ["n"], label: "new partition" },
+	{ action: "remove", keys: ["d"], label: "delete" },
+	{ action: "resize", keys: ["r"], label: "resize" },
+	{ action: "format", keys: ["f"], label: "format" },
+	{ action: "role", keys: ["m"], label: "use as (role)" },
+	{ action: "clear", keys: ["x"], label: "leave as is" },
+	{ action: "table", keys: ["W"], label: "new partition table (erase all)" },
+	{ action: "undo", keys: ["u"], label: "undo" },
+	{ action: "reset", keys: ["U"], label: "undo all" },
+	{ action: "next", keys: ["enter"], label: "continue" },
+	{ action: "back", keys: ["p"], label: "back" },
+] as const satisfies Keymap;
+
+/** Keys while the editor asks to pick one of a list. */
+export const CHOICE_KEYS = [
+	{ action: "move", keys: ["up", "k", "down", "j"], hint: "↑/↓", label: "choose" },
+	{ action: "accept", keys: ["enter"], label: "accept" },
+	{ action: "cancel", keys: ["escape"], label: "cancel" },
+] as const satisfies Keymap;
+
+/** Keys while the editor asks for a size or a name; everything else typed goes in. */
+export const TEXT_KEYS = [
+	{ action: "accept", keys: ["enter"], label: "accept" },
+	{ action: "erase", keys: ["backspace", "delete"], label: "erase" },
+	{ action: "cancel", keys: ["escape"], label: "cancel" },
 ] as const satisfies Keymap;
 
 /** Keys on the destructive-confirm page; everything else typed goes into the token. */

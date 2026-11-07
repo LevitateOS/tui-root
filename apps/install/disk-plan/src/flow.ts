@@ -3,7 +3,9 @@ import {
 	type ApplyResult,
 	type DiskInventory,
 	type ErrorPayload,
+	type InspectResult,
 	type InstallMode,
+	type ManualLayout,
 	type PartitionPlan,
 } from "./generated/recpart";
 
@@ -29,10 +31,21 @@ export type Run<T> =
 			error: ErrorPayload | null;
 	  };
 
+/** How the layout is made: recpart's template over the whole disk, or edits to what is on it. */
+export type Method = "erase" | "edit";
+
+export const METHODS: readonly Method[] = ["erase", "edit"];
+
 /** Everything the pages and gates read. */
 export type Session = {
 	disk: DiskChoice | null;
 	mode: InstallMode;
+	method: Method;
+	/** `recpart inspect` of the disk, for the editor. */
+	inspect: Run<InspectResult>;
+	/** The editor's layout (edit only). */
+	layout: ManualLayout | null;
+	/** The template's plan, or the editor's layout planned (recpart's check of it). */
 	plan: Run<PartitionPlan>;
 	/** One `apply --dry-run`; the command preview and the preflight both read it. */
 	dryRun: Run<ApplyResult>;
@@ -66,7 +79,10 @@ export function lastFailure(
 	| null {
 	if (session.apply.kind === "failed") return { step: "apply", run: session.apply };
 	if (session.dryRun.kind === "failed") return { step: "dry-run", run: session.dryRun };
-	if (session.plan.kind === "failed") return { step: "plan", run: session.plan };
+	// The editor shows recpart's refusals of a layout as it is being made; they aren't failures.
+	const refusedLayout =
+		session.method === "edit" && session.plan.kind === "failed" && session.plan.error;
+	if (session.plan.kind === "failed" && !refusedLayout) return { step: "plan", run: session.plan };
 	if (refusals(session).length > 0) return { step: "preflight", refusals: refusals(session) };
 	return null;
 }
@@ -75,6 +91,7 @@ export type PageId =
 	| "welcome"
 	| "target-disk"
 	| "mode-selection"
+	| "partitions"
 	| "plan-preview"
 	| "command-preview"
 	| "preflight-checks"
@@ -94,6 +111,8 @@ export type Page = {
 	phase?: Phase;
 	/** Has keys of its own, so the content pane can take focus. */
 	interactive: boolean;
+	/** Whether the flow goes through this page (default: always). */
+	shown?: (session: Session) => boolean;
 	/** What must hold to move on, shown on the welcome page as the safety rules. */
 	gate?: { rule: string; holds: (session: Session) => boolean };
 	next: (session: Session) => PageId | null;
@@ -123,8 +142,18 @@ export const PAGES: readonly Page[] = [
 		title: "Layout",
 		phase: "Choose",
 		interactive: true,
-		next: () => "plan-preview",
+		next: (s) => (s.method === "edit" ? "partitions" : "plan-preview"),
 		back: () => "target-disk",
+	},
+	{
+		id: "partitions",
+		title: "Partitions",
+		phase: "Choose",
+		interactive: true,
+		shown: (s) => s.method === "edit",
+		gate: { rule: "recpart accepts the layout", holds: (s) => s.plan.kind === "ok" },
+		next: () => "plan-preview",
+		back: () => "mode-selection",
 	},
 	{
 		id: "plan-preview",
@@ -133,7 +162,7 @@ export const PAGES: readonly Page[] = [
 		interactive: false,
 		gate: { rule: "recpart produced a plan", holds: (s) => s.plan.kind === "ok" },
 		next: () => "command-preview",
-		back: () => "mode-selection",
+		back: (s) => (s.method === "edit" ? "partitions" : "mode-selection"),
 	},
 	{
 		id: "command-preview",
@@ -201,6 +230,11 @@ export function page(id: PageId): Page {
 	return PAGES.find((p) => p.id === id)!;
 }
 
+/** The pages the flow goes through for this session, in order. */
+export function shownPages(session: Session): Page[] {
+	return PAGES.filter((p) => !p.shown || p.shown(session));
+}
+
 export type StepState = "done" | "current" | "failed" | "pending";
 
 /** How the rail marks a page: where the run failed, the page you're on, a page behind you
@@ -208,7 +242,7 @@ export type StepState = "done" | "current" | "failed" | "pending";
 export function stepState(id: PageId, current: PageId, session: Session): StepState {
 	const failure = lastFailure(session);
 	const failedAt: Record<string, PageId> = {
-		plan: "plan-preview",
+		plan: session.method === "edit" ? "partitions" : "plan-preview",
 		"dry-run": "command-preview",
 		preflight: "preflight-checks",
 		apply: "apply-progress",
