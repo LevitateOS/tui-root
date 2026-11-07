@@ -35,15 +35,18 @@ export const DISK_KEYS = [
 	},
 ] as const satisfies Keymap;
 
-/** Keys on the layout page: four choices, a layout and a way to lay it out. */
-export const LAYOUT_KEYS = [
+/** Keys on the two pages that choose one of two (the system, the disk's use). */
+export const PICK_KEYS = [
 	{
-		action: "move",
-		keys: ["left", "h", "right", "l", "up", "k", "down", "j"],
+		action: "pick",
+		keys: ["left", "h", "up", "k", "right", "l", "down", "j"],
 		hint: "arrows/hjkl",
 		label: "choose",
 	},
 ] as const satisfies Keymap;
+
+/** Of PICK_KEYS, the ones that pick the first choice. */
+export const PICK_FIRST = new Set(["left", "h", "up", "k"]);
 
 /** Keys on the partition editor page. */
 export const PARTITION_KEYS = [

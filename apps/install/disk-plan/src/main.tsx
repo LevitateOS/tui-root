@@ -9,7 +9,7 @@ import {
 	DISK_KEYS,
 	GLOBAL_KEYS,
 	CHOICE_KEYS,
-	LAYOUT_KEYS,
+	PICK_KEYS,
 	PARTITION_KEYS,
 	TEXT_KEYS,
 	NAV_KEYS,
@@ -32,7 +32,7 @@ runApp({
 		{ title: "Keys (page list focused)", keymap: NAV_KEYS },
 		{
 			title: "Keys (page content focused)",
-			keymap: [...CONTENT_KEYS, ...DISK_KEYS, ...LAYOUT_KEYS],
+			keymap: [...CONTENT_KEYS, ...DISK_KEYS, ...PICK_KEYS],
 		},
 		{ title: "Keys (partition editor)", keymap: PARTITION_KEYS },
 		{ title: "Keys (editor asks to choose)", keymap: CHOICE_KEYS },

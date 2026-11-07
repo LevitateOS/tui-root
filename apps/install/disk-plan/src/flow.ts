@@ -41,7 +41,7 @@ export type Session = {
 	disk: DiskChoice | null;
 	mode: InstallMode;
 	method: Method;
-	/** `recpart inspect` of the disk, for the editor. */
+	/** `recpart inspect` of the disk: what is on it, and the editor's starting point. */
 	inspect: Run<InspectResult>;
 	/** The editor's layout (edit only). */
 	layout: ManualLayout | null;
@@ -90,7 +90,8 @@ export function lastFailure(
 export type PageId =
 	| "welcome"
 	| "target-disk"
-	| "mode-selection"
+	| "system"
+	| "disk-use"
 	| "partitions"
 	| "plan-preview"
 	| "command-preview"
@@ -134,16 +135,24 @@ export const PAGES: readonly Page[] = [
 		phase: "Choose",
 		interactive: true,
 		gate: { rule: "a disk is chosen", holds: (s) => s.disk !== null },
-		next: () => "mode-selection",
+		next: () => "system",
 		back: () => "welcome",
 	},
 	{
-		id: "mode-selection",
-		title: "Layout",
+		id: "system",
+		title: "System",
+		phase: "Choose",
+		interactive: true,
+		next: () => "disk-use",
+		back: () => "target-disk",
+	},
+	{
+		id: "disk-use",
+		title: "Disk use",
 		phase: "Choose",
 		interactive: true,
 		next: (s) => (s.method === "edit" ? "partitions" : "plan-preview"),
-		back: () => "target-disk",
+		back: () => "system",
 	},
 	{
 		id: "partitions",
@@ -153,7 +162,7 @@ export const PAGES: readonly Page[] = [
 		shown: (s) => s.method === "edit",
 		gate: { rule: "recpart accepts the layout", holds: (s) => s.plan.kind === "ok" },
 		next: () => "plan-preview",
-		back: () => "mode-selection",
+		back: () => "disk-use",
 	},
 	{
 		id: "plan-preview",
@@ -162,7 +171,7 @@ export const PAGES: readonly Page[] = [
 		interactive: false,
 		gate: { rule: "recpart produced a plan", holds: (s) => s.plan.kind === "ok" },
 		next: () => "command-preview",
-		back: (s) => (s.method === "edit" ? "partitions" : "mode-selection"),
+		back: (s) => (s.method === "edit" ? "partitions" : "disk-use"),
 	},
 	{
 		id: "command-preview",

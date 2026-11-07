@@ -54,6 +54,7 @@ import {
 	shownPages,
 	stepState,
 	type DiskChoice,
+	type Method,
 	type PageId,
 	type Run,
 	type Session,
@@ -64,7 +65,8 @@ import {
 	CONTENT_KEYS,
 	DISK_KEYS,
 	GLOBAL_KEYS,
-	LAYOUT_KEYS,
+	PICK_FIRST,
+	PICK_KEYS,
 	NAV_KEYS,
 } from "./keymap";
 import { PartitionEditorPage } from "./partition-editor";
@@ -74,10 +76,11 @@ import {
 	CommandPreview,
 	DestructiveConfirm,
 	FailureDiagnostics,
-	ModeSelection,
+	DiskUse,
 	PlanPreview,
 	PreflightChecks,
 	ResultHandoff,
+	SystemChoice,
 	TargetDisk,
 	Welcome,
 } from "./pages";
@@ -140,23 +143,15 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 	const path = disk ? diskPath(disk) : null;
 	const reached = (id: PageId) => position(pageId) >= position(id);
 
-	// The layout page's four choices: each method, for each mode.
-	const layoutChoices = METHODS.flatMap((method) =>
-		INSTALL_MODES.map((mode) => ({ method, mode })),
-	);
-	const layoutNav = useGridNavigation({
-		count: layoutChoices.length,
-		columns: INSTALL_MODES.length,
-		initialIndex: Math.max(0, INSTALL_MODES.indexOf(defaultMode)),
-	});
-	const { mode, method } = layoutChoices[layoutNav.safeIndex]!;
+	const [mode, setMode] = useState<InstallMode>(defaultMode);
+	const [method, setMethod] = useState<Method>("erase");
 
 	const current = page(pageId);
 	const view: PageId = showFailure ? "failure-diagnostics" : pageId;
 	const contentFocus = focus.isContent && current.interactive && !showFailure;
 
 	const inspect = useRecpartRun<InspectResult>(
-		path && method === "edit" && reached("partitions") ? inspectCommand(path) : null,
+		path && reached("disk-use") ? inspectCommand(path) : null,
 		INSPECT_SCHEMA_VERSION,
 	);
 	const inspected = inspect.kind === "ok" ? inspect.value : null;
@@ -267,20 +262,15 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 		{ active: contentFocus && pageId === "target-disk" },
 	);
 	useKeymap(
-		LAYOUT_KEYS,
+		PICK_KEYS,
 		{
-			move: (key) =>
-				layoutNav.move(
-					["up", "k"].includes(key)
-						? "up"
-						: ["down", "j"].includes(key)
-							? "down"
-							: ["left", "h"].includes(key)
-								? "left"
-								: "right",
-				),
+			pick: (key) => {
+				const first = PICK_FIRST.has(key);
+				if (pageId === "system") setMode(INSTALL_MODES[first ? 0 : 1]);
+				else setMethod(METHODS[first ? 0 : 1]!);
+			},
 		},
-		{ active: pageId === "mode-selection" && contentFocus },
+		{ active: contentFocus && (pageId === "system" || pageId === "disk-use") },
 	);
 	useKeymap(
 		CONFIRM_KEYS,
@@ -320,11 +310,15 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 				listing={listingState}
 			/>
 		),
-		"mode-selection": () => (
-			<ModeSelection
-				choices={layoutChoices}
-				selected={layoutNav.safeIndex}
-				defaultMode={defaultMode}
+		system: () => (
+			<SystemChoice mode={mode} defaultMode={defaultMode} width={shell.content.textColumns} />
+		),
+		"disk-use": () => (
+			<DiskUse
+				method={method}
+				mode={mode}
+				path={path}
+				inspect={inspect}
 				width={shell.content.textColumns}
 			/>
 		),
@@ -351,7 +345,7 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 					? [
 							...CONTENT_KEYS,
 							...(pageId === "target-disk" ? DISK_KEYS : []),
-							...(pageId === "mode-selection" ? LAYOUT_KEYS : []),
+							...(pageId === "system" || pageId === "disk-use" ? PICK_KEYS : []),
 						]
 					: NAV_KEYS),
 		...(prompting
@@ -426,12 +420,13 @@ function Rail({ view, session }: { view: PageId; session: Session }): ReactNode 
 	const changes = session.layout?.actions.length ?? 0;
 	const choice: Partial<Record<PageId, string>> = {
 		"target-disk": session.disk ? diskPath(session.disk) : undefined,
-		"mode-selection": `${session.mode} · ${session.method}`,
-		partitions: session.layout
-			? session.layout.new_table
-				? "new table"
-				: `${changes} change${changes === 1 ? "" : "s"}`
-			: undefined,
+		system: session.mode === "ab" ? "A/B" : "mutable",
+		"disk-use": session.method === "erase" ? "erase all" : "keep some",
+		partitions: session.layout?.new_table
+			? "new table"
+			: changes
+				? `${changes} change${changes === 1 ? "" : "s"}`
+				: undefined,
 	};
 	const color = (intent: ColorIntent) => resolveIntentColor(theme, intent, colors);
 	return (

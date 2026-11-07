@@ -19,9 +19,9 @@ import {
 } from "@levitate/tui-kit";
 import {
 	CONFIRM_TOKEN,
-	INSTALL_MODE_HELP,
 	INSTALL_MODES,
 	type ApplyResult,
+	type InspectResult,
 	type InstallMode,
 	type PartitionChange,
 	type PartitionPlan,
@@ -31,6 +31,7 @@ import {
 	diskPath,
 	lastFailure,
 	refusals,
+	METHODS,
 	shownPages,
 	type DiskChoice,
 	type Method,
@@ -180,7 +181,10 @@ export function Welcome({ session }: { session: Session }): ReactNode {
 				<Facts
 					rows={[
 						["Disk", diskSummary(session.disk)],
-						["Layout", `${session.mode} · ${METHOD_TITLE[session.method]}`],
+						[
+							"Layout",
+							`${session.mode === "ab" ? "A/B" : "mutable"}, ${session.method === "erase" ? "erasing the whole disk" : "keeping some of it"}`,
+						],
 					]}
 				/>
 			</Section>
@@ -285,62 +289,214 @@ function DiskFacts({ disk }: { disk: Extract<DiskChoice, { kind: "listed" }>["di
 	);
 }
 
-const METHOD_TITLE: Record<Method, string> = {
-	erase: "erase the disk",
-	edit: "edit the partitions",
-};
-
-const METHOD_HELP: Record<Method, string> = {
-	erase: "recpart's layout over the whole disk; everything on it is erased",
-	edit: "keep, resize, delete and create partitions yourself (dual boot, keeping data)",
-};
-
-export function ModeSelection({
-	choices,
+/** A choice drawn as a card: a mark and title, then what it means. */
+function ChoiceCard({
 	selected,
-	defaultMode,
-	width,
+	title,
+	tag,
+	children,
 }: {
-	choices: ReadonlyArray<{ mode: InstallMode; method: Method }>;
-	selected: number;
-	defaultMode: InstallMode;
-	width: number;
+	selected: boolean;
+	title: string;
+	/** A dim word after the title, e.g. "default". */
+	tag?: string;
+	children: ReactNode;
 }): ReactNode {
 	const theme = useTuiTheme();
 	const colors = useTuiColors();
-	const dim = resolveIntentColor(theme, "dimText", colors);
+	return (
+		<Box
+			width="100%"
+			flexGrow={1}
+			flexDirection="column"
+			paddingX={1}
+			borderStyle={inkBorderStyle(theme.chrome.borderGlyphSet)}
+			borderColor={resolveIntentColor(theme, selected ? "accent" : "panelBorder", colors)}
+		>
+			<Text>
+				<Text bold color={resolveIntentColor(theme, selected ? "accent" : "text", colors)}>
+					{selected ? "● " : "○ "}
+					{title}
+				</Text>
+				{tag ? <Text color={resolveIntentColor(theme, "dimText", colors)}> {tag}</Text> : null}
+			</Text>
+			{children}
+		</Box>
+	);
+}
+
+/** Two choices side by side, or one above the other when the pane is narrow. */
+function TwoChoices<T>({
+	items,
+	selected,
+	width,
+	render,
+}: {
+	items: readonly [T, T];
+	selected: number;
+	width: number;
+	render: (item: T, selected: boolean) => ReactNode;
+}): ReactNode {
+	return (
+		<Box marginBottom={1}>
+			<SelectableGrid
+				items={items}
+				selectedIndex={selected}
+				columns={width >= 60 ? 2 : 1}
+				width={width}
+				gapY={0}
+				renderItem={(item, { selected: isSelected }) => render(item, isSelected)}
+			/>
+		</Box>
+	);
+}
+
+const SYSTEM: Record<InstallMode, { title: string; how: string; parts: string }> = {
+	ab: {
+		title: "A/B: two system slots",
+		how: "The system is read-only, in one of two slots. An update goes into the other slot and is tried once; if it doesn't start, the machine goes back to the working one.",
+		parts: "EFI · root A · root B · state (/var)",
+	},
+	mutable: {
+		title: "Mutable: one system",
+		how: "One root you change in place, as on most distributions. Updates can't be tried first or rolled back.",
+		parts: "EFI · root",
+	},
+};
+
+export function SystemChoice({
+	mode,
+	defaultMode,
+	width,
+}: {
+	mode: InstallMode;
+	defaultMode: InstallMode;
+	width: number;
+}): ReactNode {
 	return (
 		<Page
-			title="Choose a layout"
-			subtitle={`A layout (A/B or mutable), and whether recpart lays it over the whole disk or you edit the partitions. ${defaultMode} is the layout this system was started with.`}
+			title="How is the system updated?"
+			subtitle="This decides which partitions the system needs. You choose what happens to the disk next."
 		>
-			<SelectableGrid
-				items={choices}
-				selectedIndex={selected}
-				columns={INSTALL_MODES.length}
+			<TwoChoices
+				items={INSTALL_MODES}
+				selected={INSTALL_MODES.indexOf(mode)}
 				width={width}
-				renderItem={(choice, { selected: isSelected }) => (
-					<Box
-						width="100%"
-						flexDirection="column"
-						paddingX={1}
-						borderStyle={inkBorderStyle(theme.chrome.borderGlyphSet)}
-						borderColor={resolveIntentColor(theme, isSelected ? "accent" : "panelBorder", colors)}
+				render={(m, selected) => (
+					<ChoiceCard
+						selected={selected}
+						title={SYSTEM[m].title}
+						tag={m === defaultMode ? "default" : undefined}
 					>
-						<Text>
-							<Text bold color={resolveIntentColor(theme, isSelected ? "accent" : "text", colors)}>
-								{isSelected ? "● " : "○ "}
-								{choice.mode} · {METHOD_TITLE[choice.method]}
-							</Text>
-							{choice.mode === defaultMode && choice.method === "erase" ? (
-								<Text color={dim}> default</Text>
-							) : null}
-						</Text>
-						<UiText>{INSTALL_MODE_HELP[choice.mode]}</UiText>
-						<UiText intent="dimText">{METHOD_HELP[choice.method]}</UiText>
-					</Box>
+						<UiText>{SYSTEM[m].how}</UiText>
+						<UiText intent="dimText">{`Partitions: ${SYSTEM[m].parts}`}</UiText>
+					</ChoiceCard>
 				)}
 			/>
+			<UiText intent="dimText">{`${defaultMode === "ab" ? "A/B" : "Mutable"} is what this live system was started with.`}</UiText>
+		</Page>
+	);
+}
+
+/** What is on the disk now, red where the choice erases it. */
+function DiskContents({
+	inspect,
+	erasing,
+}: {
+	inspect: Run<InspectResult>;
+	erasing: boolean;
+}): ReactNode {
+	if (inspect.kind === "failed")
+		return (
+			<UiText intent="warning">
+				{`recpart couldn't read what's on the disk: ${inspect.error ? inspect.error.observed : inspect.output}`}
+			</UiText>
+		);
+	if (inspect.kind !== "ok") return <Pending run={inspect} what="recpart inspect" />;
+	const parts = inspect.value.partitions;
+	if (parts.length === 0)
+		return <UiText intent="dimText">No partitions: the disk is empty, so nothing is lost.</UiText>;
+	return (
+		<Table
+			tones={parts.map(() => (erasing ? "error" : null))}
+			columns={[
+				{ title: "Partition" },
+				{ title: "Size", align: "right" },
+				{ title: "FS" },
+				{ title: "Label", optional: true },
+				{ title: "In use", optional: true },
+			]}
+			rows={parts.map((part) => [
+				part.device.replace(/^\/dev\//, ""),
+				formatBytes(part.size_bytes),
+				part.filesystem ?? "",
+				part.fs_label ?? part.label ?? "",
+				part.used_bytes !== null ? formatBytes(part.used_bytes) : "",
+			])}
+		/>
+	);
+}
+
+export function DiskUse({
+	method,
+	mode,
+	path,
+	inspect,
+	width,
+}: {
+	method: Method;
+	mode: InstallMode;
+	path: string | null;
+	inspect: Run<InspectResult>;
+	width: number;
+}): ReactNode {
+	const parts = inspect.kind === "ok" ? inspect.value.partitions : null;
+	const lost =
+		parts === null
+			? "Everything on it is erased."
+			: parts.length === 0
+				? "The disk is empty, so nothing is lost."
+				: `Erases all ${parts.length} partition${parts.length === 1 ? "" : "s"} below.`;
+	return (
+		<Page
+			title="What happens to the disk?"
+			subtitle={`${path ?? "The disk"}: give it all to the new system, or keep some of what is on it. Nothing is written until the Confirm step.`}
+		>
+			<TwoChoices
+				items={METHODS as readonly [Method, Method]}
+				selected={METHODS.indexOf(method)}
+				width={width}
+				render={(m, selected) =>
+					m === "erase" ? (
+						<ChoiceCard selected={selected} title="Erase the whole disk" tag="simplest">
+							<UiText>{`The ${mode === "ab" ? "A/B" : "mutable"} partitions take all of it.`}</UiText>
+							<UiText intent={parts?.length ? "error" : "dimText"}>{lost}</UiText>
+						</ChoiceCard>
+					) : (
+						<ChoiceCard selected={selected} title="Keep some of it">
+							<UiText>
+								Keep, shrink or delete partitions and place the new ones: for dual boot, or keeping
+								data.
+							</UiText>
+							<UiText intent="dimText">
+								{parts?.length === 0
+									? "There's nothing on this disk to keep."
+									: "Next: the partition editor."}
+							</UiText>
+						</ChoiceCard>
+					)
+				}
+			/>
+			<Section
+				title={`On ${path ?? "the disk"} now`}
+				trailing={
+					inspect.kind === "ok"
+						? `${formatBytes(inspect.value.disk.size_bytes)} · ${inspect.value.table === "none" ? "no partition table" : `${inspect.value.table} table`}`
+						: undefined
+				}
+			>
+				<DiskContents inspect={inspect} erasing={method === "erase"} />
+			</Section>
 		</Page>
 	);
 }
@@ -579,7 +735,10 @@ export function DestructiveConfirm({ session }: { session: Session }): ReactNode
 									["Serial", known(listed.serial) ?? "(unknown)"],
 								] as [string, string][])
 							: []),
-						["Layout", `${session.mode} · ${METHOD_TITLE[session.method]}`],
+						[
+							"Layout",
+							`${session.mode === "ab" ? "A/B" : "mutable"}, ${session.method === "erase" ? "erasing the whole disk" : "keeping some of it"}`,
+						],
 					]}
 				/>
 			</Callout>

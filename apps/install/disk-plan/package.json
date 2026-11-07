@@ -42,15 +42,19 @@
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 1 of 8 · Disk"
+							"expect": "│Step 1 of 9 · Disk"
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 2 of 8 · Layout"
+							"expect": "│Step 2 of 9 · System"
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 3 of 8 · Plan"
+							"expect": "│Step 3 of 9 · Disk use"
+						},
+						{
+							"keys": "j",
+							"expect": "│Step 4 of 9 · Plan"
 						},
 						{
 							"keys": "",
@@ -58,7 +62,7 @@
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 4 of 8 · Commands"
+							"expect": "│Step 5 of 9 · Commands"
 						},
 						{
 							"keys": "",
@@ -70,7 +74,7 @@
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 6 of 8 · Confirm"
+							"expect": "│Step 7 of 9 · Confirm"
 						},
 						{
 							"keys": "q",
@@ -90,11 +94,11 @@
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 8 of 8 · Done"
+							"expect": "│Step 9 of 9 · Done"
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 8 of 8 · Done"
+							"expect": "│Step 9 of 9 · Done"
 						},
 						{
 							"keys": "",
@@ -114,15 +118,19 @@
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 1 of 8 · Disk"
+							"expect": "│Step 1 of 9 · Disk"
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 2 of 8 · Layout"
+							"expect": "│Step 2 of 9 · System"
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 3 of 8 · Plan"
+							"expect": "│Step 3 of 9 · Disk use"
+						},
+						{
+							"keys": "j",
+							"expect": "│Step 4 of 9 · Plan"
 						},
 						{
 							"keys": "",
@@ -130,7 +138,7 @@
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 4 of 8 · Commands"
+							"expect": "│Step 5 of 9 · Commands"
 						},
 						{
 							"keys": "",
@@ -142,7 +150,7 @@
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 6 of 8 · Confirm"
+							"expect": "│Step 7 of 9 · Confirm"
 						},
 						{
 							"keys": "q",
@@ -170,7 +178,7 @@
 						},
 						{
 							"keys": "k",
-							"expect": "│Step 7 of 8 · Apply"
+							"expect": "│Step 8 of 9 · Apply"
 						}
 					]
 				},
@@ -181,7 +189,7 @@
 					},
 					"steps": [
 						{
-							"keys": "jjjjj",
+							"keys": "jjjjjj",
 							"expect": "recpart would refuse this disk"
 						},
 						{
@@ -201,7 +209,7 @@
 					},
 					"steps": [
 						{
-							"keys": "jj\\r\\x1b[B\\r",
+							"keys": "jjj\\r\\x1b[B\\r",
 							"expect": "Not a valid ab layout yet"
 						},
 						{
@@ -221,8 +229,8 @@
 					},
 					"steps": [
 						{
-							"keys": "jj\\r\\x1b[B\\r",
-							"expect": "│Step 3 of 9 · Partitions"
+							"keys": "jjj\\r\\x1b[B\\r",
+							"expect": "│Step 4 of 10 · Partitions"
 						},
 						{
 							"keys": "m",
@@ -247,6 +255,30 @@
 						{
 							"keys": "\\rjjj",
 							"expect": "Nothing on /dev/vdy is erased: this resizes 1 partition and creates 3"
+						}
+					]
+				},
+				{
+					"name": "disk use: what erasing loses",
+					"args": [
+						"--disk",
+						"/dev/vdy"
+					],
+					"env": {
+						"RECPART_FIXTURE_DISKS": "all"
+					},
+					"steps": [
+						{
+							"keys": "jj",
+							"expect": "How is the system updated?"
+						},
+						{
+							"keys": "j",
+							"expect": "Erases all 4 partitions below."
+						},
+						{
+							"keys": "\\r\\x1b[B",
+							"expect": "Disk use  keep some"
 						}
 					]
 				}
