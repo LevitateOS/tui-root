@@ -1,7 +1,10 @@
 # TUI workspace
 
-Terminal apps built on a shared kit. Only install-docs ships today: the live ISO's install
-screen shows it. disk-plan and recab-tui run from a checkout (`cargo xtask tui <name>`).
+Terminal apps built on a shared kit. A variant's `[install_ux]` names the apps its live ISO
+carries (`docs` and `apps` in products.toml): today install-docs (LevitateOS) and disk-plan
+(both). The builder compiles them into one binary per ISO, for that rootfs's libc, with a
+command per app on PATH (`distro/builder/src/tui_binary.rs`). recab-tui ships nowhere yet.
+Every app also runs from a checkout (`cargo xtask tui <name>`).
 
 ## Apps
 
