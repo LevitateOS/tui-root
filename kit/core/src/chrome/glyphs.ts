@@ -44,8 +44,7 @@ export function glyphs(style: BorderStyle): Glyphs {
 type InkBoxStyle = Exclude<NonNullable<BoxProps["borderStyle"]>, string>;
 
 /** The same glyphs as an Ink `borderStyle`, so text-drawn rows and Ink borders meet exactly. */
-export function inkBorderStyle(style: BorderStyle): InkBoxStyle {
-	const g = GLYPHS[style];
+function toInkBoxStyle(g: Glyphs): InkBoxStyle {
 	return {
 		topLeft: g.tl,
 		top: g.h,
@@ -56,4 +55,16 @@ export function inkBorderStyle(style: BorderStyle): InkBoxStyle {
 		bottomLeft: g.bl,
 		left: g.v,
 	};
+}
+
+// One object per glyph set, never a new one per render: when Ink sees `borderStyle`
+// change on a re-render it turns every border edge back on except those set to false in
+// the same update, so a box with `borderTop={false}` grows its top border back (a blank
+// row, the contents pushed down).
+const INK_BOX_STYLES = Object.fromEntries(
+	Object.entries(GLYPHS).map(([name, g]) => [name, toInkBoxStyle(g)]),
+) as Record<BorderStyle, InkBoxStyle>;
+
+export function inkBorderStyle(style: BorderStyle): InkBoxStyle {
+	return INK_BOX_STYLES[style];
 }

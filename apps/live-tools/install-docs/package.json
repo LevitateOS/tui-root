@@ -42,6 +42,19 @@
 							"keys": "\\t"
 						}
 					]
+				},
+				{
+					"name": "next page",
+					"steps": [
+						{
+							"keys": "l",
+							"expect": "││ Step-by-step guide to installing"
+						},
+						{
+							"keys": "h",
+							"expect": "││ Download a LevitateOS variant"
+						}
+					]
 				}
 			]
 		}

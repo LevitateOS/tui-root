@@ -95,21 +95,34 @@ function Pane({ layout, title, body, borderIntent, titleIntent, backgroundIntent
 			height={layout.outerHeight}
 			flexShrink={0}
 		>
-			<Text
-				color={border}
-				backgroundColor={background}
-			>{`${g.tl}${g.h.repeat(inner)}${g.tr}`}</Text>
-			<Text backgroundColor={background}>
-				<Text color={border}>{g.v}</Text>
-				<Text color={resolveIntentColor(theme, titleIntent, colors)} bold>
-					{padRight(title, inner)}
+			{/* The chrome rows never shrink: a body taller than the pane is clipped instead. */}
+			<Box flexShrink={0}>
+				<Text
+					color={border}
+					backgroundColor={background}
+				>{`${g.tl}${g.h.repeat(inner)}${g.tr}`}</Text>
+			</Box>
+			<Box flexShrink={0}>
+				<Text backgroundColor={background}>
+					<Text color={border}>{g.v}</Text>
+					<Text color={resolveIntentColor(theme, titleIntent, colors)} bold>
+						{padRight(title, inner)}
+					</Text>
+					<Text color={border}>{g.v}</Text>
 				</Text>
-				<Text color={border}>{g.v}</Text>
-			</Text>
-			<Text color={border} backgroundColor={background}>{`${g.l}${g.h.repeat(inner)}${g.r}`}</Text>
+			</Box>
+			<Box flexShrink={0}>
+				<Text
+					color={border}
+					backgroundColor={background}
+				>{`${g.l}${g.h.repeat(inner)}${g.r}`}</Text>
+			</Box>
 			<Box
 				flexDirection="column"
 				flexGrow={1}
+				flexShrink={1}
+				minHeight={0}
+				overflow="hidden"
 				borderStyle={inkBorderStyle(theme.chrome.borderGlyphSet)}
 				borderTop={false}
 				borderColor={border}
