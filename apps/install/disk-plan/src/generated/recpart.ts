@@ -364,8 +364,8 @@ export const ROLE_HELP = {
 	home: "/home (ext4)",
 	other: "Mounted at the action's `mountpoint`",
 	root: "The one root of a mutable install, at / (ext4)",
-	"root-a": "A/B root slot A, installed now and mounted at / (ext4)",
-	"root-b": "A/B root slot B, left unmounted for updates (ext4)",
+	root_a: "A/B root slot A, installed now and mounted at / (ext4)",
+	root_b: "A/B root slot B, left unmounted for updates (ext4)",
 	state: "The persistent /var: the A/B state partition, or a mutable install's own /var (ext4)",
 	swap: "A swap partition, activated with swapon",
 } as const;
