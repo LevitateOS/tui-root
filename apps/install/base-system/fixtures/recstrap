@@ -1,0 +1,48 @@
+#!/bin/sh
+# Stand-in for recstrap in headless runs (cargo xtask inspect, check tui, stories): it
+# copies nothing. It prints what `recstrap TARGET [--check] --json` prints for a 3 GiB
+# system; RECSTRAP_FIXTURE selects a failure:
+#   not-empty   the check refuses: the target holds files (E009)
+#   copy-fails  the copy stops part-way: the disk filled up (E005)
+# RECSTRAP_FIXTURE_PACE is the seconds between progress lines (default 0.05; ten lines).
+# Keep the JSON in the shape of recstrap's `StrapEvent` and `ErrorPayload`
+# (src/generated/recstrap.ts).
+target=/mnt check=
+for arg; do
+	case "$arg" in
+	--check | -c) check=1 ;;
+	--json) ;;
+	-*)
+		echo "fixture recstrap: unsupported: $*" >&2
+		exit 2
+		;;
+	*) target=$arg ;;
+	esac
+done
+fail() {
+	printf '{\n  "schema_version": 1,\n  "code": "%s",\n  "message": "%s",\n  "remediation": "%s"\n}\n' "$2" "$3" "$4" >&2
+	exit "$1"
+}
+rootfs=/run/live-rootfs.erofs
+if [ "$RECSTRAP_FIXTURE" = not-empty ]; then
+	fail 9 E009 "target directory '$target' is not empty (use --force to override)" \
+		"mount an empty filesystem there, or remove what is in it"
+fi
+if [ -n "$check" ]; then
+	echo "{\"event\":\"checked\",\"schema_version\":1,\"target\":\"$target\",\"rootfs\":\"$rootfs\",\"rootfs_bytes\":1503238553,\"free_bytes\":42949672960,\"checks\":12}"
+	exit 0
+fi
+total=48213
+echo "{\"event\":\"start\",\"schema_version\":1,\"target\":\"$target\",\"rootfs\":\"$rootfs\",\"total_entries\":$total,\"total_bytes\":3221225472}"
+i=1
+while [ $i -le 10 ]; do
+	sleep "${RECSTRAP_FIXTURE_PACE:-0.05}"
+	if [ "$RECSTRAP_FIXTURE" = copy-fails ] && [ $i -eq 6 ]; then
+		echo "mount: some kernel message" >&2
+		fail 5 E005 "extraction failed: cp exited with 1: cp: error writing '$target/usr/lib64/libLLVM.so.19': No space left on device" "the target filesystem is full: give the root partition more room in disk-plan, then copy again"
+	fi
+	echo "{\"event\":\"progress\",\"entries\":$((total * i / 10)),\"bytes\":$((3300000000 / 10 * i))}"
+	i=$((i + 1))
+done
+echo '{"event":"verify"}'
+echo '{"event":"done","schema_version":1,"entries":48213,"bytes":3300000000,"duration_ms":41250}'

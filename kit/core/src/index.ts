@@ -8,6 +8,7 @@ export {
 	ContentWidth,
 	Facts,
 	Heading,
+	ProgressBar,
 	Section,
 	StepList,
 	Table,
@@ -43,4 +44,4 @@ export { useKeymap } from "./runtime/keymap";
 export type { Keymap } from "./runtime/keymap";
 export { runApp, UsageError } from "./app/run-app";
 export { runCommand, startCommand } from "./app/command";
-export type { CommandResult, RunningCommand } from "./app/command";
+export type { CommandOptions, CommandResult, RunningCommand } from "./app/command";

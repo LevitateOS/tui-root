@@ -32,7 +32,10 @@
 		"base": {
 			"done_at": "2026-11-07T12:05:00.000Z",
 			"result": {
-				"target": "/mnt"
+				"target": "/mnt",
+				"rootfs": "/run/live-rootfs.erofs",
+				"entries": 48213,
+				"fstab": "/mnt/etc/fstab"
 			}
 		},
 		"setup": {

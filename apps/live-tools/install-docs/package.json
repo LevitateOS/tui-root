@@ -98,7 +98,7 @@
 					],
 					"steps": [
 						{
-							"keys": "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+							"keys": "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
 							"expect": "│ 5 │UUID=ABCD-1234  /boot   vfat    relatime,fmask=0022,dmask=0022"
 						}
 					]

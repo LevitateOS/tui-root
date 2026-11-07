@@ -55,6 +55,7 @@ function shellQuote(word: string): string {
 export function installSteps(state: InstallState, facts: Facts): Step[] {
 	const done = (name: StepName) => state.steps[name] !== undefined;
 	const disk = state.steps.disk?.result;
+	const base = state.steps.base?.result;
 	const target = disk ? shellQuote(disk.target) : "/mnt";
 	const steps: Omit<Step, "status">[] = [
 		{
@@ -97,14 +98,13 @@ export function installSteps(state: InstallState, facts: Facts): Step[] {
 			id: "base",
 			title: "Base system",
 			about: "Copy the system onto the disk and write its fstab.",
-			summary: done("base") ? `extracted to ${disk?.target}` : undefined,
+			summary: base
+				? typeof base.entries === "number" && base.entries > 0
+					? `${base.entries.toLocaleString("en-US")} files copied to ${base.target}, fstab written`
+					: `copied to ${base.target}`
+				: undefined,
 			action: disk
-				? {
-						kind: "run",
-						label: "run these",
-						lines: [`recstrap ${target}`, `recfstab ${target} >> ${target}/etc/fstab`],
-						record: { step: "base", result: { target: disk.target } },
-					}
+				? { kind: "app", argv: ["base-system"], label: "open base-system" }
 				: { kind: "none", why: "The disk step says where the system goes." },
 			docs: "installation-base",
 		},

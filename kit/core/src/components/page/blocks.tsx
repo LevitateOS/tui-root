@@ -264,3 +264,26 @@ export function StepList({
 		</Box>
 	);
 }
+
+/** How far something has got: a bar to the pane's edge, then the percentage. `fraction`
+ * is clamped to 0..1; null draws an empty bar with no figure (not started, or unknown). */
+export function ProgressBar({
+	fraction,
+	tone = "info",
+}: {
+	fraction: number | null;
+	tone?: Tone;
+}): ReactNode {
+	const width = useContext(ContentWidth);
+	const shown = fraction === null ? null : Math.min(1, Math.max(0, fraction));
+	const label = shown === null ? "" : ` ${Math.floor(shown * 100)}%`.padStart(5);
+	const cells = Math.max(1, width - textWidth(label));
+	const filled = shown === null ? 0 : Math.round(shown * cells);
+	return (
+		<Text>
+			<Text color={useIntent(TONE[tone].intent)}>{"█".repeat(filled)}</Text>
+			<Text color={useIntent("panelBorder")}>{"░".repeat(cells - filled)}</Text>
+			<Text bold>{label}</Text>
+		</Text>
+	);
+}

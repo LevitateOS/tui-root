@@ -1,0 +1,250 @@
+{
+	"name": "@levitate/base-system",
+	"version": "0.1.0",
+	"private": true,
+	"description": "copy the system onto the disk with recstrap, with progress, then review and write its fstab with recfstab",
+	"license": "(MIT OR Apache-2.0)",
+	"bin": {
+		"base-system": "./src/main.tsx"
+	},
+	"type": "module",
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"lint": "oxlint --config ../../../../.oxlintrc.json src --deny-warnings",
+		"format": "oxfmt --config ../../../../.oxfmtrc.json --write src package.json tsconfig.json",
+		"format:check": "oxfmt --config ../../../../.oxfmtrc.json --check src package.json tsconfig.json"
+	},
+	"dependencies": {
+		"@levitate/install-state": "workspace:*",
+		"@levitate/tui-kit": "workspace:*",
+		"ink": "^6.8.0",
+		"react": "^19.2.0"
+	},
+	"devDependencies": {
+		"@types/bun": "^1.2.17",
+		"@types/react": "^19.2.0",
+		"typescript": "^5.9.2"
+	},
+	"levitate": {
+		"tools": [
+			"recstrap"
+		],
+		"inspect": {
+			"path": [
+				"fixtures"
+			],
+			"stories": [
+				{
+					"name": "copy and write the fstab",
+					"about": "The whole step on a target mounted by hand: the check passes, the copy runs to the end, the fstab entries are reviewed and written, and the step is saved to the install state file.",
+					"args": [
+						"--target",
+						"/mnt"
+					],
+					"env": {
+						"LEVITATE_INSTALL_STATE": "/tmp/levitate-base-system-story/state.json"
+					},
+					"steps": [
+						{
+							"expect": "mounted by hand"
+						},
+						{
+							"keys": "j",
+							"expect": "Ready to copy"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Enter starts the copy"
+						},
+						{
+							"keys": "\\r",
+							"expect": "System copied"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Entries"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Base system installed"
+						}
+					]
+				},
+				{
+					"name": "from the disk step",
+					"about": "After disk-plan: the target and its mounts come from the install state file's disk step, so no --target is needed.",
+					"env": {
+						"LEVITATE_INSTALL_STATE": "fixtures/state-disk-done.json"
+					},
+					"steps": [
+						{
+							"expect": "/dev/vda, A/B layout"
+						},
+						{
+							"keys": "",
+							"expect": "/mnt/var"
+						}
+					]
+				},
+				{
+					"name": "copy in progress",
+					"about": "The copy as it runs: the progress bar, files and bytes so far, the time taken and the time left.",
+					"args": [
+						"--target",
+						"/mnt"
+					],
+					"env": {
+						"LEVITATE_INSTALL_STATE": "/tmp/levitate-base-system-story/state.json",
+						"RECSTRAP_FIXTURE_PACE": "1"
+					},
+					"steps": [
+						{
+							"keys": "j",
+							"expect": "Ready to copy"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Enter starts the copy"
+						},
+						{
+							"keys": "\\r",
+							"expect": "of 48,213"
+						}
+					]
+				},
+				{
+					"name": "target not empty",
+					"about": "The check refuses a target that holds files, with recstrap's fix; nothing is copied.",
+					"args": [
+						"--target",
+						"/mnt"
+					],
+					"env": {
+						"LEVITATE_INSTALL_STATE": "/tmp/levitate-base-system-story/state.json",
+						"RECSTRAP_FIXTURE": "not-empty"
+					},
+					"steps": [
+						{
+							"keys": "j",
+							"expect": "is not empty"
+						},
+						{
+							"keys": "",
+							"expect": "What to do"
+						}
+					]
+				},
+				{
+					"name": "copy fails",
+					"about": "The copy stops part-way (the disk fills up): where it stopped, recstrap's error and fix, and why the target must be emptied before another try.",
+					"args": [
+						"--target",
+						"/mnt"
+					],
+					"env": {
+						"LEVITATE_INSTALL_STATE": "/tmp/levitate-base-system-story/state.json",
+						"RECSTRAP_FIXTURE": "copy-fails"
+					},
+					"steps": [
+						{
+							"keys": "j",
+							"expect": "Ready to copy"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Enter starts the copy"
+						},
+						{
+							"keys": "\\r",
+							"expect": "The copy stopped"
+						},
+						{
+							"keys": "",
+							"expect": "holds part of a system"
+						}
+					]
+				},
+				{
+					"name": "fstab already has entries",
+					"about": "A second run: the target's fstab already describes / and /boot, so writing asks before it replaces those lines (y replaces them).",
+					"args": [
+						"--target",
+						"/mnt"
+					],
+					"env": {
+						"LEVITATE_INSTALL_STATE": "/tmp/levitate-base-system-story/state.json",
+						"RECFSTAB_FIXTURE": "conflict"
+					},
+					"steps": [
+						{
+							"keys": "j",
+							"expect": "Ready to copy"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Enter starts the copy"
+						},
+						{
+							"keys": "\\r",
+							"expect": "System copied"
+						},
+						{
+							"keys": "\\r",
+							"expect": "replaced"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Replace lines 2, 4"
+						},
+						{
+							"keys": "y",
+							"expect": "Base system installed"
+						}
+					]
+				},
+				{
+					"name": "no EFI partition mounted",
+					"about": "Nothing is mounted at /mnt/boot: recfstab's warning stands out above the entries, before they are written.",
+					"args": [
+						"--target",
+						"/mnt"
+					],
+					"env": {
+						"LEVITATE_INSTALL_STATE": "/tmp/levitate-base-system-story/state.json",
+						"RECFSTAB_FIXTURE": "no-esp"
+					},
+					"steps": [
+						{
+							"keys": "j",
+							"expect": "Ready to copy"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Enter starts the copy"
+						},
+						{
+							"keys": "\\r",
+							"expect": "System copied"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Check this before booting"
+						}
+					]
+				},
+				{
+					"name": "no target",
+					"about": "Started before the disk step and without --target: the overview says where the target comes from, and nothing runs.",
+					"env": {
+						"LEVITATE_INSTALL_STATE": "/tmp/levitate-base-system-story/none.json"
+					},
+					"steps": [
+						{
+							"expect": "Nowhere to copy to yet"
+						}
+					]
+				}
+			]
+		}
+	}
+}

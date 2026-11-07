@@ -1,0 +1,42 @@
+#!/bin/sh
+# Stand-in for recfstab in headless runs: it reads no mounts and writes no file. It
+# prints what `recfstab ROOT --json [--write [--replace]]` prints for the A/B layout
+# disk-plan mounts (/ on vda2, /boot on vda1, /var on vda4); RECFSTAB_FIXTURE selects:
+#   conflict  the target's fstab already has entries for / and /boot (a second run):
+#             --write alone is refused (E036), --write --replace replaces them
+#   no-esp    nothing is mounted at /boot, so recfstab warns
+# Keep the JSON in the shape of recstrap's `FstabResult` (src/generated/recstrap.ts).
+root=/mnt write=false replace=
+for arg; do
+	case "$arg" in
+	--write | -w) write=true ;;
+	--replace) replace=1 ;;
+	--json) ;;
+	-*)
+		echo "fixture recfstab: unsupported: $*" >&2
+		exit 2
+		;;
+	*) root=$arg ;;
+	esac
+done
+existing='[]'
+if [ "$RECFSTAB_FIXTURE" = conflict ]; then
+	if [ "$write" = true ] && [ -z "$replace" ]; then
+		printf '{\n  "schema_version": 1,\n  "code": "E036",\n  "message": "%s/etc/fstab already has entries for /, /boot",\n  "remediation": "check them, then run again with --replace to swap them for the generated entries"\n}\n' "$root" >&2
+		exit 36
+	fi
+	existing='[{"line":2,"spec":"UUID=0b9c6f4e-old","file":"/","fstype":"ext4","conflicts":true},{"line":4,"spec":"UUID=7A3E-OLD","file":"/boot","fstype":"vfat","conflicts":true},{"line":5,"spec":"tmpfs","file":"/tmp","fstype":"tmpfs","conflicts":false}]'
+fi
+entry() { # origin spec file fstype options pass
+	printf '{"origin":"%s","spec":"%s","file":"%s","fstype":"%s","options":"%s","pass":%s,"text":"# %s\\n%s\\t%s\\t%s\\t%s\\t0\\t%s\\n"}' \
+		"$1" "$2" "$3" "$4" "$5" "$6" "$1" "$2" "$3" "$4" "$5" "$6"
+}
+warnings='[]'
+entries="$(entry /dev/vda2 UUID=5f1d2c3a-root / ext4 relatime 1)"
+if [ "$RECFSTAB_FIXTURE" = no-esp ]; then
+	warnings="[\"no EFI system partition (vfat) is mounted at $root/boot or $root/efi; the boot step installs systemd-boot there\"]"
+else
+	entries="$entries,$(entry /dev/vda1 UUID=1C2B-3A4D /boot vfat relatime,fmask=0022,dmask=0022 0)"
+fi
+entries="$entries,$(entry /dev/vda4 UUID=9e8d7c6b-state /var ext4 relatime 2)"
+echo "{\"schema_version\":1,\"root\":\"$root\",\"fstab_path\":\"$root/etc/fstab\",\"entries\":[$entries],\"existing\":$existing,\"warnings\":$warnings,\"written\":$write}"

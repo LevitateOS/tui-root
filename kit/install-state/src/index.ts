@@ -29,10 +29,21 @@ export interface DiskResult {
 	root_device: string | null;
 }
 
+/** The base step: the system copied to the disk step's target, and its fstab. */
+export interface BaseResult {
+	target: string;
+	/** The image recstrap copied. */
+	rootfs: string;
+	/** Files, directories and links copied. */
+	entries: number;
+	/** The fstab the generated entries went into. */
+	fstab: string;
+}
+
 export interface StepResults {
 	preflight: unknown;
 	disk: DiskResult;
-	base: unknown;
+	base: BaseResult;
 	setup: unknown;
 	boot: unknown;
 }
