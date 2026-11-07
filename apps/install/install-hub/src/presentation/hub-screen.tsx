@@ -1,0 +1,199 @@
+import { Box, Text, useApp } from "ink";
+import { useState, type ReactNode } from "react";
+import {
+	AppShell,
+	Callout,
+	Commands,
+	ContentWidth,
+	Facts,
+	fitFooter,
+	keymapStatusSegments,
+	PAGE_SCROLL_KEYS,
+	resolveIntentColor,
+	Section,
+	textStatusSegment,
+	UiText,
+	useFocusPlane,
+	useKeymap,
+	usePageHeight,
+	usePageScroll,
+	useShellLayout,
+	useTuiColors,
+	useTuiTheme,
+	type ColorIntent,
+} from "@levitate/tui-kit";
+import { statePath } from "@levitate/install-state";
+import { handOff, liveFacts, loadState, record, SHELL_ACTION, takeNotice } from "../app/handoff";
+import { installSteps, type Step, type StepStatus } from "../domain/steps";
+import { HUB_KEYS } from "./keymap";
+
+const MARK: Record<StepStatus, { mark: string; intent: ColorIntent }> = {
+	done: { mark: "✓", intent: "success" },
+	current: { mark: "▸", intent: "accent" },
+	blocked: { mark: "○", intent: "dimText" },
+};
+
+export function HubScreen({ osName }: { osName: string }): ReactNode {
+	const { exit } = useApp();
+	const [loaded, setLoaded] = useState(loadState);
+	const [notice, setNotice] = useState<string | null>(() => takeNotice() ?? loaded.error);
+	const steps = installSteps(loaded.state, liveFacts());
+	const [selected, setSelected] = useState(() =>
+		Math.max(
+			0,
+			steps.findIndex((step) => step.status === "current"),
+		),
+	);
+	const focus = useFocusPlane({ initial: "content" });
+	const step = steps[selected]!;
+	const leave = (action: Parameters<typeof handOff>[0]) => {
+		handOff(action);
+		exit();
+	};
+	const reload = (error: string | null) => {
+		setLoaded(loadState());
+		setNotice(error);
+	};
+
+	useKeymap(HUB_KEYS, {
+		move: (key) =>
+			setSelected((i) =>
+				key === "up" || key === "k" ? Math.max(0, i - 1) : Math.min(steps.length - 1, i + 1),
+			),
+		start: () => {
+			if (step.status === "blocked") {
+				const current = steps.find((s) => s.status === "current");
+				return setNotice(`first: ${current?.title ?? "the step before"}`);
+			}
+			const action = step.action;
+			if (action.kind === "none") return setNotice(action.why);
+			if (action.kind === "record") {
+				reload(record(action.record));
+				return setSelected((i) => Math.min(steps.length - 1, i + 1));
+			}
+			leave(action);
+		},
+		mark: () => {
+			const action = step.action;
+			if (action.kind !== "shell" || !action.record) {
+				return setNotice(`${step.title} is marked done by doing it`);
+			}
+			if (step.status === "blocked") return setNotice("finish the steps before it first");
+			reload(record(action.record));
+			setSelected((i) => Math.min(steps.length - 1, i + 1));
+		},
+		shell: () => leave(SHELL_ACTION),
+		focus: () => focus.togglePlane(),
+		quit: () => exit(),
+	});
+
+	const shell = useShellLayout({ navWidth: 22 });
+	const pageHeight = usePageHeight(`${step.id}:${step.status}`);
+	const scrollable = pageHeight.height > shell.content.textRows - 2;
+	const layout = fitFooter(shell, [
+		...keymapStatusSegments(scrollable ? [...HUB_KEYS, ...PAGE_SCROLL_KEYS] : HUB_KEYS),
+		...(notice ? [textStatusSegment("notice", notice, "warning")] : []),
+	]);
+	const scroll = usePageScroll(pageHeight, layout.content.textRows, true);
+	return (
+		<ContentWidth.Provider value={layout.content.textColumns}>
+			<AppShell
+				layout={layout}
+				focus={layout.narrow ? focus.plane : "navigation"}
+				navTitle={`${osName} install`}
+				nav={<StepRail steps={steps} selected={selected} />}
+				contentTitle={`${step.title}${scroll.more}`}
+				content={
+					<Box
+						ref={pageHeight.ref}
+						flexDirection="column"
+						flexShrink={0}
+						marginTop={-scroll.offset}
+					>
+						<StepPage step={step} statePath={statePath()} />
+					</Box>
+				}
+			/>
+		</ContentWidth.Provider>
+	);
+}
+
+function StepRail({ steps, selected }: { steps: readonly Step[]; selected: number }): ReactNode {
+	const theme = useTuiTheme();
+	const colors = useTuiColors();
+	const color = (intent: ColorIntent) => resolveIntentColor(theme, intent, colors);
+	return (
+		<Box flexDirection="column">
+			{steps.map((step, i) => {
+				const { mark, intent } = MARK[step.status];
+				return (
+					<Text key={step.id}>
+						<Text color={color(i === selected ? "accent" : "dimText")}>
+							{i === selected ? "› " : "  "}
+						</Text>
+						<Text color={color(intent)}>{mark} </Text>
+						<Text
+							bold={i === selected}
+							color={color(step.status === "blocked" ? "dimText" : "navItem")}
+						>
+							{step.title}
+						</Text>
+					</Text>
+				);
+			})}
+		</Box>
+	);
+}
+
+function StepPage({ step, statePath }: { step: Step; statePath: string }): ReactNode {
+	const action = step.action;
+	return (
+		<Box flexDirection="column">
+			<Box marginBottom={1}>
+				<UiText intent="dimText">{step.about}</UiText>
+			</Box>
+			{step.status === "done" ? (
+				<Callout tone="success" title="Done">
+					{step.summary ? <UiText intent="dimText">{step.summary}</UiText> : null}
+					{action.kind !== "none" ? (
+						<UiText intent="dimText">Doing it again drops the steps after it.</UiText>
+					) : null}
+				</Callout>
+			) : step.status === "blocked" ? (
+				<UiText intent="dimText">Waits for the steps before it.</UiText>
+			) : null}
+			{step.checks ? (
+				<Section title="Checks">
+					<Facts
+						rows={step.checks.map((check) => [
+							check.ok ? "✓" : "✗",
+							<Text key={check.label}>
+								{check.label}
+								{check.ok || !check.fix ? "" : `. ${check.fix}`}
+							</Text>,
+						])}
+					/>
+				</Section>
+			) : null}
+			{action.kind === "app" ? (
+				<Section title="Enter starts">
+					<Commands lines={[action.argv.join(" ")]} />
+				</Section>
+			) : action.kind === "run" ? (
+				<Section title="Enter runs">
+					<Commands lines={action.lines} />
+				</Section>
+			) : action.kind === "shell" ? (
+				<Section title="In the shell (Enter opens it)">
+					<Commands lines={action.lines} />
+					<UiText intent="dimText">Then press m here to mark the step done.</UiText>
+				</Section>
+			) : action.kind === "none" ? (
+				<UiText intent="dimText">{action.why}</UiText>
+			) : null}
+			<UiText intent="dimText">
+				The guide beside this has the step in full. Progress is kept in {statePath}.
+			</UiText>
+		</Box>
+	);
+}

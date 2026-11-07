@@ -1,0 +1,45 @@
+{
+	"schema": 1,
+	"steps": {
+		"preflight": {
+			"done_at": "2026-11-07T11:59:00.000Z",
+			"result": {
+				"uefi": true,
+				"media": true
+			}
+		},
+		"disk": {
+			"done_at": "2026-11-07T12:00:00.000Z",
+			"result": {
+				"disk": "/dev/vda",
+				"mode": "mutable",
+				"target": "/mnt",
+				"mounts": [
+					{
+						"path": "/mnt",
+						"device": "/dev/vda2"
+					},
+					{
+						"path": "/mnt/boot",
+						"device": "/dev/vda1"
+					}
+				],
+				"slot_a": null,
+				"slot_b": null,
+				"root_device": "/dev/vda2"
+			}
+		},
+		"base": {
+			"done_at": "2026-11-07T12:05:00.000Z",
+			"result": {
+				"target": "/mnt"
+			}
+		},
+		"setup": {
+			"done_at": "2026-11-07T12:10:00.000Z",
+			"result": {
+				"manual": true
+			}
+		}
+	}
+}

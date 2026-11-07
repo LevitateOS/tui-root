@@ -1,0 +1,103 @@
+{
+	"name": "@levitate/install-hub",
+	"version": "0.1.0",
+	"private": true,
+	"description": "the install's steps in order: starts each step's app, runs the guide's commands, or opens a shell, and keeps where the install stands",
+	"license": "(MIT OR Apache-2.0)",
+	"bin": {
+		"install-hub": "./src/main.tsx"
+	},
+	"type": "module",
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"lint": "oxlint --config ../../../../.oxlintrc.json src --deny-warnings",
+		"format": "oxfmt --config ../../../../.oxfmtrc.json --write src package.json tsconfig.json",
+		"format:check": "oxfmt --config ../../../../.oxfmtrc.json --check src package.json tsconfig.json"
+	},
+	"dependencies": {
+		"@levitate/install-state": "workspace:*",
+		"@levitate/tui-kit": "workspace:*",
+		"ink": "^6.8.0",
+		"react": "^19.2.0"
+	},
+	"devDependencies": {
+		"@types/bun": "^1.2.17",
+		"@types/react": "^19.2.0",
+		"typescript": "^5.9.2"
+	},
+	"levitate": {
+		"inspect": {
+			"stories": [
+				{
+					"name": "fresh install",
+					"about": "Nothing done yet: the preflight checks come first.",
+					"env": {
+						"LEVITATE_INSTALL_STATE": "fixtures/no-state.json"
+					},
+					"steps": [
+						{
+							"expect": "Check that this machine can take the install."
+						},
+						{
+							"keys": "",
+							"expect": "Booted in UEFI mode"
+						}
+					]
+				},
+				{
+					"name": "steps wait their turn",
+					"about": "Starting a step before the ones it needs says which comes first.",
+					"env": {
+						"LEVITATE_INSTALL_STATE": "fixtures/no-state.json"
+					},
+					"steps": [
+						{
+							"keys": "jj",
+							"expect": "Waits for the steps before it."
+						},
+						{
+							"keys": "\\r",
+							"expect": "first: Preflight"
+						}
+					]
+				},
+				{
+					"name": "disk done",
+					"about": "After disk-plan: the base step runs recstrap and recfstab on the disk's target.",
+					"env": {
+						"LEVITATE_INSTALL_STATE": "fixtures/disk-done.json"
+					},
+					"steps": [
+						{
+							"expect": "recstrap /mnt"
+						},
+						{
+							"keys": "",
+							"expect": "recfstab /mnt >> /mnt/etc/fstab"
+						},
+						{
+							"keys": "k",
+							"expect": "/dev/vda, A/B, at /mnt"
+						},
+						{
+							"keys": "jjj",
+							"expect": "--boot ab --slot-a /dev/vda2 --slot-b /dev/vda3"
+						}
+					]
+				},
+				{
+					"name": "mutable boot",
+					"about": "A mutable disk, configured: the boot step names the root device.",
+					"env": {
+						"LEVITATE_INSTALL_STATE": "fixtures/mutable-configured.json"
+					},
+					"steps": [
+						{
+							"expect": "recsetup apply --root /mnt --boot mutable --root-device /dev/vda2 --machine-id"
+						}
+					]
+				}
+			]
+		}
+	}
+}

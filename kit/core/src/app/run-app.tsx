@@ -36,6 +36,12 @@ export type AppSpec = {
 	 * something itself (a non-interactive flag). Throw `UsageError` for bad input.
 	 */
 	run: (args: Args) => ReactElement | undefined;
+	/**
+	 * Runs when the screen ends, before the process exits. Returning true shows the
+	 * screen again, built anew by `run`: an app that hands the terminal to another
+	 * program for a while runs it here.
+	 */
+	afterExit?: () => boolean;
 };
 
 function helpText(spec: AppSpec): string {
@@ -112,12 +118,14 @@ export function runApp(spec: AppSpec, argv: readonly string[] = process.argv.sli
 		process.exit(status);
 	};
 	let element: ReactElement | undefined;
+	let args: Args = {};
 	try {
-		const args = parseArgs(spec, argv);
-		if (args === "help") {
+		const parsed = parseArgs(spec, argv);
+		if (parsed === "help") {
 			console.log(helpText(spec));
 			return;
 		}
+		args = parsed;
 		element = spec.run(args);
 	} catch (error) {
 		if (error instanceof UsageError) fail(2, `${error.message} (see --help)`);
@@ -139,17 +147,24 @@ export function runApp(spec: AppSpec, argv: readonly string[] = process.argv.sli
 			process.exitCode = 1;
 		}
 	});
-	const instance = render(
-		<AppProvider app={app}>
-			<RecordCrash onCrash={(error) => (crash = error)}>
-				<KeyboardProvider>{element}</KeyboardProvider>
-			</RecordCrash>
-		</AppProvider>,
-		// KeyboardProvider handles Ctrl-C, so a screen's quit binding can refuse it.
-		{ exitOnCtrlC: false },
-	);
-	instance.waitUntilExit().then(
-		() => process.exit(),
-		() => process.exit(),
-	);
+	const show = (screen: ReactElement) => {
+		const instance = render(
+			<AppProvider app={app}>
+				<RecordCrash onCrash={(error) => (crash = error)}>
+					<KeyboardProvider>{screen}</KeyboardProvider>
+				</RecordCrash>
+			</AppProvider>,
+			// KeyboardProvider handles Ctrl-C, so a screen's quit binding can refuse it.
+			{ exitOnCtrlC: false },
+		);
+		instance.waitUntilExit().then(
+			() => {
+				const again = !crash && spec.afterExit?.() ? spec.run(args) : undefined;
+				if (again) show(again);
+				else process.exit();
+			},
+			() => process.exit(),
+		);
+	};
+	show(element);
 }
