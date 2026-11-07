@@ -34,6 +34,7 @@
 			"stories": [
 				{
 					"name": "overview",
+					"about": "Running slot A, committed; slot B's last trial failed and B is the rollback target.",
 					"steps": [
 						{
 							"expect": "Running slot A, committed"
@@ -42,6 +43,7 @@
 				},
 				{
 					"name": "trial pending",
+					"about": "Slot B is set to boot once on the next reboot, as a trial.",
 					"env": {
 						"RECAB_FIXTURE": "trial"
 					},
@@ -53,6 +55,7 @@
 				},
 				{
 					"name": "running a trial",
+					"about": "Running slot B on trial, not committed: the trial service still has to judge it.",
 					"env": {
 						"RECAB_FIXTURE": "uncommitted"
 					},
@@ -64,6 +67,7 @@
 				},
 				{
 					"name": "status unreadable",
+					"about": "recab status fails, as on a system recab doesn't manage: the error and what to do.",
 					"env": {
 						"RECAB_FIXTURE": "no-status"
 					},
@@ -75,6 +79,7 @@
 				},
 				{
 					"name": "try the other slot",
+					"about": "t, Enter, y: set slot B to boot once, then the slots before and after.",
 					"steps": [
 						{
 							"keys": "t",
@@ -92,6 +97,7 @@
 				},
 				{
 					"name": "commit a trial",
+					"about": "Running uncommitted slot B: commit keeps it as known-good and the default.",
 					"env": {
 						"RECAB_FIXTURE": "uncommitted"
 					},
@@ -104,6 +110,7 @@
 				},
 				{
 					"name": "nothing to roll back to",
+					"about": "A fresh install: Roll back is refused, and the page says why.",
 					"env": {
 						"RECAB_FIXTURE": "fresh"
 					},
@@ -116,6 +123,7 @@
 				},
 				{
 					"name": "write a system",
+					"about": "Write a new system to slot B: paths with checks, typing B to confirm, the result.",
 					"steps": [
 						{
 							"keys": "s\\r",
@@ -140,6 +148,7 @@
 				},
 				{
 					"name": "change fails",
+					"about": "Every change fails for want of root: recab's error and the advice to run as root.",
 					"env": {
 						"RECAB_FIXTURE": "fail"
 					},

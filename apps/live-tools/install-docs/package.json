@@ -38,6 +38,7 @@
 			"stories": [
 				{
 					"name": "content focused",
+					"about": "Tab moves focus from the page list into the page.",
 					"steps": [
 						{
 							"keys": "\\t"
@@ -46,6 +47,7 @@
 				},
 				{
 					"name": "next page",
+					"about": "Moving through the guide page by page.",
 					"steps": [
 						{
 							"keys": "l",
@@ -59,6 +61,7 @@
 				},
 				{
 					"name": "tabs in code",
+					"about": "A page whose code blocks hold tabs (recfstab), drawn without breaking the layout.",
 					"args": [
 						"--slug",
 						"recfstab"
@@ -72,6 +75,7 @@
 				},
 				{
 					"name": "selected command",
+					"about": "Selecting a command on the disk page, ready to copy into the shell beside it.",
 					"args": [
 						"--slug",
 						"installation-disk"

@@ -35,6 +35,7 @@
 			"stories": [
 				{
 					"name": "apply succeeds",
+					"about": "The whole erase-the-disk flow on the empty 64 GB disk: every page, typing DESTROY, the apply, and the hand-off to recstrap.",
 					"steps": [
 						{
 							"keys": "",
@@ -108,6 +109,7 @@
 				},
 				{
 					"name": "apply fails",
+					"about": "The same flow where the apply fails part way: the failure page and the step it failed at.",
 					"env": {
 						"RECPART_FIXTURE_APPLY": "fail"
 					},
@@ -184,6 +186,7 @@
 				},
 				{
 					"name": "disk refused",
+					"about": "The dry run reports a disk apply would refuse (a partition mounted), so Checks blocks the way to Confirm.",
 					"env": {
 						"RECPART_FIXTURE_DRY_RUN": "refuse"
 					},
@@ -200,6 +203,7 @@
 				},
 				{
 					"name": "edit: empty disk with quick setup",
+					"about": "Keep some of an empty disk: the Next step box offers a, which creates EFI, both slots and state.",
 					"args": [
 						"--disk",
 						"/dev/vdz"
@@ -224,6 +228,7 @@
 				},
 				{
 					"name": "edit: dual boot with quick setup",
+					"about": "Windows disk: s opens the make-room slider on Windows, Enter shrinks it, a fills the space; nothing is erased.",
 					"args": [
 						"--disk",
 						"/dev/vdy"
@@ -264,6 +269,7 @@
 				},
 				{
 					"name": "edit: dual boot by hand",
+					"about": "Windows disk, partition by partition: reuse the EFI partition, shrink Windows to 150 GB, create both slots and state.",
 					"args": [
 						"--disk",
 						"/dev/vdy"
@@ -304,6 +310,7 @@
 				},
 				{
 					"name": "edit: nothing can shrink",
+					"about": "A running XFS system (like a Fedora install): nothing can shrink, and the page says why and what is left to do.",
 					"args": [
 						"--disk",
 						"/dev/vdv"
@@ -328,6 +335,7 @@
 				},
 				{
 					"name": "disk use: what erasing loses",
+					"about": "The Disk use page on the Windows disk: what erasing would lose, in red, then choosing to keep some of it.",
 					"args": [
 						"--disk",
 						"/dev/vdy"
