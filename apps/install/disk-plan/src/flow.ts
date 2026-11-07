@@ -83,8 +83,15 @@ export type PageId =
 	| "result-handoff"
 	| "failure-diagnostics";
 
+/** The stages the steps are grouped in on the rail. */
+export type Phase = "Choose" | "Review" | "Apply";
+
 export type Page = {
 	id: PageId;
+	/** What the page is called on screen. */
+	title: string;
+	/** The rail's group; pages without one (the failure view) aren't on the rail. */
+	phase?: Phase;
 	/** Has keys of its own, so the content pane can take focus. */
 	interactive: boolean;
 	/** What must hold to move on, shown on the welcome page as the safety rules. */
@@ -95,9 +102,17 @@ export type Page = {
 
 /** The flow: each page, its gate, and where Next and Back lead. */
 export const PAGES: readonly Page[] = [
-	{ id: "welcome", interactive: false, next: () => "target-disk", back: () => null },
+	{
+		id: "welcome",
+		title: "Overview",
+		interactive: false,
+		next: () => "target-disk",
+		back: () => null,
+	},
 	{
 		id: "target-disk",
+		title: "Disk",
+		phase: "Choose",
 		interactive: true,
 		gate: { rule: "a disk is chosen", holds: (s) => s.disk !== null },
 		next: () => "mode-selection",
@@ -105,12 +120,16 @@ export const PAGES: readonly Page[] = [
 	},
 	{
 		id: "mode-selection",
+		title: "Layout",
+		phase: "Choose",
 		interactive: true,
 		next: () => "plan-preview",
 		back: () => "target-disk",
 	},
 	{
 		id: "plan-preview",
+		title: "Plan",
+		phase: "Review",
 		interactive: false,
 		gate: { rule: "recpart produced a plan", holds: (s) => s.plan.kind === "ok" },
 		next: () => "command-preview",
@@ -118,6 +137,8 @@ export const PAGES: readonly Page[] = [
 	},
 	{
 		id: "command-preview",
+		title: "Commands",
+		phase: "Review",
 		interactive: false,
 		gate: { rule: "the dry run succeeded", holds: (s) => s.dryRun.kind === "ok" },
 		next: () => "preflight-checks",
@@ -125,6 +146,8 @@ export const PAGES: readonly Page[] = [
 	},
 	{
 		id: "preflight-checks",
+		title: "Checks",
+		phase: "Review",
 		interactive: false,
 		gate: {
 			rule: "recpart would not refuse the disk",
@@ -135,6 +158,8 @@ export const PAGES: readonly Page[] = [
 	},
 	{
 		id: "destructive-confirm",
+		title: "Confirm",
+		phase: "Apply",
 		interactive: true,
 		gate: { rule: `${CONFIRM_TOKEN} is typed, then Enter starts the apply`, holds: canApply },
 		// Only the apply action leaves this page forwards.
@@ -143,6 +168,8 @@ export const PAGES: readonly Page[] = [
 	},
 	{
 		id: "apply-progress",
+		title: "Apply",
+		phase: "Apply",
 		interactive: false,
 		next: (s) =>
 			s.apply.kind === "ok"
@@ -153,9 +180,17 @@ export const PAGES: readonly Page[] = [
 		// After an apply the disk no longer matches the reviewed plan; there is no way back to it.
 		back: () => null,
 	},
-	{ id: "result-handoff", interactive: false, next: () => null, back: () => "apply-progress" },
+	{
+		id: "result-handoff",
+		title: "Done",
+		phase: "Apply",
+		interactive: false,
+		next: () => null,
+		back: () => "apply-progress",
+	},
 	{
 		id: "failure-diagnostics",
+		title: "Failure",
 		interactive: false,
 		next: () => null,
 		back: () => "apply-progress",
@@ -164,4 +199,29 @@ export const PAGES: readonly Page[] = [
 
 export function page(id: PageId): Page {
 	return PAGES.find((p) => p.id === id)!;
+}
+
+export type StepState = "done" | "current" | "failed" | "pending";
+
+/** How the rail marks a page: where the run failed, the page you're on, a page behind you
+ * whose gate holds, or one still ahead. */
+export function stepState(id: PageId, current: PageId, session: Session): StepState {
+	const failure = lastFailure(session);
+	const failedAt: Record<string, PageId> = {
+		plan: "plan-preview",
+		"dry-run": "command-preview",
+		preflight: "preflight-checks",
+		apply: "apply-progress",
+	};
+	if (failure && failedAt[failure.step] === id) return "failed";
+	if (id === current) return "current";
+	const behind = position(id) < position(current);
+	const target = page(id);
+	return behind && (!target.gate || target.gate.holds(session) || id === "destructive-confirm")
+		? "done"
+		: "pending";
+}
+
+export function position(id: PageId): number {
+	return PAGES.findIndex((p) => p.id === id);
 }

@@ -7,12 +7,14 @@ live ISO's install guide uses `recpart` directly.
 
 ## Layout
 
-- `src/flow.ts`: the pages, each page's gate (the welcome page lists them), and where
-  Next and Back lead, including the branch after the apply.
+- `src/flow.ts`: the pages (title, phase, gate), where Next and Back lead, including the
+  branch after the apply, and how the rail marks each step.
 - `src/app/plan-runner.ts`: the recpart command lines and reading recpart's documents
   (with the generated `readRecpartOutput`).
 - `src/presentation/use-recpart.ts`: runs recpart for a page; `pages.tsx`: one component
-  per page; `disk-plan-screen.tsx`: state, keys and the frame.
+  per page, built from `blocks.tsx` (heading, section, callout, table, disk bar, step list,
+  command block), so every page has the same hierarchy; `disk-plan-screen.tsx`: state, keys,
+  the step rail and the frame. A page taller than its pane scrolls with space/b.
 - `src/generated/recpart.ts`: written by `cargo xtask gen` from recpart's Rust types.
 
 recpart owns partitioning, its safety checks and its JSON; this app owns the flow and

@@ -1,19 +1,20 @@
-import { Box, useApp } from "ink";
+import { Box, measureElement, Text, useApp, type DOMElement } from "ink";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
 	AppShell,
-	keymapStatusSegments,
-	scopeStatusSegment,
 	fitFooter,
+	keymapStatusSegments,
+	resolveIntentColor,
 	startCommand,
 	textStatusSegment,
-	UiText,
-	useAppName,
 	useAsyncTask,
 	useFocusPlane,
 	useGridNavigation,
 	useKeymap,
 	useShellLayout,
+	useTuiColors,
+	useTuiTheme,
+	type ColorIntent,
 	type RunningCommand,
 } from "@levitate/tui-kit";
 import {
@@ -39,12 +40,25 @@ import {
 	lastFailure,
 	page,
 	PAGES,
+	position,
+	stepState,
 	type DiskChoice,
 	type PageId,
 	type Run,
 	type Session,
+	type StepState,
 } from "../flow";
-import { CONFIRM_KEYS, CONTENT_KEYS, DISK_KEYS, GLOBAL_KEYS, MODE_KEYS, NAV_KEYS } from "./keymap";
+import { ContentWidth } from "./blocks";
+import {
+	CONFIRM_KEYS,
+	CONTENT_KEYS,
+	DISK_KEYS,
+	GLOBAL_KEYS,
+	MODE_KEYS,
+	NAV_KEYS,
+	SCROLL_KEYS,
+	SCROLL_UP,
+} from "./keymap";
 import {
 	ApplyProgress,
 	CommandPreview,
@@ -62,8 +76,6 @@ import { useRecpartRun } from "./use-recpart";
 /** About this many columns show a disk card's path, size and model. */
 const DISK_CARD_COLUMNS = 40;
 
-const position = (id: PageId) => PAGES.findIndex((p) => p.id === id);
-
 type DiskPlanScreenProps = {
 	/** `--disk`, or "" to choose from recpart's list. */
 	disk: string;
@@ -73,7 +85,6 @@ type DiskPlanScreenProps = {
 
 export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskPlanScreenProps) {
 	const { exit } = useApp();
-	const appName = useAppName();
 	const shell = useShellLayout({ navWidth: 38 });
 	const focus = useFocusPlane({ initial: "navigation" });
 	const [pageId, setPageId] = useState<PageId>("welcome");
@@ -265,37 +276,124 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 		...(pageId === "mode-selection" ? MODE_KEYS : []),
 		...GLOBAL_KEYS.filter((b) => b.action !== "failure" || lastFailure(session) !== null),
 	];
+	// A page taller than its pane scrolls; it is measured after each render.
+	const pageBox = useRef<DOMElement>(null);
+	const [pageRows, setPageRows] = useState(0);
+	const [offset, setOffset] = useState(0);
+	useEffect(() => setOffset(0), [view]);
+	useEffect(() => {
+		if (pageBox.current) {
+			const { height } = measureElement(pageBox.current);
+			if (height !== pageRows) setPageRows(height);
+		}
+	});
+	const typing = pageId === "destructive-confirm" && !showFailure;
+	const scrollable = !typing && pageRows > shell.content.textRows - 2;
+	const railPages = PAGES.filter((p) => p.phase);
+	const step = railPages.findIndex((p) => p.id === view);
 	const layout = fitFooter(shell, [
-		scopeStatusSegment(appName),
 		textStatusSegment(
 			"focus",
-			contentFocus ? "content" : "nav",
+			contentFocus ? "content" : "steps",
 			contentFocus ? "accent" : "warning",
 		),
-		textStatusSegment("page", `${view} (${position(view) + 1}/${PAGES.length})`, "accent"),
-		...keymapStatusSegments(keys),
+		...keymapStatusSegments(scrollable ? [...keys, ...SCROLL_KEYS] : keys),
 		...(notice ? [textStatusSegment("notice", notice, "warning")] : []),
 	]);
+	const rows = layout.content.textRows;
+	const maxOffset = Math.max(0, pageRows - rows);
+	const shownOffset = Math.min(offset, maxOffset);
+	useKeymap(
+		SCROLL_KEYS,
+		{
+			scroll: (key) =>
+				setOffset((value) =>
+					Math.max(
+						0,
+						Math.min(maxOffset, value + (SCROLL_UP.has(key) ? -1 : 1) * Math.max(1, rows - 2)),
+					),
+				),
+		},
+		{ active: !typing && maxOffset > 0 },
+	);
+	const more = `${shownOffset > 0 ? " ↑" : ""}${shownOffset < maxOffset ? " ↓" : ""}`;
 	return (
-		<AppShell
-			layout={layout}
-			focus={contentFocus ? "content" : "navigation"}
-			navTitle="Pages"
-			nav={
-				<Box flexDirection="column">
-					{PAGES.map((p) => (
-						<UiText key={p.id} intent={p.id === view ? "accent" : "navItem"}>
-							{p.id === view ? "▸ " : "  "}
-							{p.id}
-						</UiText>
-					))}
-					<UiText> </UiText>
-					<UiText>Disk: {path ?? "(none)"}</UiText>
-					<UiText>Mode: {mode}</UiText>
+		<ContentWidth.Provider value={layout.content.textColumns}>
+			<AppShell
+				layout={layout}
+				focus={contentFocus ? "content" : "navigation"}
+				navTitle="Steps"
+				nav={<Rail view={view} session={session} />}
+				contentTitle={`${
+					step >= 0
+						? `Step ${step + 1} of ${railPages.length} · ${page(view).title}`
+						: page(view).title
+				}${more}`}
+				content={
+					<Box ref={pageBox} flexDirection="column" flexShrink={0} marginTop={-shownOffset}>
+						{body[view]()}
+					</Box>
+				}
+			/>
+		</ContentWidth.Provider>
+	);
+}
+
+const STATE_MARK: Record<StepState, { mark: string; intent: ColorIntent }> = {
+	done: { mark: "✓", intent: "success" },
+	current: { mark: "▸", intent: "accent" },
+	failed: { mark: "✗", intent: "error" },
+	pending: { mark: "○", intent: "dimText" },
+};
+
+/** Every step under its phase, marked done, current, failed or still ahead, with the
+ * choices made so far beside their steps. */
+function Rail({ view, session }: { view: PageId; session: Session }): ReactNode {
+	const theme = useTuiTheme();
+	const colors = useTuiColors();
+	const phases = [...new Set(PAGES.flatMap((p) => (p.phase ? [p.phase] : [])))];
+	const choice: Partial<Record<PageId, string>> = {
+		"target-disk": session.disk ? diskPath(session.disk) : undefined,
+		"mode-selection": session.mode,
+	};
+	const color = (intent: ColorIntent) => resolveIntentColor(theme, intent, colors);
+	return (
+		<Box flexDirection="column">
+			<Text color={color(view === "welcome" ? "accent" : "navItem")} bold={view === "welcome"}>
+				{view === "welcome" ? "▸ " : "  "}Overview
+			</Text>
+			{phases.map((phase) => (
+				<Box key={phase} flexDirection="column" marginTop={1}>
+					<Text bold color={color("navHeading")}>
+						{phase.toUpperCase()}
+					</Text>
+					{PAGES.filter((p) => p.phase === phase).map((p) => {
+						const state = stepState(p.id, view, session);
+						const { mark, intent } = STATE_MARK[state];
+						return (
+							<Text key={p.id}>
+								<Text color={color(intent)}>{mark} </Text>
+								<Text
+									bold={state === "current"}
+									color={color(
+										state === "current" ? "accent" : state === "pending" ? "dimText" : "navItem",
+									)}
+								>
+									{p.title}
+								</Text>
+								{choice[p.id] ? <Text color={color("dimText")}>{`  ${choice[p.id]}`}</Text> : null}
+							</Text>
+						);
+					})}
 				</Box>
-			}
-			contentTitle={view}
-			content={body[view]()}
-		/>
+			))}
+			{view === "failure-diagnostics" ? (
+				<Box marginTop={1}>
+					<Text bold color={color("error")}>
+						▸ Failure
+					</Text>
+				</Box>
+			) : null}
+		</Box>
 	);
 }

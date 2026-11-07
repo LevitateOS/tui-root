@@ -37,19 +37,19 @@
 					"steps": [
 						{
 							"keys": "",
-							"expect": "│welcome"
+							"expect": "│Overview"
 						},
 						{
 							"keys": "j",
-							"expect": "│target-disk"
+							"expect": "│Step 1 of 8 · Disk"
 						},
 						{
 							"keys": "j",
-							"expect": "│mode-selection"
+							"expect": "│Step 2 of 8 · Layout"
 						},
 						{
 							"keys": "j",
-							"expect": "│plan-preview"
+							"expect": "│Step 3 of 8 · Plan"
 						},
 						{
 							"keys": "",
@@ -57,31 +57,31 @@
 						},
 						{
 							"keys": "j",
-							"expect": "│command-preview"
+							"expect": "│Step 4 of 8 · Commands"
 						},
 						{
 							"keys": "",
-							"expect": "What apply would do"
+							"expect": "What apply will run"
 						},
 						{
 							"keys": "j",
-							"expect": "[OK] recpart would apply"
+							"expect": "✓ recpart would apply to this disk"
 						},
 						{
 							"keys": "j",
-							"expect": "│destructive-confirm"
+							"expect": "│Step 6 of 8 · Confirm"
 						},
 						{
 							"keys": "q",
-							"expect": "Type DESTROY to unlock: q"
+							"expect": "› q______"
 						},
 						{
 							"keys": "\\x7f",
-							"expect": "Type DESTROY to unlock: (empty)"
+							"expect": "› _______"
 						},
 						{
 							"keys": "DESTROY",
-							"expect": "Unlocked: Enter starts the apply."
+							"expect": "Unlocked. Enter starts the apply."
 						},
 						{
 							"keys": "\\r",
@@ -89,11 +89,11 @@
 						},
 						{
 							"keys": "j",
-							"expect": "│result-handoff"
+							"expect": "│Step 8 of 8 · Done"
 						},
 						{
 							"keys": "j",
-							"expect": "│result-handoff"
+							"expect": "│Step 8 of 8 · Done"
 						},
 						{
 							"keys": "",
@@ -109,19 +109,19 @@
 					"steps": [
 						{
 							"keys": "",
-							"expect": "│welcome"
+							"expect": "│Overview"
 						},
 						{
 							"keys": "j",
-							"expect": "│target-disk"
+							"expect": "│Step 1 of 8 · Disk"
 						},
 						{
 							"keys": "j",
-							"expect": "│mode-selection"
+							"expect": "│Step 2 of 8 · Layout"
 						},
 						{
 							"keys": "j",
-							"expect": "│plan-preview"
+							"expect": "│Step 3 of 8 · Plan"
 						},
 						{
 							"keys": "",
@@ -129,31 +129,31 @@
 						},
 						{
 							"keys": "j",
-							"expect": "│command-preview"
+							"expect": "│Step 4 of 8 · Commands"
 						},
 						{
 							"keys": "",
-							"expect": "What apply would do"
+							"expect": "What apply will run"
 						},
 						{
 							"keys": "j",
-							"expect": "[OK] recpart would apply"
+							"expect": "✓ recpart would apply to this disk"
 						},
 						{
 							"keys": "j",
-							"expect": "│destructive-confirm"
+							"expect": "│Step 6 of 8 · Confirm"
 						},
 						{
 							"keys": "q",
-							"expect": "Type DESTROY to unlock: q"
+							"expect": "› q______"
 						},
 						{
 							"keys": "\\x7f",
-							"expect": "Type DESTROY to unlock: (empty)"
+							"expect": "› _______"
 						},
 						{
 							"keys": "DESTROY",
-							"expect": "Unlocked: Enter starts the apply."
+							"expect": "Unlocked. Enter starts the apply."
 						},
 						{
 							"keys": "\\r",
@@ -161,7 +161,7 @@
 						},
 						{
 							"keys": "j",
-							"expect": "│failure-diagnostics"
+							"expect": "│Failure"
 						},
 						{
 							"keys": "",
@@ -169,7 +169,7 @@
 						},
 						{
 							"keys": "k",
-							"expect": "│apply-progress"
+							"expect": "│Step 7 of 8 · Apply"
 						}
 					]
 				}
