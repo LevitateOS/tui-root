@@ -38,7 +38,7 @@ import {
 	type Run,
 	type Session,
 } from "../flow";
-import { formatBytes, known } from "../domain/recpart";
+import { describeSignature, formatBytes, known } from "../domain/recpart";
 import { DOCS, type DocsRef } from "../docs";
 import { DiskBar, type BarPart } from "./disk-bar";
 
@@ -414,6 +414,25 @@ function DiskContents({
 		);
 	if (inspect.kind !== "ok") return <Pending run={inspect} what="recpart inspect" />;
 	const parts = inspect.value.partitions;
+	const signatures = inspect.value.signatures ?? [];
+	if (parts.length === 0 && signatures.length)
+		return (
+			<Box flexDirection="column">
+				<UiText>No partition table, but the whole disk holds:</UiText>
+				{signatures.map((sig) => (
+					<UiText
+						key={`${sig.kind}${sig.offset_bytes}`}
+						bold
+						intent={erasing ? "error" : "warning"}
+					>
+						{`• ${describeSignature(sig)}`}
+					</UiText>
+				))}
+				<UiText intent="dimText">
+					Erasing the disk destroys it; it can't be kept beside the new system.
+				</UiText>
+			</Box>
+		);
 	if (parts.length === 0)
 		return <UiText intent="dimText">No partitions: the disk is empty, so nothing is lost.</UiText>;
 	return (
@@ -451,12 +470,15 @@ export function DiskUse({
 	width: number;
 }): ReactNode {
 	const parts = inspect.kind === "ok" ? inspect.value.partitions : null;
+	const signatures = inspect.kind === "ok" ? (inspect.value.signatures ?? []) : [];
 	const lost =
 		parts === null
 			? "Everything on it is erased."
-			: parts.length === 0
-				? "The disk is empty, so nothing is lost."
-				: `Erases all ${parts.length} partition${parts.length === 1 ? "" : "s"} below.`;
+			: parts.length === 0 && signatures.length
+				? `Erases ${signatures.map(describeSignature).join(" and ")} on it.`
+				: parts.length === 0
+					? "The disk is empty, so nothing is lost."
+					: `Erases all ${parts.length} partition${parts.length === 1 ? "" : "s"} below.`;
 	return (
 		<Page
 			title="What happens to the disk?"
@@ -470,7 +492,9 @@ export function DiskUse({
 					m === "erase" ? (
 						<ChoiceCard selected={selected} title="Erase the whole disk" tag="simplest">
 							<UiText>{`The ${mode === "ab" ? "A/B" : "mutable"} partitions take all of it.`}</UiText>
-							<UiText intent={parts?.length ? "error" : "dimText"}>{lost}</UiText>
+							<UiText intent={parts?.length || signatures.length ? "error" : "dimText"}>
+								{lost}
+							</UiText>
 						</ChoiceCard>
 					) : (
 						<ChoiceCard selected={selected} title="Keep some of it">
@@ -739,6 +763,12 @@ export function DestructiveConfirm({ session }: { session: Session }): ReactNode
 							"Layout",
 							`${session.mode === "ab" ? "A/B" : "mutable"}, ${session.method === "erase" ? "erasing the whole disk" : "keeping some of it"}`,
 						],
+						...(plan?.erased_signatures?.length
+							? ([["Also erased", plan.erased_signatures.map(describeSignature).join(", ")]] as [
+									string,
+									string,
+								][])
+							: []),
 					]}
 				/>
 			</Callout>

@@ -357,6 +357,31 @@
 							"expect": "Disk use  keep some"
 						}
 					]
+				},
+				{
+					"name": "disk use: an encrypted disk",
+					"about": "A disk that is one LUKS container with no partition table: Disk use and Confirm say the container is erased.",
+					"args": [
+						"--disk",
+						"/dev/vdu"
+					],
+					"env": {
+						"RECPART_FIXTURE_DISKS": "all"
+					},
+					"steps": [
+						{
+							"keys": "jjj",
+							"expect": "Erases an encrypted LUKS container"
+						},
+						{
+							"keys": "",
+							"expect": "No partition table, but the whole disk holds:"
+						},
+						{
+							"keys": "jjjj",
+							"expect": "Also erased"
+						}
+					]
 				}
 			]
 		}

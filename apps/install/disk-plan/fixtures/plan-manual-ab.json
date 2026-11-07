@@ -206,5 +206,8 @@
   "swap_file": {
     "path": "/var/swapfile",
     "size_mb": 2048
-  }
+  },
+  "disk_serial": "FIXTURE0001",
+  "table_id": null,
+  "erased_signatures": []
 }

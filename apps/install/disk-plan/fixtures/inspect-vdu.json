@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "disk": {
+    "path": "/dev/vdu",
+    "size_bytes": 137438953472,
+    "logical_sector_bytes": 512,
+    "physical_sector_bytes": 512,
+    "model": "Fixture Encrypted 128G",
+    "vendor": "unknown",
+    "serial": "FIXTURE0006",
+    "transport": "virtio",
+    "rotational": false,
+    "removable": false,
+    "read_only": false
+  },
+  "table": "none",
+  "table_id": null,
+  "usable_start_bytes": 1048576,
+  "usable_end_bytes": 137438936576,
+  "partitions": [],
+  "free": [
+    {
+      "start_bytes": 1048576,
+      "size_bytes": 137436856320
+    }
+  ],
+  "signatures": [
+    {
+      "kind": "crypto_LUKS",
+      "offset_bytes": 0,
+      "uuid": "6f1e2d3c-4b5a-4968-8776-655443322110",
+      "label": "vault"
+    }
+  ]
+}

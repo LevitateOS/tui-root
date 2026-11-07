@@ -172,7 +172,12 @@ export function planAction(id: ActionId, s: Status): ActionPlan {
 							kind: "refused",
 							reason: `Slot ${inactive} is the next boot. Roll back or commit first, so the next boot is slot ${active}.`,
 						}
-					: ready;
+					: s.default_slot === inactive
+						? {
+								kind: "refused",
+								reason: `Slot ${inactive} is the default. Commit slot ${active} first, so a new system in slot ${inactive} isn't booted untried.`,
+							}
+						: ready;
 			return {
 				id,
 				label: `Write system to ${inactive}`,

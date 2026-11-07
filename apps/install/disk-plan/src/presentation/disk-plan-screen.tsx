@@ -41,6 +41,7 @@ import {
 	planCommand,
 	resolveDiskPath,
 	toRun,
+	writeDocument,
 	writeLayout,
 } from "../app/plan-runner";
 import { toLayout } from "../domain/layout";
@@ -174,9 +175,14 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 			: null,
 		PLAN_SCHEMA_VERSION,
 	);
+	// The plan as reviewed: apply must find the disk giving exactly this plan.
+	const planFile = useMemo(
+		() => (plan.kind === "ok" ? writeDocument("plan", plan.value) : null),
+		[plan],
+	);
 	const dryRun = useRecpartRun<ApplyResult>(
 		path && reached("command-preview") && plan.kind === "ok"
-			? applyCommand(path, mode, layoutFile, true)
+			? applyCommand(path, mode, layoutFile, planFile, true)
 			: null,
 		APPLY_SCHEMA_VERSION,
 	);
@@ -213,7 +219,7 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 	const back = () => (showFailure ? setShowFailure(false) : go(current.back(session)));
 	const startApply = () => {
 		if (!canApply(session) || applyRun.current || !path) return;
-		const argv = applyCommand(path, mode, layoutFile, false);
+		const argv = applyCommand(path, mode, layoutFile, planFile, false);
 		const running = startCommand(argv);
 		applyRun.current = running;
 		setApply({ kind: "running", argv });

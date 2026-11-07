@@ -17,7 +17,7 @@ import {
 } from "@levitate/tui-kit";
 import type { InspectResult, InstallMode, PartitionPlan } from "../generated/recpart";
 import type { Run } from "../flow";
-import { formatBytes } from "../domain/recpart";
+import { describeSignature, formatBytes } from "../domain/recpart";
 import { MIB, requiredRoles, type Projection, type Segment } from "../domain/layout";
 import { neededMb, roleLabel, ROLE_NAME, ROLE_PURPOSE } from "../domain/setup";
 import { sizeAnswer, type PartitionEditor, type Prompt } from "./use-partition-editor";
@@ -515,15 +515,20 @@ export function PartitionEditorPage({
 					<UiText intent="warning">{editor.notice}</UiText>
 				</Box>
 			) : null}
-			{projection.erased.length ? (
+			{projection.erased.length || (editor.edits.newTable && inspect.value.signatures?.length) ? (
 				<Section title="Erased" trailing={`${projection.erased.length}`}>
 					<UiText intent="error">
-						{projection.erased
-							.map(
+						{[
+							...projection.erased.map(
 								(p) =>
 									`${short(p.device)} ${formatBytes(p.size_bytes)}${p.filesystem ? ` ${p.filesystem}` : ""}`,
-							)
-							.join(" · ")}
+							),
+							...(editor.edits.newTable
+								? (inspect.value.signatures ?? []).map(
+										(sig) => `${describeSignature(sig)} on the whole disk`,
+									)
+								: []),
+						].join(" · ")}
 					</UiText>
 				</Section>
 			) : null}

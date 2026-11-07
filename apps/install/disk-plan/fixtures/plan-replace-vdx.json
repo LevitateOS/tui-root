@@ -119,5 +119,8 @@
       "mountpoint": "/"
     }
   ],
-  "swap_file": null
+  "swap_file": null,
+  "disk_serial": "FIXTURE0003",
+  "table_id": "3C9E2B71-5D4A-4F86-A0B1-C2D3E4F50617",
+  "erased_signatures": []
 }

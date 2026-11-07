@@ -2,6 +2,19 @@
   "schema_version": 1,
   "disks": [
     {
+      "path": "/dev/vdu",
+      "size_bytes": 137438953472,
+      "logical_sector_bytes": 512,
+      "physical_sector_bytes": 512,
+      "model": "Fixture Encrypted 128G",
+      "vendor": "unknown",
+      "serial": "FIXTURE0006",
+      "transport": "virtio",
+      "rotational": false,
+      "removable": false,
+      "read_only": false
+    },
+    {
       "path": "/dev/vdv",
       "size_bytes": 512110190592,
       "logical_sector_bytes": 512,

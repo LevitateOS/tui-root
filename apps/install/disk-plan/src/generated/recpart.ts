@@ -19,6 +19,22 @@ export type DiskInventory = {
 
 export type DiskListResult = { schema_version: number; disks: Array<DiskInventory> };
 
+export type DiskSignature = {
+	/**
+	 * wipefs's TYPE: `crypto_LUKS`, `btrfs`, `LVM2_member`, `ext4`, ...
+	 */
+	kind: string;
+	/**
+	 * Where the signature's magic is, in bytes from the start of the disk;
+	 * 0 when only lsblk's FSTYPE was readable (wipefs needs root).
+	 */
+	offset_bytes: number;
+	uuid: string | null;
+	label: string | null;
+};
+
+export type TableType = "gpt" | "mbr" | "none";
+
 export type PartitionInfo = {
 	number: number;
 	device: string;
@@ -68,8 +84,6 @@ export type PartitionInfo = {
 
 export type FreeGap = { start_bytes: number; size_bytes: number };
 
-export type TableType = "gpt" | "mbr" | "none";
-
 export type InspectResult = {
 	schema_version: number;
 	disk: DiskInventory;
@@ -92,11 +106,14 @@ export type InspectResult = {
 	 * Unpartitioned space of at least 1 MiB, aligned to 1 MiB, ordered by start.
 	 */
 	free: Array<FreeGap>;
+	/**
+	 * Signatures on the whole disk itself, outside any partition: a LUKS
+	 * container, a filesystem or an LVM PV written to the bare disk (the
+	 * partition table's own `gpt`, `PMBR` and `dos` are not listed). Empty
+	 * when there are none, or when neither wipefs nor lsblk could tell.
+	 */
+	signatures: Array<DiskSignature>;
 };
-
-export type SwapFileLocation = "root" | "var";
-
-export type SwapFileRequest = { size_mb: number; location: SwapFileLocation };
 
 export type Filesystem = "vfat" | "ext4" | "swap";
 
@@ -130,6 +147,10 @@ export type LayoutAction =
 			mountpoint: string | null;
 	  };
 
+export type SwapFileLocation = "root" | "var";
+
+export type SwapFileRequest = { size_mb: number; location: SwapFileLocation };
+
 export type ManualLayout = {
 	/**
 	 * Replace the partition table with an empty GPT one, erasing every
@@ -149,24 +170,6 @@ export type ManualLayout = {
 	swap_file: SwapFileRequest | null;
 };
 
-export type DiskTarget = {
-	path: string;
-	size_bytes: number;
-	logical_sector_bytes: number;
-	physical_sector_bytes: number;
-};
-
-export type InstallMode = "ab" | "mutable";
-
-export type ResolvedLayout = {
-	mode: InstallMode;
-	efi_size_mb: number;
-	root_size_mb: number | null;
-	root_a_size_mb: number | null;
-	root_b_size_mb: number | null;
-	state_size_mb: number | null;
-};
-
 export type PartitionTemplate = {
 	index: number;
 	name: string;
@@ -181,7 +184,16 @@ export type PartitionTemplate = {
 	mountpoint: string;
 };
 
-export type ChangeKind = "erased" | "created" | "resized" | "formatted" | "untouched";
+export type InstallMode = "ab" | "mutable";
+
+export type ResolvedLayout = {
+	mode: InstallMode;
+	efi_size_mb: number;
+	root_size_mb: number | null;
+	root_a_size_mb: number | null;
+	root_b_size_mb: number | null;
+	state_size_mb: number | null;
+};
 
 export type PartitionState = {
 	start_bytes: number;
@@ -189,6 +201,8 @@ export type PartitionState = {
 	filesystem: string | null;
 	fs_label: string | null;
 };
+
+export type ChangeKind = "erased" | "created" | "resized" | "formatted" | "untouched";
 
 export type PartitionChange = {
 	number: number;
@@ -207,6 +221,21 @@ export type PartitionChange = {
 	 * Where the installed system mounts it (`None`: not mounted).
 	 */
 	mountpoint: string | null;
+};
+
+export type SwapFilePlan = {
+	/**
+	 * The file's path in the installed system (`/swapfile`, `/var/swapfile`).
+	 */
+	path: string;
+	size_mb: number;
+};
+
+export type DiskTarget = {
+	path: string;
+	size_bytes: number;
+	logical_sector_bytes: number;
+	physical_sector_bytes: number;
 };
 
 export type LayoutRequest = {
@@ -230,14 +259,6 @@ export type LayoutRequest = {
 	 * A/B state partition size in MB (ab mode only). Omit to use remaining space.
 	 */
 	state_size_mb: number | null;
-};
-
-export type SwapFilePlan = {
-	/**
-	 * The file's path in the installed system (`/swapfile`, `/var/swapfile`).
-	 */
-	path: string;
-	size_mb: number;
 };
 
 export type PartitionPlan = {
@@ -271,20 +292,25 @@ export type PartitionPlan = {
 	 * The swap file apply creates, if any.
 	 */
 	swap_file: SwapFilePlan | null;
+	/**
+	 * The serial of the disk the plan was made for (`inspect`'s
+	 * `disk.serial`): with `disk` and `table_id`, it names the disk
+	 * `apply --expect` must still find.
+	 */
+	disk_serial: string;
+	/**
+	 * The partition table id the disk had when the plan was made
+	 * (`inspect`'s `table_id`); `None` when it had no table, or no id.
+	 */
+	table_id: string | null;
+	/**
+	 * What apply's `wipefs -a` erases besides the partitions (`inspect`'s
+	 * `signatures`): listed whenever `wipes_disk`, so the confirm page can
+	 * say a LUKS container or a filesystem on the bare disk is lost. Empty
+	 * when the plan keeps the table.
+	 */
+	erased_signatures: Array<DiskSignature>;
 };
-
-export type CommandRecord = {
-	phase: string;
-	command: string;
-	program: string;
-	args: Array<string>;
-	status: number | null;
-	stdout: string | null;
-	stderr: string | null;
-	dry_run: boolean;
-};
-
-export type MountMapping = { path: string; device: string };
 
 export type ModeContext = {
 	install_target_slot: string | null;
@@ -292,6 +318,8 @@ export type ModeContext = {
 	slot_a_device: string | null;
 	slot_b_device: string | null;
 };
+
+export type MountMapping = { path: string; device: string };
 
 export type HandoffPayload = {
 	schema_version: number;
@@ -304,6 +332,17 @@ export type HandoffPayload = {
 	 * find them.
 	 */
 	swaps: Array<string>;
+};
+
+export type CommandRecord = {
+	phase: string;
+	command: string;
+	program: string;
+	args: Array<string>;
+	status: number | null;
+	stdout: string | null;
+	stderr: string | null;
+	dry_run: boolean;
 };
 
 export type ApplyResult = {

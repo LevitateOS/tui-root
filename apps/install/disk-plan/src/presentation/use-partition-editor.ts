@@ -134,7 +134,11 @@ export function usePartitionEditor({
 	next: () => void;
 	back: () => void;
 }): PartitionEditor {
-	const [history, setHistory] = useState<Edits[]>([NO_EDITS]);
+	// A disk without a partition table gets a new one: there is nothing on it to keep,
+	// and recpart wants that said (it refuses to overwrite a whole-disk signature unasked).
+	const start = (disk: InspectResult | null): Edits =>
+		disk?.table === "none" ? { ...NO_EDITS, newTable: true } : NO_EDITS;
+	const [history, setHistory] = useState<Edits[]>([start(inspect)]);
 	const [selected, setSelected] = useState(0);
 	const [prompt, setPrompt] = useState<Prompt | null>(null);
 	const [notice, setNotice] = useState<string | null>(null);
@@ -146,7 +150,7 @@ export function usePartitionEditor({
 
 	// Another disk, or a changed table, starts a new set of edits.
 	useEffect(() => {
-		setHistory([NO_EDITS]);
+		setHistory([start(inspect)]);
 		setSelected(0);
 		setPrompt(null);
 	}, [inspect?.disk.path, inspect?.table_id]);
@@ -432,7 +436,7 @@ export function usePartitionEditor({
 			setNotice(history.length > 1 ? "undone" : "nothing to undo");
 		},
 		reset: () => {
-			setHistory([NO_EDITS]);
+			setHistory([start(inspect)]);
 			setNotice("back to what's on the disk");
 		},
 		next,

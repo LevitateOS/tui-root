@@ -1,0 +1,213 @@
+{
+  "schema_version": 2,
+  "mode": "mutable",
+  "layout_request": {
+    "efi_size_mb": null,
+    "root_size_mb": null,
+    "root_a_size_mb": null,
+    "root_b_size_mb": null,
+    "state_size_mb": null
+  },
+  "resolved_layout": {
+    "mode": "mutable",
+    "efi_size_mb": 1024,
+    "root_size_mb": null,
+    "root_a_size_mb": null,
+    "root_b_size_mb": null,
+    "state_size_mb": null
+  },
+  "disk": {
+    "path": "/dev/vdu",
+    "size_bytes": 137438953472,
+    "logical_sector_bytes": 512,
+    "physical_sector_bytes": 512
+  },
+  "dry_run": false,
+  "steps": [
+    {
+      "phase": "partition",
+      "command": "wipefs -a /dev/vdu",
+      "program": "wipefs",
+      "args": [
+        "-a",
+        "/dev/vdu"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "partition",
+      "command": "sfdisk /dev/vdu",
+      "program": "sfdisk",
+      "args": [
+        "/dev/vdu"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "partition",
+      "command": "udevadm settle --timeout=10",
+      "program": "udevadm",
+      "args": [
+        "settle",
+        "--timeout=10"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "partition",
+      "command": "verify-partitions",
+      "program": "verify-partitions",
+      "args": [],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "format",
+      "command": "mkfs.vfat -F 32 -n EFI /dev/vdu1",
+      "program": "mkfs.vfat",
+      "args": [
+        "-F",
+        "32",
+        "-n",
+        "EFI",
+        "/dev/vdu1"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "format",
+      "command": "mkfs.ext4 -F -L ROOT /dev/vdu2",
+      "program": "mkfs.ext4",
+      "args": [
+        "-F",
+        "-L",
+        "ROOT",
+        "/dev/vdu2"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "mount",
+      "command": "mount /dev/vdu2 /mnt/sysroot",
+      "program": "mount",
+      "args": [
+        "/dev/vdu2",
+        "/mnt/sysroot"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    },
+    {
+      "phase": "mount",
+      "command": "mount /dev/vdu1 /mnt/sysroot/boot",
+      "program": "mount",
+      "args": [
+        "/dev/vdu1",
+        "/mnt/sysroot/boot"
+      ],
+      "status": 0,
+      "stdout": null,
+      "stderr": null,
+      "dry_run": false
+    }
+  ],
+  "partition_map": [
+    {
+      "index": 1,
+      "name": "efi",
+      "filesystem": "vfat",
+      "label": "EFI",
+      "gpt_type": "U",
+      "bootable": true,
+      "size_mb": 1024,
+      "mountpoint": "/boot"
+    },
+    {
+      "index": 2,
+      "name": "root",
+      "filesystem": "ext4",
+      "label": "ROOT",
+      "gpt_type": "L",
+      "bootable": false,
+      "size_mb": null,
+      "mountpoint": "/"
+    }
+  ],
+  "formatted_devices": [
+    "/dev/vdu1",
+    "/dev/vdu2"
+  ],
+  "handoff": {
+    "schema_version": 2,
+    "mode": "mutable",
+    "install_target": "/mnt/sysroot",
+    "mount_map": [
+      {
+        "path": "/mnt/sysroot",
+        "device": "/dev/vdu2"
+      },
+      {
+        "path": "/mnt/sysroot/boot",
+        "device": "/dev/vdu1"
+      }
+    ],
+    "mode_context": {
+      "install_target_slot": null,
+      "inactive_slot_hint": null,
+      "slot_a_device": null,
+      "slot_b_device": null
+    },
+    "swaps": []
+  },
+  "warnings": [],
+  "summary": [
+    {
+      "number": 1,
+      "device": "/dev/vdu1",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 1048576,
+        "size_bytes": 1073741824,
+        "filesystem": "vfat",
+        "fs_label": "EFI"
+      },
+      "role": "efi",
+      "mountpoint": "/boot"
+    },
+    {
+      "number": 2,
+      "device": "/dev/vdu2",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 1074790400,
+        "size_bytes": 136363114496,
+        "filesystem": "ext4",
+        "fs_label": "ROOT"
+      },
+      "role": "root",
+      "mountpoint": "/"
+    }
+  ],
+  "disk_checks_skipped": false
+}

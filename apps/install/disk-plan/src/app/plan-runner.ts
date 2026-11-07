@@ -24,10 +24,14 @@ export function planCommand(disk: string, mode: InstallMode, layout: string | nu
 	return ["recpart", "plan", "--disk", disk, "--mode", mode, ...layoutArgs(layout), "--json"];
 }
 
+/** `expected` is the plan the user reviewed (see `writeDocument`): recpart refuses (E023)
+ * when the disk no longer gives that exact plan, so apply touches only the disk and
+ * partitions that were shown. */
 export function applyCommand(
 	disk: string,
 	mode: InstallMode,
 	layout: string | null,
+	expected: string | null,
 	dryRun: boolean,
 ): string[] {
 	return [
@@ -38,6 +42,7 @@ export function applyCommand(
 		"--mode",
 		mode,
 		...layoutArgs(layout),
+		...(expected ? ["--expect", expected] : []),
 		"--json",
 		...(dryRun ? ["--dry-run"] : ["--confirm", CONFIRM_TOKEN]),
 	];
@@ -53,14 +58,20 @@ let layoutDirMade = false;
  * it exits). The name is the content's hash, so a changed
  * layout is a changed command and the plan runs again. */
 export function writeLayout(layout: ManualLayout): string {
-	const text = `${JSON.stringify(layout, null, "\t")}\n`;
+	return writeDocument("layout", layout);
+}
+
+/** Writes `value` as JSON to this run's temporary directory (removed on exit), named by
+ * its content, and returns the path: an explicit layout, or the plan apply must match. */
+export function writeDocument(kind: "layout" | "plan", value: unknown): string {
+	const text = `${JSON.stringify(value, null, "\t")}\n`;
 	const dir = join(tmpdir(), `disk-plan-${process.pid}`);
 	if (!layoutDirMade) {
 		mkdirSync(dir, { recursive: true });
 		process.on("exit", () => rmSync(dir, { recursive: true, force: true }));
 		layoutDirMade = true;
 	}
-	const path = join(dir, `layout-${Bun.hash(text).toString(16)}.json`);
+	const path = join(dir, `${kind}-${Bun.hash(text).toString(16)}.json`);
 	writeFileSync(path, text);
 	return path;
 }

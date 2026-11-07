@@ -99,5 +99,6 @@
       "resize_blocker": "XFS can only grow, never shrink; it is in use, mounted at /, and recpart resizes only unmounted filesystems"
     }
   ],
-  "free": []
+  "free": [],
+  "signatures": []
 }

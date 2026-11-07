@@ -66,7 +66,7 @@
   ],
   "sfdisk_script": "label: gpt\nunit: sectors\nsector-size: 512\n\n/dev/vdz1 : start=2048, size=2097152, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B, name=\"EFI\"\n/dev/vdz2 : start=2099200, size=41943040, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, name=\"ROOT_A\"\n/dev/vdz3 : start=44042240, size=41943040, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, name=\"ROOT_B\"\n/dev/vdz4 : start=85985280, size=48230400, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, name=\"STATE\"\n",
   "manual_layout": {
-    "new_table": false,
+    "new_table": true,
     "table_id": null,
     "actions": [
       {
@@ -167,5 +167,8 @@
       "mountpoint": "/var"
     }
   ],
-  "swap_file": null
+  "swap_file": null,
+  "disk_serial": "FIXTURE0001",
+  "table_id": null,
+  "erased_signatures": []
 }

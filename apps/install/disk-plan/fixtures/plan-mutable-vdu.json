@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "mode": "mutable",
+  "layout_request": {
+    "efi_size_mb": null,
+    "root_size_mb": null,
+    "root_a_size_mb": null,
+    "root_b_size_mb": null,
+    "state_size_mb": null
+  },
+  "resolved_layout": {
+    "mode": "mutable",
+    "efi_size_mb": 1024,
+    "root_size_mb": null,
+    "root_a_size_mb": null,
+    "root_b_size_mb": null,
+    "state_size_mb": null
+  },
+  "disk": {
+    "path": "/dev/vdu",
+    "size_bytes": 137438953472,
+    "logical_sector_bytes": 512,
+    "physical_sector_bytes": 512
+  },
+  "partitions": [
+    {
+      "index": 1,
+      "name": "efi",
+      "filesystem": "vfat",
+      "label": "EFI",
+      "gpt_type": "U",
+      "bootable": true,
+      "size_mb": 1024,
+      "mountpoint": "/boot"
+    },
+    {
+      "index": 2,
+      "name": "root",
+      "filesystem": "ext4",
+      "label": "ROOT",
+      "gpt_type": "L",
+      "bootable": false,
+      "size_mb": null,
+      "mountpoint": "/"
+    }
+  ],
+  "sfdisk_script": "label: gpt\n,1024M,U,*\n,,L\n",
+  "manual_layout": null,
+  "wipes_disk": true,
+  "summary": [
+    {
+      "number": 1,
+      "device": "/dev/vdu1",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 1048576,
+        "size_bytes": 1073741824,
+        "filesystem": "vfat",
+        "fs_label": "EFI"
+      },
+      "role": "efi",
+      "mountpoint": "/boot"
+    },
+    {
+      "number": 2,
+      "device": "/dev/vdu2",
+      "change": "created",
+      "before": null,
+      "after": {
+        "start_bytes": 1074790400,
+        "size_bytes": 136363114496,
+        "filesystem": "ext4",
+        "fs_label": "ROOT"
+      },
+      "role": "root",
+      "mountpoint": "/"
+    }
+  ],
+  "swap_file": null,
+  "disk_serial": "FIXTURE0006",
+  "table_id": null,
+  "erased_signatures": [
+    {
+      "kind": "crypto_LUKS",
+      "offset_bytes": 0,
+      "uuid": "6f1e2d3c-4b5a-4968-8776-655443322110",
+      "label": "vault"
+    }
+  ]
+}
