@@ -80,8 +80,12 @@ export type TrialRecord = {
 export type Health = {
 	init: InitSystem;
 	/**
-	 * Startup ran to its end (systemd `running` or `degraded`; OpenRC's
-	 * default runlevel entered with nothing starting).
+	 * How startup ended.
+	 */
+	startup: Startup;
+	/**
+	 * Startup ran to its end, healthy or not (`startup` is `running` or
+	 * `failed`).
 	 */
 	finished: boolean;
 	/**
@@ -97,6 +101,8 @@ export type Health = {
 };
 
 export type InitSystem = "systemd" | "openrc";
+
+export type Startup = "running" | "failed" | "emergency" | "timed_out" | "inconclusive";
 
 export type ErrorClass =
 	| "permission"
