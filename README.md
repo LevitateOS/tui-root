@@ -1,6 +1,6 @@
 # TUI workspace
 
-Terminal apps built on a shared kit. A variant's `product_config.install_ux` (in its distro.toml)
+Terminal apps built on a shared kit. A variant's `install_ux` (in its distro.toml)
 names the apps its live ISO carries (`docs` and `apps`): today install-docs (LevitateOS) and disk-plan
 (both). The builder compiles them into one binary per ISO, for that rootfs's libc, with a
 command per app on PATH (`distro/builder/src/tui_binary.rs`). recab-tui ships nowhere yet.
