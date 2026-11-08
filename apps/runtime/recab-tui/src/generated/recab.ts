@@ -2,19 +2,6 @@
 
 export type Slot = "A" | "B";
 
-export type TrialRecord = {
-	slot: Slot;
-	/**
-	 * The trial was healthy and committed; otherwise it was abandoned.
-	 */
-	committed: boolean;
-	/**
-	 * How startup ended, and the failed units if any.
-	 */
-	detail: string;
-	unix_time: number;
-};
-
 export type SlotView = {
 	slot: Slot;
 	/**
@@ -42,6 +29,19 @@ export type SlotView = {
 	 * not yet committed).
 	 */
 	trial: boolean;
+};
+
+export type TrialRecord = {
+	slot: Slot;
+	/**
+	 * The trial was healthy and committed; otherwise it was abandoned.
+	 */
+	committed: boolean;
+	/**
+	 * How startup ended, and the failed units if any.
+	 */
+	detail: string;
+	unix_time: number;
 };
 
 export type Status = {
@@ -77,10 +77,10 @@ export type Status = {
 	slots: Array<SlotView>;
 };
 
-export type InitSystemName = "systemd" | "openrc";
+export type InitSystem = "systemd" | "openrc";
 
 export type Health = {
-	init: InitSystemName;
+	init: InitSystem;
 	/**
 	 * Startup ran to its end (systemd `running` or `degraded`; OpenRC's
 	 * default runlevel entered with nothing starting).
@@ -118,8 +118,10 @@ export type ErrorPayload = {
 	message: string;
 };
 
+/** The slots, as every recab command and document spells them. */
 export const SLOTS = ["A", "B"] as const;
 
+/** The schema of the error a failed `--json` command prints. */
 export const ERROR_SCHEMA_VERSION = 1 as const;
 
 /** Each error class's exit status and the tag its text message starts with. */
