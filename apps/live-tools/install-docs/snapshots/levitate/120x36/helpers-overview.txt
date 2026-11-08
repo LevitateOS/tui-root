@@ -1,5 +1,5 @@
 ┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│Docs                          ││Helpers Overview  lines 1-30/95                                                       │
+│LevitateOS docs               ││Helpers Overview  lines 1-30/95                                                       │
 ├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
 │ ▸ Getting Started            ││ Functions available in recipe scripts (/docs/recipe-format) with const RECIPE_API =  │
 │                              ││ 2;. Helpers take explicit paths and return explicit results; paths come from RUNTIME │

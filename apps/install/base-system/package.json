@@ -28,7 +28,8 @@
 	},
 	"levitate": {
 		"tools": [
-			"recstrap"
+			"recstrap",
+			"recfstab"
 		],
 		"inspect": {
 			"path": [

@@ -1,5 +1,5 @@
 ┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│Docs                          ││Command Helpers  lines 1-30/75                                                        │
+│AcornOS docs                  ││Command Helpers  lines 1-30/75                                                        │
 ├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
 │ ▸ Getting Started            ││ Functions for running programs and shell commands inside the recipe's domain.        │
 │                              ││                                                                                      │

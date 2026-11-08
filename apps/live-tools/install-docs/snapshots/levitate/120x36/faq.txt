@@ -1,5 +1,5 @@
 ┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│Docs                          ││Architecture FAQ  lines 1-30/344                                                      │
+│LevitateOS docs               ││Architecture FAQ  lines 1-30/344                                                      │
 ├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
 │ ▸ Getting Started            ││ Design decisions and rationale behind LevitateOS components. Each answer explains    │
 │                              ││ why we chose a particular approach over alternatives.                                │

@@ -1,0 +1,21 @@
+┌────────────────────────────────────┐
+│Installation  lines 1-11/91         │
+├────────────────────────────────────┤
+│ Step-by-step guide to installing   │
+│ AcornOS from the live environment. │
+│                                    │
+│ ◆ Overview                         │
+│                                    │
+│ Installing AcornOS follows the     │
+│ same process as Arch Linux. You    │
+│ boot the live ISO, partition the   │
+│ disk with recpart, extract the     │
+│ system with recstrap, configure it │
+│ with recsetup, and reboot. No      │
+└────────────────────────────────────┘
+ content | <masked> | 1/5 | q quit
+ Tab switch pane | m sidebar mode
+ j/k next/prev action
+ Enter open link / copy | c/y copy
+ space/b scroll a page | g/home top
+ G/end end

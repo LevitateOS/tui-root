@@ -1,0 +1,6 @@
+#!/bin/sh
+# Stand-in for the install tools the hub's steps run in its shell (recfstab,
+# recchroot, recsetup), for headless runs (cargo xtask inspect, check tui): no story
+# runs a step, so it only says what it was asked and fails.
+echo "stand-in $(basename "$0") $*: the hub's stories run no step" >&2
+exit 1

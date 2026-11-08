@@ -28,7 +28,9 @@
 	},
 	"levitate": {
 		"tools": [
-			"recstrap"
+			"recfstab",
+			"recchroot",
+			"recsetup"
 		],
 		"inspect": {
 			"stories": [
@@ -177,7 +179,14 @@
 						}
 					]
 				}
+			],
+			"path": [
+				"fixtures/bin"
 			]
+		},
+		"distroArgs": {
+			"osName": "--os-name",
+			"shell": "--shell"
 		}
 	}
 }

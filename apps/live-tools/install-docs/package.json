@@ -28,8 +28,6 @@
 		"inspect": {
 			"pages": {
 				"list": [
-					"--os-name",
-					"LevitateOS",
 					"--pages"
 				],
 				"arg": "--slug"
@@ -136,6 +134,9 @@
 					]
 				}
 			]
+		},
+		"distroArgs": {
+			"osName": "--os-name"
 		}
 	}
 }

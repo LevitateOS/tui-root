@@ -1,0 +1,36 @@
+┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
+│AcornOS docs                  ││Architecture FAQ  lines 1-30/344                                                      │
+├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
+│ ▸ Getting Started            ││ Design decisions and rationale behind LevitateOS components. Each answer explains    │
+│                              ││ why we chose a particular approach over alternatives.                                │
+│ ▸ Package Manager            ││                                                                                      │
+│                              ││ ◆ Core Philosophy                                                                    │
+│ ▸ Helpers                    ││                                                                                      │
+│                              ││ Q >                                                                                  │
+│ ▾ Architecture               ││   What is LevitateOS and why does it exist?                                          │
+│  ▸ Architecture FAQ          ││ A >                                                                                  │
+│    How We Compare            ││   LevitateOS is a daily driver Linux distribution competing directly with Arch       │
+│    Atomic Updates (A/B)      ││   Linux. It borrows Arch's philosophy (you maintain your own packages on a minimal   │
+│    Variants                  ││   base) but takes its core system (glibc, systemd, coreutils, OpenSSH and the rest   │
+│                              ││   of a minimal base) pre-built from Fedora instead of compiling it, and it updates   │
+│ ▸ Rec Tooling                ││   atomically: A/B slots by default, with a trial boot before each update is kept.    │
+│                              ││   Dimension       │ Arch Linux                  │ LevitateOS                         │
+│                              ││   ────────────────┼─────────────────────────────┼─────────────────────────────────   │
+│                              ││   Target User     │ Power users seeking control │ Same                               │
+│                              ││   Philosophy      │ Minimal base, user builds   │ Same                               │
+│                              ││   Package Manager │ pacman + AUR                │ recipe (Rhai scripts)              │
+│                              ││   Binary Source   │ Compiled from source        │ Core extracted from signed         │
+│                              ││                   │                             │ Fedora RPMs                        │
+│                              ││   Updates         │ In place                    │ A/B slots, trial boot, rollback    │
+│                              ││   Build Time      │ Hours (compiling)           │ Minutes (extracting)               │
+│                              ││   Its sibling AcornOS is built by the same pipeline on musl, OpenRC and busybox,     │
+│                              ││   from Alpine packages. See Variants (/docs/variants).                               │
+│                              ││                                                                                      │
+│                              ││ Q >                                                                                  │
+│                              ││   Why not just use Arch?                                                             │
+│                              ││ A >                                                                                  │
+│                              ││   Arch requires compiling AUR packages. That means build dependencies, compiler      │
+│                              ││   toolchains, and waiting. LevitateOS extracts its core from signed Fedora RPMs in   │
+└──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
+ navigation | <masked> | q quit | Tab switch pane | m sidebar mode | h/l prev/next page | [/] prev/next section
+ j/k scroll content | space/b scroll a page
