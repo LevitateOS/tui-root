@@ -439,8 +439,8 @@ export function FstabPage({
 			) : write.kind === "ok" || prompt ? null : (
 				<Hint>
 					{keyFor(MAIN_KEYS, "go")} writes these entries to {value.fstab_path || path}
-					{replaced.length > 0 ? `, replacing ${replaced.length} lines` : ""}. {keyFor(MAIN_KEYS, "again")} reads the mounts
-					again.
+					{replaced.length > 0 ? `, replacing ${replaced.length} lines` : ""}.{" "}
+					{keyFor(MAIN_KEYS, "again")} reads the mounts again.
 				</Hint>
 			)}
 		</Box>

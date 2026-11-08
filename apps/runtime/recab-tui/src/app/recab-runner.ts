@@ -57,7 +57,9 @@ export function checkPath(path: string, want: "image" | "file"): string | null {
 			return want === "image" ? "not a file or a partition" : "not a file";
 	} catch (error) {
 		// Only a missing path is "doesn't exist"; anything else (EACCES, ELOOP) says what it is.
-		return (error as NodeJS.ErrnoException).code === "ENOENT" ? "doesn't exist" : errorMessage(error);
+		return (error as NodeJS.ErrnoException).code === "ENOENT"
+			? "doesn't exist"
+			: errorMessage(error);
 	}
 	if (want === "image" && isErofs(full) === false)
 		return "not an EROFS image (no EROFS superblock); pass the system's .erofs image";
