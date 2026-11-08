@@ -19,7 +19,7 @@ const FIELDS: readonly StageField[] = ["rootfs", "kernel", "initrd"];
 export const FIELD_QUESTION: Record<StageField, string> = {
 	rootfs: "The system image: an EROFS file, or a partition holding one",
 	kernel: "The kernel image (vmlinuz) for the new system",
-	initrd: "Its initramfs (leave empty if it boots without one)",
+	initrd: "Its initramfs (initramfs-installed.img on the release ISO)",
 };
 
 export type Prompt =

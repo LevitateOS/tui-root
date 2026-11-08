@@ -1,6 +1,6 @@
 # TUI workspace
 
-Terminal apps built on a shared kit. A variant's `install_ux` (in its `distro.toml`) names the apps its live ISO carries; the builder compiles them into one binary per ISO (`distro/builder/src/tui_binary.rs`). Every app also runs from a checkout.
+Terminal apps built on a shared kit. The install screen contract (`distro/contract/src/install_ux.rs`) names the apps every live ISO carries; the builder compiles them into one binary per ISO (`distro/builder/src/tui_binary.rs`). Every app also runs from a checkout.
 
 ## Where things live
 
