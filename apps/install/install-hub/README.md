@@ -9,7 +9,4 @@ type. When that ends the hub comes back and reads where the install stands from 
 install state file (`@levitate/install-state`; `--help` names its path). `s` is a shell at
 any time.
 
-```bash
-cargo xtask tui install-hub
-INSTALL_STATE=fixtures/disk-done.json bun src/main.tsx --os-name LevitateOS
-```
+Run it with `cargo xtask tui install-hub`.

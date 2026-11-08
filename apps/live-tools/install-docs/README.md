@@ -6,14 +6,7 @@ Style change map: `style-map.md`
 
 ## Usage
 
-```bash
-bun src/main.tsx --os-name LevitateOS
-bun src/main.tsx --os-name AcornOS --slug installation
-```
-
-On the live ISO the builder bundles it as `install-docs`, which the install screen (`install-ux`) runs in its right pane.
-
-`--pages` prints every page slug, one per line.
+`bun src/main.tsx --help` lists the flags and keys. On the live ISO the builder bundles it as `install-docs`, which the install screen runs in its right pane. `--pages` prints every page slug.
 
 ## Keys
 
@@ -22,12 +15,4 @@ the focused pane. Both come from `src/presentation/ink/keymap.ts`.
 
 ## Development
 
-```bash
-cargo xtask check tui           # typecheck, lint, format, renders, snapshots for every TUI package
-cargo xtask check tui --bless   # accept the current renders as the snapshots
-cargo xtask inspect install-docs --stdout -- --os-name AcornOS --slug installation
-```
-
-Snapshots live in `snapshots/<columns>x<rows>/<page>.txt`; add a file to snapshot another
-page or size. The status bar's page count is masked (`levitate.inspect.mask` in
-`package.json`), so docs edits elsewhere don't fail them.
+`cargo xtask check tui` checks it with every other TUI package (`--bless` accepts the current renders); `cargo xtask inspect install-docs` renders a page. Snapshots live in `snapshots/<columns>x<rows>/<page>.txt`; add a file to snapshot another page or size. The status bar's page count is masked (`levitate.inspect.mask` in `package.json`).

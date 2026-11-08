@@ -2,8 +2,7 @@
 
 Interactive disk planning on top of `recpart`: choose a disk and mode, review the plan
 and the exact commands, pass the preflight, type the confirmation token, apply, and get
-the handoff. It ships on no ISO yet; the
-live ISO's install guide uses `recpart` directly.
+the handoff. `install-hub` starts it on the live ISO.
 
 ## Layout
 
@@ -20,12 +19,6 @@ live ISO's install guide uses `recpart` directly.
 recpart owns partitioning, its safety checks and its JSON; this app owns the flow and
 shows every command it ran.
 
-## Run
-
-```bash
-cargo xtask tui disk-plan [-- --disk /dev/sdX --mode ab]
-```
-
-`bun src/main.tsx --help` lists flags and keys. Headless runs (`cargo xtask inspect`,
+Run it with `cargo xtask tui disk-plan`; `bun src/main.tsx --help` lists flags and keys. Headless runs (`cargo xtask inspect`,
 `cargo xtask check tui`) use `fixtures/recpart`, a stand-in that answers from recorded
 documents for a fake disk and never touches a device.

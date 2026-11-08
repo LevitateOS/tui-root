@@ -3,7 +3,7 @@
 The install's base step on top of `recstrap` and `recfstab`: check the target, copy the
 system onto it with a progress bar, review the fstab entries (and any lines already in
 the target's fstab they would replace), write them, and record the step in the install
-state file. `install-hub` starts it once the disk step is done; both live ISOs ship it.
+state file. `install-hub` starts it once the disk step is done; both distros' live ISOs ship it.
 
 ## Layout
 
@@ -21,14 +21,4 @@ state file. `install-hub` starts it once the disk step is done; both live ISOs s
 recstrap and recfstab own the checks, the copy and the fstab; this app owns the flow and
 shows every command it ran.
 
-## Run
-
-```bash
-cargo xtask tui base-system -- --target /mnt
-cargo xtask tui list base-system
-```
-
-Without `--target` it takes the disk step's target from the install state file
-(`INSTALL_STATE`, default `/run/install/state.json`). Headless runs
-use `fixtures/recstrap` and `fixtures/recfstab`, stand-ins that print the tools' JSON
-and touch nothing; their header comments list the failures they can play.
+Run it with `cargo xtask tui base-system`; `--help` lists flags and the install state file's path. Headless runs use `fixtures/recstrap` and `fixtures/recfstab`, stand-ins that print the tools' JSON and touch nothing; their header comments list the failures they can play.
