@@ -19,6 +19,53 @@ export type DiskInventory = {
 
 export type DiskListResult = { schema_version: number; disks: Array<DiskInventory> };
 
+export type DiskSignature = {
+	/**
+	 * wipefs's TYPE: `crypto_LUKS`, `btrfs`, `LVM2_member`, `ext4`, ...
+	 */
+	kind: string;
+	/**
+	 * Where the signature's magic is, in bytes from the start of the disk;
+	 * 0 when only lsblk's FSTYPE was readable (wipefs needs root).
+	 */
+	offset_bytes: number;
+	uuid: string | null;
+	label: string | null;
+};
+
+export type FreeGap = { start_bytes: number; size_bytes: number };
+
+export type InspectResult = {
+	schema_version: number;
+	disk: DiskInventory;
+	table: TableType;
+	/**
+	 * The table's identifier (GPT disk GUID, or MBR disk id).
+	 */
+	table_id: string | null;
+	/**
+	 * The space partitions may use: after the GPT header (or the first MiB)
+	 * and before the backup GPT, in bytes from the start of the disk.
+	 */
+	usable_start_bytes: number;
+	usable_end_bytes: number;
+	/**
+	 * Ordered by start.
+	 */
+	partitions: Array<PartitionInfo>;
+	/**
+	 * Unpartitioned space of at least 1 MiB, aligned to 1 MiB, ordered by start.
+	 */
+	free: Array<FreeGap>;
+	/**
+	 * Signatures on the whole disk itself, outside any partition: a LUKS
+	 * container, a filesystem or an LVM PV written to the bare disk (the
+	 * partition table's own `gpt`, `PMBR` and `dos` are not listed). Empty
+	 * when there are none, or when neither wipefs nor lsblk could tell.
+	 */
+	signatures: Array<DiskSignature>;
+};
+
 export type PartitionInfo = {
 	number: number;
 	device: string;
@@ -66,62 +113,9 @@ export type PartitionInfo = {
 	resize_blocker: string | null;
 };
 
-export type FreeGap = { start_bytes: number; size_bytes: number };
-
 export type TableType = "gpt" | "mbr" | "none";
 
-export type DiskSignature = {
-	/**
-	 * wipefs's TYPE: `crypto_LUKS`, `btrfs`, `LVM2_member`, `ext4`, ...
-	 */
-	kind: string;
-	/**
-	 * Where the signature's magic is, in bytes from the start of the disk;
-	 * 0 when only lsblk's FSTYPE was readable (wipefs needs root).
-	 */
-	offset_bytes: number;
-	uuid: string | null;
-	label: string | null;
-};
-
-export type InspectResult = {
-	schema_version: number;
-	disk: DiskInventory;
-	table: TableType;
-	/**
-	 * The table's identifier (GPT disk GUID, or MBR disk id).
-	 */
-	table_id: string | null;
-	/**
-	 * The space partitions may use: after the GPT header (or the first MiB)
-	 * and before the backup GPT, in bytes from the start of the disk.
-	 */
-	usable_start_bytes: number;
-	usable_end_bytes: number;
-	/**
-	 * Ordered by start.
-	 */
-	partitions: Array<PartitionInfo>;
-	/**
-	 * Unpartitioned space of at least 1 MiB, aligned to 1 MiB, ordered by start.
-	 */
-	free: Array<FreeGap>;
-	/**
-	 * Signatures on the whole disk itself, outside any partition: a LUKS
-	 * container, a filesystem or an LVM PV written to the bare disk (the
-	 * partition table's own `gpt`, `PMBR` and `dos` are not listed). Empty
-	 * when there are none, or when neither wipefs nor lsblk could tell.
-	 */
-	signatures: Array<DiskSignature>;
-};
-
-export type SwapFileLocation = "root" | "var";
-
-export type SwapFileRequest = { size_mb: number; location: SwapFileLocation };
-
 export type Filesystem = "vfat" | "ext4" | "swap";
-
-export type Role = "efi" | "root" | "root_a" | "root_b" | "state" | "home" | "swap" | "other";
 
 export type LayoutAction =
 	| { action: "keep"; partition: number; role: Role | null; mountpoint: string | null }
@@ -170,6 +164,23 @@ export type ManualLayout = {
 	swap_file: SwapFileRequest | null;
 };
 
+export type Role = "efi" | "root" | "root_a" | "root_b" | "state" | "home" | "swap" | "other";
+
+export type SwapFileLocation = "root" | "var";
+
+export type SwapFileRequest = { size_mb: number; location: SwapFileLocation };
+
+export type ChangeKind = "erased" | "created" | "resized" | "formatted" | "untouched";
+
+export type DiskTarget = {
+	path: string;
+	size_bytes: number;
+	logical_sector_bytes: number;
+	physical_sector_bytes: number;
+};
+
+export type InstallMode = "ab" | "mutable";
+
 export type LayoutRequest = {
 	/**
 	 * EFI partition size in MB
@@ -192,51 +203,6 @@ export type LayoutRequest = {
 	 */
 	state_size_mb: number | null;
 };
-
-export type DiskTarget = {
-	path: string;
-	size_bytes: number;
-	logical_sector_bytes: number;
-	physical_sector_bytes: number;
-};
-
-export type SwapFilePlan = {
-	/**
-	 * The file's path in the installed system (`/swapfile`, `/var/swapfile`).
-	 */
-	path: string;
-	size_mb: number;
-};
-
-export type InstallMode = "ab" | "mutable";
-
-export type PartitionTemplate = {
-	index: number;
-	name: string;
-	filesystem: Filesystem;
-	label: string;
-	gpt_type: string;
-	size_mb: number | null;
-	mountpoint: string;
-};
-
-export type ResolvedLayout = {
-	mode: InstallMode;
-	efi_size_mb: number;
-	root_size_mb: number | null;
-	root_a_size_mb: number | null;
-	root_b_size_mb: number | null;
-	state_size_mb: number | null;
-};
-
-export type PartitionState = {
-	start_bytes: number;
-	size_bytes: number;
-	filesystem: string | null;
-	fs_label: string | null;
-};
-
-export type ChangeKind = "erased" | "created" | "resized" | "formatted" | "untouched";
 
 export type PartitionChange = {
 	number: number;
@@ -308,37 +274,38 @@ export type PartitionPlan = {
 	erased_signatures: Array<DiskSignature>;
 };
 
-export type ModeContext = {
-	install_target_slot: string | null;
-	inactive_slot_hint: string | null;
-	slot_a_device: string | null;
-	slot_b_device: string | null;
+export type PartitionState = {
+	start_bytes: number;
+	size_bytes: number;
+	filesystem: string | null;
+	fs_label: string | null;
 };
 
-export type MountMapping = { path: string; device: string };
+export type PartitionTemplate = {
+	index: number;
+	name: string;
+	filesystem: Filesystem;
+	label: string;
+	gpt_type: string;
+	size_mb: number | null;
+	mountpoint: string;
+};
 
-export type HandoffPayload = {
-	schema_version: number;
+export type ResolvedLayout = {
 	mode: InstallMode;
-	install_target: string;
-	mount_map: Array<MountMapping>;
-	mode_context: ModeContext;
-	/**
-	 * Swap devices and files apply activated (`swapon`), as recfstab will
-	 * find them.
-	 */
-	swaps: Array<string>;
+	efi_size_mb: number;
+	root_size_mb: number | null;
+	root_a_size_mb: number | null;
+	root_b_size_mb: number | null;
+	state_size_mb: number | null;
 };
 
-export type CommandRecord = {
-	phase: string;
-	command: string;
-	program: string;
-	args: Array<string>;
-	status: number | null;
-	stdout: string | null;
-	stderr: string | null;
-	dry_run: boolean;
+export type SwapFilePlan = {
+	/**
+	 * The file's path in the installed system (`/swapfile`, `/var/swapfile`).
+	 */
+	path: string;
+	size_mb: number;
 };
 
 export type ApplyResult = {
@@ -366,6 +333,39 @@ export type ApplyResult = {
 	 */
 	disk_checks_skipped: boolean;
 };
+
+export type CommandRecord = {
+	phase: string;
+	command: string;
+	program: string;
+	args: Array<string>;
+	status: number | null;
+	stdout: string | null;
+	stderr: string | null;
+	dry_run: boolean;
+};
+
+export type HandoffPayload = {
+	schema_version: number;
+	mode: InstallMode;
+	install_target: string;
+	mount_map: Array<MountMapping>;
+	mode_context: ModeContext;
+	/**
+	 * Swap devices and files apply activated (`swapon`), as recfstab will
+	 * find them.
+	 */
+	swaps: Array<string>;
+};
+
+export type ModeContext = {
+	install_target_slot: string | null;
+	inactive_slot_hint: string | null;
+	slot_a_device: string | null;
+	slot_b_device: string | null;
+};
+
+export type MountMapping = { path: string; device: string };
 
 export type ErrorPayload = {
 	schema_version: number;

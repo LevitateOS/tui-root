@@ -2,19 +2,6 @@
 
 export type Slot = "A" | "B";
 
-export type TrialRecord = {
-	slot: Slot;
-	/**
-	 * The trial was healthy and committed; otherwise it was abandoned.
-	 */
-	committed: boolean;
-	/**
-	 * How startup ended, and the failed units if any.
-	 */
-	detail: string;
-	unix_time: number;
-};
-
 export type SlotView = {
 	slot: Slot;
 	/**
@@ -77,7 +64,18 @@ export type Status = {
 	slots: Array<SlotView>;
 };
 
-export type InitSystem = "systemd" | "openrc";
+export type TrialRecord = {
+	slot: Slot;
+	/**
+	 * The trial was healthy and committed; otherwise it was abandoned.
+	 */
+	committed: boolean;
+	/**
+	 * How startup ended, and the failed units if any.
+	 */
+	detail: string;
+	unix_time: number;
+};
 
 export type Health = {
 	init: InitSystem;
@@ -97,6 +95,8 @@ export type Health = {
 	 */
 	failed: Array<string>;
 };
+
+export type InitSystem = "systemd" | "openrc";
 
 export type ErrorClass =
 	| "permission"
