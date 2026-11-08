@@ -19,6 +19,24 @@ export type DiskInventory = {
 
 export type DiskListResult = { schema_version: number; disks: Array<DiskInventory> };
 
+export type FreeGap = { start_bytes: number; size_bytes: number };
+
+export type DiskSignature = {
+	/**
+	 * wipefs's TYPE: `crypto_LUKS`, `btrfs`, `LVM2_member`, `ext4`, ...
+	 */
+	kind: string;
+	/**
+	 * Where the signature's magic is, in bytes from the start of the disk;
+	 * 0 when only lsblk's FSTYPE was readable (wipefs needs root).
+	 */
+	offset_bytes: number;
+	uuid: string | null;
+	label: string | null;
+};
+
+export type TableType = "gpt" | "mbr" | "none";
+
 export type PartitionInfo = {
 	number: number;
 	device: string;
@@ -66,24 +84,6 @@ export type PartitionInfo = {
 	resize_blocker: string | null;
 };
 
-export type FreeGap = { start_bytes: number; size_bytes: number };
-
-export type DiskSignature = {
-	/**
-	 * wipefs's TYPE: `crypto_LUKS`, `btrfs`, `LVM2_member`, `ext4`, ...
-	 */
-	kind: string;
-	/**
-	 * Where the signature's magic is, in bytes from the start of the disk;
-	 * 0 when only lsblk's FSTYPE was readable (wipefs needs root).
-	 */
-	offset_bytes: number;
-	uuid: string | null;
-	label: string | null;
-};
-
-export type TableType = "gpt" | "mbr" | "none";
-
 export type InspectResult = {
 	schema_version: number;
 	disk: DiskInventory;
@@ -119,9 +119,9 @@ export type SwapFileLocation = "root" | "var";
 
 export type SwapFileRequest = { size_mb: number; location: SwapFileLocation };
 
-export type Filesystem = "vfat" | "ext4" | "swap";
-
 export type Role = "efi" | "root" | "root_a" | "root_b" | "state" | "home" | "swap" | "other";
+
+export type Filesystem = "vfat" | "ext4" | "swap";
 
 export type LayoutAction =
 	| { action: "keep"; partition: number; role: Role | null; mountpoint: string | null }
@@ -170,11 +170,12 @@ export type ManualLayout = {
 	swap_file: SwapFileRequest | null;
 };
 
-export type DiskTarget = {
+export type SwapFilePlan = {
+	/**
+	 * The file's path in the installed system (`/swapfile`, `/var/swapfile`).
+	 */
 	path: string;
-	size_bytes: number;
-	logical_sector_bytes: number;
-	physical_sector_bytes: number;
+	size_mb: number;
 };
 
 export type ChangeKind = "erased" | "created" | "resized" | "formatted" | "untouched";
@@ -205,25 +206,6 @@ export type PartitionChange = {
 	mountpoint: string | null;
 };
 
-export type SwapFilePlan = {
-	/**
-	 * The file's path in the installed system (`/swapfile`, `/var/swapfile`).
-	 */
-	path: string;
-	size_mb: number;
-};
-
-export type InstallMode = "ab" | "mutable";
-
-export type ResolvedLayout = {
-	mode: InstallMode;
-	efi_size_mb: number;
-	root_size_mb: number | null;
-	root_a_size_mb: number | null;
-	root_b_size_mb: number | null;
-	state_size_mb: number | null;
-};
-
 export type LayoutRequest = {
 	/**
 	 * EFI partition size in MB
@@ -247,16 +229,30 @@ export type LayoutRequest = {
 	state_size_mb: number | null;
 };
 
+export type DiskTarget = {
+	path: string;
+	size_bytes: number;
+	logical_sector_bytes: number;
+	physical_sector_bytes: number;
+};
+
+export type InstallMode = "ab" | "mutable";
+
+export type ResolvedLayout = {
+	mode: InstallMode;
+	efi_size_mb: number;
+	root_size_mb: number | null;
+	root_a_size_mb: number | null;
+	root_b_size_mb: number | null;
+	state_size_mb: number | null;
+};
+
 export type PartitionTemplate = {
 	index: number;
 	name: string;
 	filesystem: Filesystem;
 	label: string;
 	gpt_type: string;
-	/**
-	 * The legacy-BIOS bootable flag (set on the ESP).
-	 */
-	bootable: boolean;
 	size_mb: number | null;
 	mountpoint: string;
 };
@@ -390,6 +386,7 @@ export const DISK_LIST_SCHEMA_VERSION = 1 as const;
 
 export const INSPECT_SCHEMA_VERSION = 1 as const;
 
+/** The `--confirm` value a destructive apply requires. */
 export const CONFIRM_TOKEN = "DESTROY" as const;
 
 export const INSTALL_MODES = ["ab", "mutable"] as const;
@@ -399,6 +396,7 @@ export const INSTALL_MODE_HELP = {
 	mutable: "Classic layout with one mutable root",
 } as const;
 
+/** recpart's default mode (`--mode` unset). */
 export const DEFAULT_INSTALL_MODE = "ab" as const;
 
 export const ROLES = ["efi", "root", "root_a", "root_b", "state", "home", "swap", "other"] as const;
@@ -414,7 +412,73 @@ export const ROLE_HELP = {
 	swap: "A swap partition, activated with swapon",
 } as const;
 
-/** What a recpart run printed, read the one way recpart writes it. */
+/** The filesystems recpart makes, by blkid name. */
+export const FILESYSTEMS = ["vfat", "ext4", "swap"] as const;
+
+/** Each role's filesystem, label and installed mount point (null: not mounted, or for `other` the layout's own). */
+export const ROLE_FACTS = {
+	efi: { filesystem: "vfat", label: "EFI", mountpoint: "/boot" },
+	home: { filesystem: "ext4", label: "HOME", mountpoint: "/home" },
+	other: { filesystem: "ext4", label: null, mountpoint: null },
+	root: { filesystem: "ext4", label: "ROOT", mountpoint: "/" },
+	root_a: { filesystem: "ext4", label: "ROOT_A", mountpoint: "/" },
+	root_b: { filesystem: "ext4", label: "ROOT_B", mountpoint: null },
+	state: { filesystem: "ext4", label: "STATE", mountpoint: "/var" },
+	swap: { filesystem: "swap", label: "SWAP", mountpoint: null },
+} as const;
+
+/** The roles each mode's template creates, in order (the roles a manual layout of that mode needs). */
+export const TEMPLATE_ROLES = {
+	ab: ["efi", "root_a", "root_b", "state"],
+	mutable: ["efi", "root"],
+} as const;
+
+/** recpart's size policy, in MiB. */
+export const SIZE_POLICY = {
+	defaultAbRootMb: 20480,
+	defaultEfiMb: 1024,
+	efiBootFilesMb: { ab: 264, mutable: 136 },
+	minAbRootMb: 8192,
+	minAbStateMb: 4096,
+	minDiskMb: { ab: 46082, mutable: 9218 },
+	minMutableRootMb: 8192,
+	minNewEfiMb: 260,
+	minSwapMb: 64,
+} as const;
+
+/** The GPT type GUID of an EFI system partition. */
+export const EFI_TYPE = "C12A7328-F81F-11D2-BA4B-00A0C93EC93B" as const;
+
+/** recpart's error codes by name; a code's number is recpart's exit status. */
+export const ERROR_CODES = {
+	DISK_CHANGED: "E023",
+	DUPLICATE_MOUNTPOINT: "E017",
+	EFI_UNSUITABLE: "E019",
+	FORMAT_FAILED: "E006",
+	INTERNAL: "E012",
+	INVALID_EXPECTED_PLAN: "E027",
+	INVALID_INVENTORY: "E024",
+	INVALID_LAYOUT: "E014",
+	INVALID_MOUNT_ROOT: "E013",
+	INVALID_TARGET_DISK: "E001",
+	LAYOUT_DOES_NOT_FIT: "E015",
+	MISALIGNED: "E022",
+	MISSING_CONFIRMATION: "E004",
+	MISSING_TOOL: "E002",
+	MODE_REQUIREMENTS: "E016",
+	MOUNT_FAILED: "E007",
+	NOT_ROOT: "E011",
+	PARTITION_APPLY_FAILED: "E005",
+	PARTITION_TOO_SMALL: "E018",
+	PLAN_GENERATION: "E003",
+	RESIZE_FAILED: "E025",
+	RESIZE_UNSUPPORTED: "E020",
+	SHRINK_BELOW_USED: "E021",
+	SWAP_FAILED: "E026",
+} as const;
+
+/** What a recpart run printed, read the one way recpart writes it: the result
+ * document on stdout, or, on failure, an error document on stderr. */
 export type RecpartOutput<T> =
 	| { kind: "ok"; value: T }
 	| { kind: "error"; error: ErrorPayload }

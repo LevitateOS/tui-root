@@ -15,6 +15,35 @@ export type TrialRecord = {
 	unix_time: number;
 };
 
+export type SlotView = {
+	slot: Slot;
+	/**
+	 * The entry file, relative to the ESP (`loader/entries/<prefix>-a.conf`).
+	 */
+	entry: string;
+	/**
+	 * The directory of its kernel and initramfs, relative to the ESP.
+	 */
+	boot_dir: string;
+	/**
+	 * The entry's `root=` (`PARTUUID=...`), if it has one.
+	 */
+	root: string | null;
+	/**
+	 * The block device `root` names on this machine, if present.
+	 */
+	device: string | null;
+	/**
+	 * Every file the entry loads is on the ESP.
+	 */
+	bootable: boolean;
+	/**
+	 * The entry carries a trial's options (it was staged or scheduled and
+	 * not yet committed).
+	 */
+	trial: boolean;
+};
+
 export type Status = {
 	active_slot: Slot;
 	inactive_slot: Slot;
@@ -42,8 +71,68 @@ export type Status = {
 	 */
 	last_trial: TrialRecord | null;
 	entry_prefix: string;
+	/**
+	 * Each slot's entry, kernel directory and partition.
+	 */
+	slots: Array<SlotView>;
+};
+
+export type InitSystemName = "systemd" | "openrc";
+
+export type Health = {
+	init: InitSystemName;
+	/**
+	 * Startup ran to its end (systemd `running` or `degraded`; OpenRC's
+	 * default runlevel entered with nothing starting).
+	 */
+	finished: boolean;
+	/**
+	 * The init's own word: systemd's `is-system-running` answer, OpenRC's
+	 * softlevel, or `timed out`.
+	 */
+	state: string;
+	/**
+	 * The units or services that failed (and, on OpenRC, crashed daemons),
+	 * sorted, by bare name; listed even when startup did not finish.
+	 */
+	failed: Array<string>;
+};
+
+export type ErrorClass =
+	| "permission"
+	| "backend_unavailable"
+	| "state_or_detection"
+	| "partial_update"
+	| "trial_failed";
+
+export type ErrorPayload = {
+	schema_version: number;
+	/**
+	 * `None` for an error without a class (exit status 1).
+	 */
+	class: ErrorClass | null;
+	/**
+	 * The exit status.
+	 */
+	code: number;
+	message: string;
 };
 
 export const SLOTS = ["A", "B"] as const;
 
-export const SLOT_HELP = { A: "", B: "" } as const;
+export const ERROR_SCHEMA_VERSION = 1 as const;
+
+/** Each error class's exit status and the tag its text message starts with. */
+export const ERROR_CLASSES = {
+	backend_unavailable: { code: 20, tag: "RECAB_ERR_BACKEND" },
+	partial_update: { code: 22, tag: "RECAB_ERR_PARTIAL_UPDATE" },
+	permission: { code: 13, tag: "RECAB_ERR_PERMISSION" },
+	state_or_detection: { code: 21, tag: "RECAB_ERR_STATE" },
+	trial_failed: { code: 23, tag: "RECAB_ERR_TRIAL_FAILED" },
+} as const;
+
+/** Where recab keeps its state on an installed system. */
+export const STATE_FILE = "/var/lib/recab/state.json" as const;
+
+/** How long a trial waits for startup to finish. */
+export const TRIAL_TIMEOUT_SECS = 900 as const;

@@ -37,6 +37,20 @@ export type StrapEvent =
 	| { event: "verify" }
 	| { event: "done"; schema_version: number; entries: number; bytes: number; duration_ms: number };
 
+export type ExistingEntry = {
+	/**
+	 * 1-based.
+	 */
+	line: number;
+	spec: string;
+	file: string;
+	fstype: string;
+	/**
+	 * Describes a mount point (or swap) that a generated entry also describes.
+	 */
+	conflicts: boolean;
+};
+
 export type FstabEntry = {
 	/**
 	 * What is mounted (the device, or the swap file's path on the live system).
@@ -54,20 +68,6 @@ export type FstabEntry = {
 	 * The entry as written, its comment line included.
 	 */
 	text: string;
-};
-
-export type ExistingEntry = {
-	/**
-	 * 1-based.
-	 */
-	line: number;
-	spec: string;
-	file: string;
-	fstype: string;
-	/**
-	 * Describes a mount point (or swap) that a generated entry also describes.
-	 */
-	conflicts: boolean;
 };
 
 export type FstabResult = {
@@ -111,7 +111,8 @@ export const FSTAB_SCHEMA_VERSION = 1 as const;
 
 export const ERROR_SCHEMA_VERSION = 1 as const;
 
-/** One line of `recstrap --json`; null when the line isn't one. */
+/** One line of `recstrap --json`: one JSON event per line; null when the line
+ * isn't one. */
 export function readStrapEvent(line: string): StrapEvent | null {
 	try {
 		const value = JSON.parse(line) as { event?: unknown };
