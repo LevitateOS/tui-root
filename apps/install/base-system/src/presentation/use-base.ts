@@ -136,16 +136,17 @@ export function useBase(target: Target | null) {
 			const run = toFstabRun(await runCommand(argv));
 			setSession((s) => {
 				if (run.kind !== "ok") return { ...s, write: run };
+				// null: recstrap did not say (the install state's "unknown").
 				const rootfs =
 					s.copy.kind === "ok"
-						? (s.copy.start?.rootfs ?? "")
+						? (s.copy.start?.rootfs ?? null)
 						: s.check.kind === "ok"
 							? s.check.value.rootfs
-							: "";
+							: null;
 				const saved = saveBaseStep({
 					target: target.path,
 					rootfs,
-					entries: s.copy.kind === "ok" ? s.copy.done.entries : 0,
+					entries: s.copy.kind === "ok" ? s.copy.done.entries : null,
 					fstab: run.value.fstab_path,
 				});
 				return { ...s, write: run, saved };

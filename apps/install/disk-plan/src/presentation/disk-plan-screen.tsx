@@ -44,6 +44,7 @@ import {
 	writeLayout,
 } from "../app/plan-runner";
 import { saveDiskStep } from "../app/install-state";
+import type { Then } from "@levitate/install-state";
 import { diskChanged, start, step as advance, tokenFor } from "../machine";
 import { toLayout } from "../domain/layout";
 import {
@@ -98,9 +99,15 @@ type DiskPlanScreenProps = {
 	disk: string;
 	/** The mode the launcher passed (or recpart's default): preselected and marked "default". */
 	mode: InstallMode;
+	/** Where the user goes when the disk is ready. */
+	then: Then;
 };
 
-export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskPlanScreenProps) {
+export function DiskPlanScreen({
+	disk: requestedDisk,
+	mode: defaultMode,
+	then,
+}: DiskPlanScreenProps) {
 	const { exit } = useApp();
 	// The rail gives way on a narrow terminal (the install screen's half), so pages keep
 	// room for their tables.
@@ -342,7 +349,7 @@ export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskP
 		"preflight-checks": () => <PreflightChecks session={session} />,
 		"destructive-confirm": () => <DestructiveConfirm session={session} />,
 		"apply-progress": () => <ApplyProgress apply={apply} dryRun={dryRun} />,
-		"result-handoff": () => <ResultHandoff apply={apply} saved={saved} />,
+		"result-handoff": () => <ResultHandoff apply={apply} saved={saved} then={then} />,
 		"failure-diagnostics": () => <FailureDiagnostics session={session} />,
 	};
 

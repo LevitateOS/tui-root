@@ -23,7 +23,9 @@ import {
 	type ColorIntent,
 } from "@levitate/tui-kit";
 import { statePath } from "@levitate/install-state";
-import { handOff, liveFacts, loadState, record, SHELL_ACTION, takeNotice } from "../app/handoff";
+import type { Distro } from "@levitate/docs-content/distros";
+import { exists, handOff, loadState, record, SHELL_ACTION, takeNotice } from "../app/handoff";
+import { guideTitle } from "@levitate/docs-content/install";
 import { installSteps, type Step, type StepStatus } from "../domain/steps";
 import { HUB_KEYS } from "./keymap";
 
@@ -33,11 +35,20 @@ const MARK: Record<StepStatus, { mark: string; intent: ColorIntent }> = {
 	blocked: { mark: "○", intent: "dimText" },
 };
 
-export function HubScreen({ osName }: { osName: string }): ReactNode {
+export function HubScreen({ distro }: { distro: Distro }): ReactNode {
 	const { exit } = useApp();
 	const [loaded, setLoaded] = useState(loadState);
 	const [notice, setNotice] = useState<string | null>(() => takeNotice() ?? loaded.error);
-	const steps = installSteps(loaded.state, liveFacts());
+	// An unusable state file stops every step: doing one would build on an unknown install.
+	const steps = installSteps(distro, loaded.state, exists).map((step) =>
+		loaded.error
+			? {
+					...step,
+					status: "blocked" as const,
+					action: { kind: "none" as const, why: loaded.error },
+				}
+			: step,
+	);
 	const [selected, setSelected] = useState(() =>
 		Math.max(
 			0,
@@ -61,6 +72,7 @@ export function HubScreen({ osName }: { osName: string }): ReactNode {
 				key === "up" || key === "k" ? Math.max(0, i - 1) : Math.min(steps.length - 1, i + 1),
 			),
 		start: () => {
+			if (loaded.error) return setNotice(loaded.error);
 			if (step.status === "blocked") {
 				const current = steps.find((s) => s.status === "current");
 				return setNotice(`first: ${current?.title ?? "the step before"}`);
@@ -100,7 +112,7 @@ export function HubScreen({ osName }: { osName: string }): ReactNode {
 			<AppShell
 				layout={layout}
 				focus={layout.narrow ? focus.plane : "navigation"}
-				navTitle={`${osName} install`}
+				navTitle={`${distro.osName} install`}
 				nav={<StepRail steps={steps} selected={selected} />}
 				contentTitle={`${step.title}${scroll.more}`}
 				content={
@@ -192,7 +204,8 @@ function StepPage({ step, statePath }: { step: Step; statePath: string }): React
 				<UiText intent="dimText">{action.why}</UiText>
 			) : null}
 			<UiText intent="dimText">
-				The guide beside this has the step in full. Progress is kept in {statePath}.
+				The guide beside this has the step in full: {guideTitle(step.guide.slug)}
+				{step.guide.section ? `, ${step.guide.section}` : ""}. Progress is kept in {statePath}.
 			</UiText>
 		</Box>
 	);

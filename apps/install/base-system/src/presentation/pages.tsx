@@ -16,7 +16,8 @@ import {
 	type ColorIntent,
 	type StepStatus,
 } from "@levitate/tui-kit";
-import { statePath } from "@levitate/install-state";
+import { statePath, type Then } from "@levitate/install-state";
+import { guideSteps, guideTitle, STEP_INFO } from "@levitate/docs-content/install";
 import type { FstabResult } from "../generated/recstrap";
 import {
 	conflicts,
@@ -89,7 +90,7 @@ export function OverviewPage({
 		<Box flexDirection="column">
 			<Heading
 				title="Copy the system onto the disk"
-				subtitle="Install steps 6–9: check the target, copy the system to it, and write its fstab."
+				subtitle={`Install ${guideSteps("installation-base")}: check the target, copy the system to it, and write its fstab.`}
 			/>
 			{stateError ? (
 				<Callout tone="warning" title="The install state file can't be read">
@@ -99,8 +100,8 @@ export function OverviewPage({
 			{!target ? (
 				<Callout tone="danger" title="Nowhere to copy to yet">
 					<UiText>
-						The disk step says where the new system is mounted. Finish it first (disk-plan mounts
-						the new system at /mnt), or start this app with --target and the path you mounted it at.
+						The disk step says where the new system is mounted, and records it for this app. Finish
+						it first, or start this app with --target and the path you mounted it at.
 					</UiText>
 				</Callout>
 			) : (
@@ -444,7 +445,7 @@ export function FstabPage({
 	);
 }
 
-export function DonePage({ session }: { session: Session }): ReactNode {
+export function DonePage({ session, then }: { session: Session; then: Then }): ReactNode {
 	const { saved, copy, write, target } = session;
 	if (!saved || write.kind !== "ok") {
 		return (
@@ -460,8 +461,10 @@ export function DonePage({ session }: { session: Session }): ReactNode {
 			{saved.kind === "ok" ? (
 				<Callout tone="success" title="Base system installed">
 					<UiText>
-						Next comes the configuration: time zone, locale, keymap, hostname, the root password and
-						a user. Enter or q goes back to the install steps.
+						Next: {STEP_INFO.setup.title.toLowerCase()}. {STEP_INFO.setup.about}{" "}
+						{then === "hub"
+							? "Enter or q goes back to the install steps."
+							: `The install guide has it (${guideTitle("installation-config")}).`}
 					</UiText>
 				</Callout>
 			) : (

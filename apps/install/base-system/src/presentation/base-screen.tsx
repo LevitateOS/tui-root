@@ -33,13 +33,16 @@ import {
 import { CONFIRM_KEYS, MAIN_KEYS } from "./keymap";
 import { CheckPage, CopyPage, DonePage, FstabPage, OverviewPage } from "./pages";
 import { useBase } from "./use-base";
+import type { Then } from "@levitate/install-state";
 
 export function BaseScreen({
 	target,
 	stateError,
+	then,
 }: {
 	target: Target | null;
 	stateError: string | null;
+	then: Then;
 }): ReactNode {
 	const { exit } = useApp();
 	const { columns } = useTuiViewport();
@@ -137,7 +140,7 @@ export function BaseScreen({
 		) : page === "fstab" ? (
 			<FstabPage session={session} prompt={prompt} />
 		) : (
-			<DonePage session={session} />
+			<DonePage session={session} then={then} />
 		);
 	return (
 		<ContentWidth.Provider value={layout.content.textColumns}>

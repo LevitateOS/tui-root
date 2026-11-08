@@ -41,6 +41,8 @@ import {
 import { describeSignature, formatBytes, known } from "../domain/recpart";
 import { DOCS, type DocsRef } from "../docs";
 import type { Saved } from "../app/install-state";
+import type { Then } from "@levitate/install-state";
+import { commands, STEP_INFO } from "@levitate/docs-content/install";
 import { DiskBar, type BarPart } from "./disk-bar";
 import { DISK_CHANGED } from "../machine";
 
@@ -852,21 +854,14 @@ export function ApplyProgress({
 	);
 }
 
-/** What the user runs after the disk is ready: the install guide's next steps. */
-function nextInstallSteps(target: string): string[] {
-	return [
-		`recstrap ${target}`,
-		`recfstab ${target} >> ${target}/etc/fstab`,
-		`recsetup inspect --root ${target}`,
-	];
-}
-
 export function ResultHandoff({
 	apply,
 	saved,
+	then,
 }: {
 	apply: Run<ApplyResult>;
 	saved: Saved | null;
+	then: Then;
 }): ReactNode {
 	if (apply.kind !== "ok")
 		return (
@@ -901,12 +896,13 @@ export function ResultHandoff({
 					</UiText>
 				</Callout>
 			) : null}
-			<Section title="Next">
-				<Commands lines={nextInstallSteps(handoff.install_target)} />
-				<UiText intent="dimText">
-					Then configure the system and install the bootloader with recsetup, from this shell. The
-					install guide has each step.
-				</UiText>
+			<Section title={`Next: ${STEP_INFO.base.title}`}>
+				<UiText intent="dimText">{STEP_INFO.base.about}</UiText>
+				{then === "hub" ? (
+					<UiText intent="dimText">q goes back to the install steps, which start it.</UiText>
+				) : (
+					<Commands lines={[commands.baseSystem()]} />
+				)}
 			</Section>
 		</Page>
 	);

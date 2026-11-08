@@ -1,22 +1,20 @@
-import type { DiskResult, InstallState, StepName, StepResults } from "@levitate/install-state";
+import type { Distro } from "@levitate/docs-content/distros";
+import {
+	installSteps as procedure,
+	type GuideRef,
+	type InstallStepId,
+} from "@levitate/docs-content/install";
+import type { InstallState, StepName, StepResults } from "@levitate/install-state";
 
-/** What the live system looks like, for the preflight step. */
-export interface Facts {
-	/** Booted in UEFI mode: /sys/firmware/efi exists. */
-	uefi: boolean;
-	/** The system image the install copies: /run/live-rootfs.erofs exists. */
-	media: boolean;
-}
-
-/** What doing a step means. */
+/** What doing a step means, for the hub. */
 export type Action =
 	/** Start the step's app; it records its own result. */
 	| { kind: "app"; argv: readonly string[]; label: string }
-	/** Run the guide's commands in the terminal; on success, record `step`. */
+	/** Run the step's commands in the terminal; on success, record `step`. */
 	| { kind: "run"; lines: readonly string[]; label: string; record?: Record_ }
 	/** Record `step` now (nothing to run). */
 	| { kind: "record"; label: string; record: Record_ }
-	/** A shell with the guide's commands to type; with `record`, the user marks the step done after. */
+	/** A shell with the step's commands to type; with `record`, the user marks the step done after. */
 	| { kind: "shell"; lines: readonly string[]; label: string; record?: Record_ }
 	/** Nothing to do yet, and why. */
 	| { kind: "none"; why: string };
@@ -26,7 +24,7 @@ export type Record_ = { [S in StepName]: { step: S; result: StepResults[S] } }[S
 export type StepStatus = "done" | "current" | "blocked";
 
 export interface Step {
-	id: StepName | "finish";
+	id: InstallStepId;
 	title: string;
 	/** One line on what the step does. */
 	about: string;
@@ -36,129 +34,118 @@ export interface Step {
 	/** Checks or facts to show. */
 	checks?: readonly { ok: boolean; label: string; fix?: string }[];
 	action: Action;
-	/** The install guide page for it (install-docs slug; AcornOS opens its counterpart). */
-	docs: string;
+	/** Where the guide beside the hub has the step in full. */
+	guide: GuideRef;
 }
 
-/** The mode's boot arguments for recsetup, from the disk step. */
-export function bootArgs(disk: DiskResult): string {
-	return disk.mode === "ab"
-		? `--boot ab --slot-a ${disk.slot_a ?? "SLOT_A"} --slot-b ${disk.slot_b ?? "SLOT_B"}`
-		: `--boot mutable --root-device ${disk.root_device ?? "ROOT"}`;
-}
+const MODE_NAME = { ab: "A/B", mutable: "mutable" } as const;
 
-function shellQuote(word: string): string {
-	return /^[\w@%+=:,./-]+$/.test(word) ? word : `'${word.replace(/'/g, `'\\''`)}'`;
-}
-
-/** Every install step, in order, with where the install stands. */
-export function installSteps(state: InstallState, facts: Facts): Step[] {
-	const done = (name: StepName) => state.steps[name] !== undefined;
+/** What the hub records for a step that its own action completes. */
+function recordFor(id: InstallStepId, state: InstallState): Record_ | undefined {
 	const disk = state.steps.disk?.result;
-	const base = state.steps.base?.result;
-	const target = disk ? shellQuote(disk.target) : "/mnt";
-	const steps: Omit<Step, "status">[] = [
-		{
-			id: "preflight",
-			title: "Preflight",
-			about: "Check that this machine can take the install.",
-			checks: [
-				{
-					ok: facts.uefi,
-					label: "Booted in UEFI mode",
-					fix: "Reboot and pick the UEFI entry for the install media in the firmware's boot menu.",
-				},
-				{
-					ok: facts.media,
-					label: "Install media mounted (/run/live-rootfs.erofs)",
-					fix: "Boot the live ISO again; the system image it installs is missing.",
-				},
-			],
-			action:
-				facts.uefi && facts.media
-					? {
-							kind: "record",
-							label: "continue",
-							record: { step: "preflight", result: { uefi: true, media: true } },
-						}
-					: { kind: "none", why: "Fix the failed checks first." },
-			docs: "installation-disk",
+	switch (id) {
+		case "preflight":
+			return { step: "preflight", result: { uefi: true, media: true } };
+		case "setup":
+			return { step: "setup", result: { manual: true } };
+		case "boot":
+			return disk ? { step: "boot", result: { mode: disk.mode } } : undefined;
+		default:
+			return undefined;
+	}
+}
+
+function summary(id: InstallStepId, state: InstallState): string | undefined {
+	const { disk, base, boot } = state.steps;
+	switch (id) {
+		case "disk":
+			return disk
+				? `${disk.result.disk}, ${MODE_NAME[disk.result.mode]}, at ${disk.result.target}`
+				: undefined;
+		case "base":
+			if (!base) return undefined;
+			return base.result.entries === null
+				? `copied to ${base.result.target}`
+				: `${base.result.entries.toLocaleString("en-US")} files copied to ${base.result.target}, fstab written`;
+		case "setup":
+			return state.steps.setup ? "marked done" : undefined;
+		case "boot":
+			return boot ? `boot entries written (${MODE_NAME[boot.result.mode]})` : undefined;
+		default:
+			return undefined;
+	}
+}
+
+/**
+ * Every install step of distro `d`, in order, with where the install stands. `exists`
+ * answers the preflight checks (a path on the live system exists).
+ */
+export function installSteps(
+	d: Distro,
+	state: InstallState,
+	exists: (path: string) => boolean,
+): Step[] {
+	const done = (id: InstallStepId) => id !== "finish" && state.steps[id] !== undefined;
+	const steps = procedure(d, { disk: state.steps.disk?.result }).map(
+		(step): Omit<Step, "status"> => {
+			const record = recordFor(step.id, state);
+			const base = {
+				id: step.id,
+				title: step.title,
+				about: step.about,
+				guide: step.guide,
+				summary: summary(step.id, state),
+			};
+			const run = step.run;
+			switch (run.kind) {
+				case "checks": {
+					const checks = run.checks.map((check) => ({
+						ok: exists(check.path),
+						label: check.label,
+						fix: check.fix,
+					}));
+					return {
+						...base,
+						checks,
+						action:
+							checks.every((check) => check.ok) && record
+								? { kind: "record", label: "continue", record }
+								: { kind: "none", why: "Fix the failed checks first." },
+					};
+				}
+				case "app":
+					return {
+						...base,
+						action: {
+							kind: "app",
+							// The app ends by sending the user back here, not to a shell.
+							argv: [...run.argv, "--then", "hub"],
+							label: `open ${run.argv[0]}`,
+						},
+					};
+				case "commands":
+					return {
+						...base,
+						action: {
+							kind: "run",
+							label: step.id === "finish" ? "unmount and reboot" : "run this",
+							lines: run.lines,
+							record,
+						},
+					};
+				case "type":
+					return {
+						...base,
+						action: { kind: "shell", label: "open a shell for these", lines: run.lines, record },
+					};
+				case "unavailable":
+					return { ...base, action: { kind: "none", why: run.why } };
+			}
 		},
-		{
-			id: "disk",
-			title: "Disk",
-			about: "Choose a disk and a layout, then partition, format and mount it.",
-			summary: disk
-				? `${disk.disk}, ${disk.mode === "ab" ? "A/B" : "mutable"}, at ${disk.target}`
-				: undefined,
-			action: { kind: "app", argv: ["disk-plan"], label: "open disk-plan" },
-			docs: "installation-disk",
-		},
-		{
-			id: "base",
-			title: "Base system",
-			about: "Copy the system onto the disk and write its fstab.",
-			summary: base
-				? typeof base.entries === "number" && base.entries > 0
-					? `${base.entries.toLocaleString("en-US")} files copied to ${base.target}, fstab written`
-					: `copied to ${base.target}`
-				: undefined,
-			action: disk
-				? { kind: "app", argv: ["base-system"], label: "open base-system" }
-				: { kind: "none", why: "The disk step says where the system goes." },
-			docs: "installation-base",
-		},
-		{
-			id: "setup",
-			title: "Configuration",
-			about: "Time zone, locale, keymap, hostname, root password and a user.",
-			summary: done("setup") ? "marked done" : undefined,
-			action: {
-				kind: "shell",
-				label: "open a shell for these",
-				lines: [
-					`recsetup inspect --root ${target}`,
-					`recsetup apply --root ${target} --timezone Europe/Brussels --locale en_US.UTF-8 --hostname myhost`,
-					`recchroot ${target} -- passwd`,
-				],
-				record: { step: "setup", result: { manual: true } },
-			},
-			docs: "installation-config",
-		},
-		{
-			id: "boot",
-			title: "Boot",
-			about: "Install systemd-boot and the boot entries.",
-			summary: done("boot")
-				? `boot entries written (${disk?.mode === "ab" ? "A/B" : "mutable"})`
-				: undefined,
-			action: disk
-				? {
-						kind: "run",
-						label: "run this",
-						lines: [`recsetup apply --root ${target} ${bootArgs(disk)} --machine-id`],
-						record: { step: "boot", result: { mode: disk.mode } },
-					}
-				: { kind: "none", why: "The disk step names the slots to boot." },
-			docs: "installation-boot",
-		},
-		{
-			id: "finish",
-			title: "Finish",
-			about:
-				"Unmount the new system and reboot into it. Remove the install media when the machine restarts.",
-			action: {
-				kind: "run",
-				label: "unmount and reboot",
-				lines: [`umount -R ${target}`, "reboot"],
-			},
-			docs: "installation-boot",
-		},
-	];
-	const isDone = (id: Step["id"]) => id !== "finish" && done(id);
-	const current = steps.findIndex((step) => !isDone(step.id));
+	);
+	const current = steps.findIndex((step) => !done(step.id));
 	return steps.map((step, i) => ({
 		...step,
-		status: isDone(step.id) ? "done" : i === current ? "current" : "blocked",
+		status: done(step.id) ? "done" : i === current ? "current" : "blocked",
 	}));
 }

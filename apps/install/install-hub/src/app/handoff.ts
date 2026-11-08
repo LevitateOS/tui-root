@@ -5,8 +5,8 @@
  */
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { readState, recordStep } from "@levitate/install-state";
-import type { Action, Facts, Record_ } from "../domain/steps";
+import { emptyState, readState, recordStep, type InstallState } from "@levitate/install-state";
+import type { Action, Record_ } from "../domain/steps";
 
 let pending: Action | null = null;
 /** The last thing that went wrong outside the screen, shown when it comes back. */
@@ -22,16 +22,18 @@ export function takeNotice(): string | null {
 	return notice;
 }
 
-export function liveFacts(): Facts {
-	return { uefi: existsSync("/sys/firmware/efi"), media: existsSync("/run/live-rootfs.erofs") };
+/** Whether `path` exists on the live system, for the preflight checks. */
+export function exists(path: string): boolean {
+	return existsSync(path);
 }
 
-export function loadState() {
+/** The install state, or why it can't be used (the hub then refuses every step). */
+export function loadState(): { state: InstallState; error: string | null } {
 	try {
 		return { state: readState(), error: null };
 	} catch (error) {
 		return {
-			state: { schema: 1 as const, steps: {} },
+			state: emptyState(),
 			error: error instanceof Error ? error.message : String(error),
 		};
 	}
@@ -39,7 +41,7 @@ export function loadState() {
 
 export function record(entry: Record_): string | null {
 	try {
-		recordStep(entry.step, entry.result as never);
+		recordStep(entry.step, entry.result);
 		return null;
 	} catch (error) {
 		return `couldn't save the step: ${error instanceof Error ? error.message : String(error)}`;
