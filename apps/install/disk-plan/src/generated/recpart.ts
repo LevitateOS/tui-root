@@ -19,24 +19,6 @@ export type DiskInventory = {
 
 export type DiskListResult = { schema_version: number; disks: Array<DiskInventory> };
 
-export type FreeGap = { start_bytes: number; size_bytes: number };
-
-export type DiskSignature = {
-	/**
-	 * wipefs's TYPE: `crypto_LUKS`, `btrfs`, `LVM2_member`, `ext4`, ...
-	 */
-	kind: string;
-	/**
-	 * Where the signature's magic is, in bytes from the start of the disk;
-	 * 0 when only lsblk's FSTYPE was readable (wipefs needs root).
-	 */
-	offset_bytes: number;
-	uuid: string | null;
-	label: string | null;
-};
-
-export type TableType = "gpt" | "mbr" | "none";
-
 export type PartitionInfo = {
 	number: number;
 	device: string;
@@ -84,6 +66,24 @@ export type PartitionInfo = {
 	resize_blocker: string | null;
 };
 
+export type FreeGap = { start_bytes: number; size_bytes: number };
+
+export type DiskSignature = {
+	/**
+	 * wipefs's TYPE: `crypto_LUKS`, `btrfs`, `LVM2_member`, `ext4`, ...
+	 */
+	kind: string;
+	/**
+	 * Where the signature's magic is, in bytes from the start of the disk;
+	 * 0 when only lsblk's FSTYPE was readable (wipefs needs root).
+	 */
+	offset_bytes: number;
+	uuid: string | null;
+	label: string | null;
+};
+
+export type TableType = "gpt" | "mbr" | "none";
+
 export type InspectResult = {
 	schema_version: number;
 	disk: DiskInventory;
@@ -119,9 +119,9 @@ export type SwapFileLocation = "root" | "var";
 
 export type SwapFileRequest = { size_mb: number; location: SwapFileLocation };
 
-export type Role = "efi" | "root" | "root_a" | "root_b" | "state" | "home" | "swap" | "other";
-
 export type Filesystem = "vfat" | "ext4" | "swap";
+
+export type Role = "efi" | "root" | "root_a" | "root_b" | "state" | "home" | "swap" | "other";
 
 export type LayoutAction =
 	| { action: "keep"; partition: number; role: Role | null; mountpoint: string | null }
@@ -170,6 +170,50 @@ export type ManualLayout = {
 	swap_file: SwapFileRequest | null;
 };
 
+export type LayoutRequest = {
+	/**
+	 * EFI partition size in MB
+	 */
+	efi_size_mb: number | null;
+	/**
+	 * Mutable root partition size in MB (mutable mode only)
+	 */
+	root_size_mb: number | null;
+	/**
+	 * A/B slot A partition size in MB (ab mode only)
+	 */
+	root_a_size_mb: number | null;
+	/**
+	 * A/B slot B partition size in MB (ab mode only)
+	 */
+	root_b_size_mb: number | null;
+	/**
+	 * A/B state partition size in MB (ab mode only). Omit to use remaining space.
+	 */
+	state_size_mb: number | null;
+};
+
+export type PartitionTemplate = {
+	index: number;
+	name: string;
+	filesystem: Filesystem;
+	label: string;
+	gpt_type: string;
+	size_mb: number | null;
+	mountpoint: string;
+};
+
+export type InstallMode = "ab" | "mutable";
+
+export type ResolvedLayout = {
+	mode: InstallMode;
+	efi_size_mb: number;
+	root_size_mb: number | null;
+	root_a_size_mb: number | null;
+	root_b_size_mb: number | null;
+	state_size_mb: number | null;
+};
+
 export type SwapFilePlan = {
 	/**
 	 * The file's path in the installed system (`/swapfile`, `/var/swapfile`).
@@ -206,55 +250,11 @@ export type PartitionChange = {
 	mountpoint: string | null;
 };
 
-export type LayoutRequest = {
-	/**
-	 * EFI partition size in MB
-	 */
-	efi_size_mb: number | null;
-	/**
-	 * Mutable root partition size in MB (mutable mode only)
-	 */
-	root_size_mb: number | null;
-	/**
-	 * A/B slot A partition size in MB (ab mode only)
-	 */
-	root_a_size_mb: number | null;
-	/**
-	 * A/B slot B partition size in MB (ab mode only)
-	 */
-	root_b_size_mb: number | null;
-	/**
-	 * A/B state partition size in MB (ab mode only). Omit to use remaining space.
-	 */
-	state_size_mb: number | null;
-};
-
 export type DiskTarget = {
 	path: string;
 	size_bytes: number;
 	logical_sector_bytes: number;
 	physical_sector_bytes: number;
-};
-
-export type InstallMode = "ab" | "mutable";
-
-export type ResolvedLayout = {
-	mode: InstallMode;
-	efi_size_mb: number;
-	root_size_mb: number | null;
-	root_a_size_mb: number | null;
-	root_b_size_mb: number | null;
-	state_size_mb: number | null;
-};
-
-export type PartitionTemplate = {
-	index: number;
-	name: string;
-	filesystem: Filesystem;
-	label: string;
-	gpt_type: string;
-	size_mb: number | null;
-	mountpoint: string;
 };
 
 export type PartitionPlan = {
