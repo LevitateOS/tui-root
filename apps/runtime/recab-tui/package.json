@@ -14,6 +14,7 @@
 		"format:check": "oxfmt --config ../../../../.oxfmtrc.json --check src package.json tsconfig.json"
 	},
 	"dependencies": {
+		"@levitate/docs-content": "workspace:*",
 		"@levitate/tui-kit": "workspace:*",
 		"ink": "^6.8.0",
 		"react": "^19.2.0"

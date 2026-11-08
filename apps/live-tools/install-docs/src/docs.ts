@@ -1,5 +1,11 @@
 import { readFileSync } from "node:fs";
 import { contentBySlug, docsNav, metaBySlug, type DocsContent } from "@levitate/docs-content";
+import {
+	DISTROS,
+	distroByOsId,
+	osReleaseValue,
+	type DistroId,
+} from "@levitate/docs-content/distros";
 
 /** One page of the docs nav. */
 export type FlatDocsNavItem = {
@@ -14,11 +20,11 @@ export function docsSlugFromHref(href: string): string {
 	return path.replace(/^\/?docs\//, "").replace(/^\//, "");
 }
 
-/** The distro whose install pages the docs show; docs-content's `shared` pages go with both. */
-export type DocsProduct = "levitate" | "acorn";
-export const PRODUCTS: readonly DocsProduct[] = ["levitate", "acorn"];
+/** The distro whose install pages the docs show, by variant id; docs-content's `shared` pages go with every one. */
+export type DocsProduct = DistroId;
+export const PRODUCTS: readonly DocsProduct[] = DISTROS.map((distro) => distro.id);
 
-/** The running system's distro, from `ID` in /etc/os-release; LevitateOS when it is neither. */
+/** The running system's distro, from `ID` in /etc/os-release; LevitateOS when it is none of the variants. */
 export function detectProduct(osRelease = "/etc/os-release"): DocsProduct {
 	let text = "";
 	try {
@@ -26,8 +32,7 @@ export function detectProduct(osRelease = "/etc/os-release"): DocsProduct {
 	} catch {
 		return "levitate";
 	}
-	const id = /^ID=["']?([^"'\n]*)/m.exec(text)?.[1]?.trim().toLowerCase();
-	return id === "acornos" || id === "acorn" ? "acorn" : "levitate";
+	return distroByOsId(osReleaseValue(text, "ID")?.toLowerCase() ?? "")?.id ?? "levitate";
 }
 
 let product: DocsProduct = detectProduct();

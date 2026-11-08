@@ -2,6 +2,8 @@
  * What recab reports, put in words: the machine's A/B state as one headline, each slot's
  * part in it, and recab's errors with what to do about them.
  */
+import { readFileSync } from "node:fs";
+import { osReleaseFact } from "@levitate/docs-content/distros";
 import type { ColorIntent, CommandResult, Tone } from "@levitate/tui-kit";
 import { SLOTS, type Slot, type Status } from "../generated/recab";
 
@@ -126,12 +128,24 @@ export function bootOrder(s: Status): Array<[string, string]> {
 
 /** What to do, by exit code, where recab's own message doesn't say it. Code 21 (refused,
  * or the layout unreadable) has none: recab's message names the reason and the fix. */
-const ERROR_HELP: Record<number, string> = {
-	13: "Run recab-tui as root (doas or sudo): changes write EFI variables and the ESP.",
+const ERROR_HELP: Record<number, string | (() => string)> = {
+	13: () => {
+		const tool = privilegeTool();
+		return `Run recab-tui as root${tool ? ` (with ${tool})` : ""}: changes write EFI variables and the ESP.`;
+	},
 	20: "recab needs UEFI with efivarfs (/sys/firmware/efi/efivars); writing a system also needs blkid, mkfs.ext4, mount and recstrap.",
 	22: "The change stopped part way. Check the slots before rebooting; recab never selects a slot that can't boot.",
 	23: "The trial boot wasn't healthy and wasn't committed; the machine returns to the known-good slot.",
 };
+
+/** The running system's privilege tool, from its os-release profile; null when it declares none. */
+export function privilegeTool(osRelease = "/etc/os-release"): string | null {
+	try {
+		return osReleaseFact(readFileSync(osRelease, "utf8"), "privilege");
+	} catch {
+		return null;
+	}
+}
 
 export type RecabError = {
 	/** recab's class, as `RECAB_ERR_STATE`, when it printed one. */
@@ -141,6 +155,11 @@ export type RecabError = {
 	/** What to do, from the exit code. */
 	help: string | null;
 };
+
+function helpFor(code: number): string | null {
+	const help = ERROR_HELP[code];
+	return typeof help === "function" ? help() : (help ?? null);
+}
 
 /** recab's error from a failed run: `recab: [RECAB_ERR_…] message` on stderr. */
 export function recabError(result: CommandResult): RecabError {
@@ -152,6 +171,6 @@ export function recabError(result: CommandResult): RecabError {
 		help:
 			result.exitCode === null
 				? "recab didn't start: is it installed and on PATH?"
-				: (ERROR_HELP[result.exitCode] ?? null),
+				: helpFor(result.exitCode),
 	};
 }
