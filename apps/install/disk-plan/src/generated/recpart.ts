@@ -68,6 +68,8 @@ export type PartitionInfo = {
 
 export type FreeGap = { start_bytes: number; size_bytes: number };
 
+export type TableType = "gpt" | "mbr" | "none";
+
 export type DiskSignature = {
 	/**
 	 * wipefs's TYPE: `crypto_LUKS`, `btrfs`, `LVM2_member`, `ext4`, ...
@@ -81,8 +83,6 @@ export type DiskSignature = {
 	uuid: string | null;
 	label: string | null;
 };
-
-export type TableType = "gpt" | "mbr" | "none";
 
 export type InspectResult = {
 	schema_version: number;
@@ -193,25 +193,11 @@ export type LayoutRequest = {
 	state_size_mb: number | null;
 };
 
-export type PartitionTemplate = {
-	index: number;
-	name: string;
-	filesystem: Filesystem;
-	label: string;
-	gpt_type: string;
-	size_mb: number | null;
-	mountpoint: string;
-};
-
-export type InstallMode = "ab" | "mutable";
-
-export type ResolvedLayout = {
-	mode: InstallMode;
-	efi_size_mb: number;
-	root_size_mb: number | null;
-	root_a_size_mb: number | null;
-	root_b_size_mb: number | null;
-	state_size_mb: number | null;
+export type DiskTarget = {
+	path: string;
+	size_bytes: number;
+	logical_sector_bytes: number;
+	physical_sector_bytes: number;
 };
 
 export type SwapFilePlan = {
@@ -222,7 +208,26 @@ export type SwapFilePlan = {
 	size_mb: number;
 };
 
-export type ChangeKind = "erased" | "created" | "resized" | "formatted" | "untouched";
+export type InstallMode = "ab" | "mutable";
+
+export type PartitionTemplate = {
+	index: number;
+	name: string;
+	filesystem: Filesystem;
+	label: string;
+	gpt_type: string;
+	size_mb: number | null;
+	mountpoint: string;
+};
+
+export type ResolvedLayout = {
+	mode: InstallMode;
+	efi_size_mb: number;
+	root_size_mb: number | null;
+	root_a_size_mb: number | null;
+	root_b_size_mb: number | null;
+	state_size_mb: number | null;
+};
 
 export type PartitionState = {
 	start_bytes: number;
@@ -230,6 +235,8 @@ export type PartitionState = {
 	filesystem: string | null;
 	fs_label: string | null;
 };
+
+export type ChangeKind = "erased" | "created" | "resized" | "formatted" | "untouched";
 
 export type PartitionChange = {
 	number: number;
@@ -248,13 +255,6 @@ export type PartitionChange = {
 	 * Where the installed system mounts it (`None`: not mounted).
 	 */
 	mountpoint: string | null;
-};
-
-export type DiskTarget = {
-	path: string;
-	size_bytes: number;
-	logical_sector_bytes: number;
-	physical_sector_bytes: number;
 };
 
 export type PartitionPlan = {
@@ -308,17 +308,6 @@ export type PartitionPlan = {
 	erased_signatures: Array<DiskSignature>;
 };
 
-export type CommandRecord = {
-	phase: string;
-	command: string;
-	program: string;
-	args: Array<string>;
-	status: number | null;
-	stdout: string | null;
-	stderr: string | null;
-	dry_run: boolean;
-};
-
 export type ModeContext = {
 	install_target_slot: string | null;
 	inactive_slot_hint: string | null;
@@ -339,6 +328,17 @@ export type HandoffPayload = {
 	 * find them.
 	 */
 	swaps: Array<string>;
+};
+
+export type CommandRecord = {
+	phase: string;
+	command: string;
+	program: string;
+	args: Array<string>;
+	status: number | null;
+	stdout: string | null;
+	stderr: string | null;
+	dry_run: boolean;
 };
 
 export type ApplyResult = {
