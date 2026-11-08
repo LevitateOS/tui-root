@@ -2,19 +2,6 @@
 
 export type Slot = "A" | "B";
 
-export type TrialRecord = {
-	slot: Slot;
-	/**
-	 * The trial was healthy and committed; otherwise it was abandoned.
-	 */
-	committed: boolean;
-	/**
-	 * How startup ended, and the failed units if any.
-	 */
-	detail: string;
-	unix_time: number;
-};
-
 export type SlotView = {
 	slot: Slot;
 	/**
@@ -42,6 +29,19 @@ export type SlotView = {
 	 * not yet committed).
 	 */
 	trial: boolean;
+};
+
+export type TrialRecord = {
+	slot: Slot;
+	/**
+	 * The trial was healthy and committed; otherwise it was abandoned.
+	 */
+	committed: boolean;
+	/**
+	 * How startup ended, and the failed units if any.
+	 */
+	detail: string;
+	unix_time: number;
 };
 
 export type Status = {
