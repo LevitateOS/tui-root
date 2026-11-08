@@ -1,5 +1,5 @@
 ┌────────────────────────────────────┐
-│Installation  lines 1-11/92         │
+│Installation  lines 1-11/144        │
 ├────────────────────────────────────┤
 │ Step-by-step guide to installing   │
 │ LevitateOS from the live           │
@@ -13,7 +13,7 @@
 │ disk with recpart, extract the     │
 │ system with recstrap, configure it │
 └────────────────────────────────────┘
- content | <masked> | 1/5 | q quit
+ content | <masked> | 1/7 | q quit
  Tab switch pane | m sidebar mode
  j/k next/prev action
  Enter open link / copy | c/y copy

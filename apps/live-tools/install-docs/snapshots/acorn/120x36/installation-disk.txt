@@ -1,5 +1,5 @@
 ┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│AcornOS docs                  ││Disk Preparation  lines 1-30/162                                                      │
+│AcornOS docs                  ││Disk Preparation  lines 1-30/161                                                      │
 ├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
 │ ▾ Getting Started            ││ Installation steps 1-5: Boot the live environment and prepare your disk. See         │
 │    Getting Started           ││ Installation (/docs/installation) for an overview.                                   │
@@ -26,11 +26,11 @@
 │                              ││ requires UEFI. Reboot and select UEFI boot in your firmware settings.                │
 │                              ││                                                                                      │
 │                              ││ Set keyboard layout (optional, default is US)                                        │
-│                              ││ $ zcat /usr/share/bkeymaps/us/us.bmap.gz | loadkmap                                  │
+│                              ││ $ loadkeys us                                                                        │
 │                              ││                                                                                      │
 │                              ││ ◆ WiFi Connection (Optional)                                                         │
 │                              ││                                                                                      │
-│                              ││ Installation is fully offline - no network required. dhcpcd configures a wired       │
+│                              ││ Installation is fully offline - no network required. NetworkManager configures a     │
 └──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
  navigation | <masked> | q quit | Tab switch pane | m sidebar mode | h/l prev/next page | [/] prev/next section
  j/k scroll content | space/b scroll a page

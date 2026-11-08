@@ -1,5 +1,5 @@
 ┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│LevitateOS docs               ││Disk Preparation  lines 1-30/160                                                      │
+│LevitateOS docs               ││Disk Preparation  lines 1-30/161                                                      │
 ├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
 │ ▾ Getting Started            ││ Installation steps 1-5: Boot the live environment and prepare your disk. See         │
 │    Getting Started           ││ Installation (/docs/installation) for an overview.                                   │

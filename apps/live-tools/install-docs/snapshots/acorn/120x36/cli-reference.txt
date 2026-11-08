@@ -1,17 +1,18 @@
 ┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│AcornOS docs                  ││CLI Reference  lines 1-30/95                                                          │
+│AcornOS docs                  ││CLI Reference  lines 1-30/96                                                          │
 ├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
-│ ▸ Getting Started            ││ The Recipe CLI executes build-time Rhai recipes inside a configured Ginux domain and │
-│                              ││ returns named published products. Prepare the launcher, verified image and worker    │
-│ ▾ Package Manager            ││ first using the Recipe README                                                        │
-│  ▸ CLI Reference             ││ (https://github.com/LevitateOS/recipe/blob/master/README.md).                        │
-│    Recipe Format             ││                                                                                      │
-│                              ││ ◆ Commands                                                                           │
-│ ▸ Helpers                    ││                                                                                      │
-│                              ││ Command                   │ Behavior                                                 │
-│ ▸ Architecture               ││ ──────────────────────────┼─────────────────────────────────                         │
-│                              ││ recipe install RECIPE     │ Run necessary                                            │
-│ ▸ Rec Tooling                ││                           │ acquire/build/install work with                          │
+│ ▸ Getting Started            ││ The Recipe CLI executes Rhai recipes inside a configured Ginux domain and returns    │
+│                              ││ named published products: the producers that build each distro, and the packages of  │
+│ ▾ Package Manager            ││ an installed system (see Post-Installation (/docs/post-installation)). Prepare the   │
+│  ▸ CLI Reference             ││ launcher, verified image and worker first using the Recipe README                    │
+│    Recipe Format             ││ (https://github.com/LevitateOS/recipe/blob/master/README.md).                        │
+│                              ││                                                                                      │
+│ ▸ Helpers                    ││ ◆ Commands                                                                           │
+│                              ││                                                                                      │
+│ ▸ Architecture               ││ Command                   │ Behavior                                                 │
+│                              ││ ──────────────────────────┼─────────────────────────────────                         │
+│ ▸ Rec Tooling                ││ recipe install RECIPE     │ Run necessary                                            │
+│                              ││                           │ acquire/build/install work with                          │
 │                              ││                           │ custom readiness.                                        │
 │                              ││ recipe isinstalled RECIPE │ Check the owned selected target;                         │
 │                              ││                           │ work needed returns nonzero.                             │
@@ -30,7 +31,6 @@
 │                              ││                           │ metadata; dynamic values are                             │
 │                              ││                           │ unavailable.                                             │
 │                              ││ recipe hash FILE          │ Compute SHA256, SHA512 and                               │
-│                              ││                           │ BLAKE3.                                                  │
 └──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
  navigation | <masked> | q quit | Tab switch pane | m sidebar mode | h/l prev/next page | [/] prev/next section
  j/k scroll content | space/b scroll a page

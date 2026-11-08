@@ -1,5 +1,5 @@
 ┌────────────────────────────────────┐
-│Installation  lines 1-11/91         │
+│Installation  lines 1-11/143        │
 ├────────────────────────────────────┤
 │ Step-by-step guide to installing   │
 │ AcornOS from the live environment. │
@@ -13,7 +13,7 @@
 │ system with recstrap, configure it │
 │ with recsetup, and reboot. No      │
 └────────────────────────────────────┘
- content | <masked> | 1/5 | q quit
+ content | <masked> | 1/7 | q quit
  Tab switch pane | m sidebar mode
  j/k next/prev action
  Enter open link / copy | c/y copy
