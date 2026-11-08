@@ -108,11 +108,11 @@
 						},
 						{
 							"keys": "",
-							"expect": "Saved for the next install steps in /tmp/levitate-disk-plan-story/state.json."
+							"expect": "Saved for the next install steps in /tmp/install-disk-plan-story/state.json."
 						}
 					],
 					"env": {
-						"LEVITATE_INSTALL_STATE": "/tmp/levitate-disk-plan-story/state.json"
+						"INSTALL_STATE": "/tmp/install-disk-plan-story/state.json"
 					}
 				},
 				{

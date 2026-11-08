@@ -29,6 +29,6 @@ cargo xtask tui list base-system
 ```
 
 Without `--target` it takes the disk step's target from the install state file
-(`LEVITATE_INSTALL_STATE`, default `/run/levitate-install/state.json`). Headless runs
+(`INSTALL_STATE`, default `/run/install/state.json`). Headless runs
 use `fixtures/recstrap` and `fixtures/recfstab`, stand-ins that print the tools' JSON
 and touch nothing; their header comments list the failures they can play.

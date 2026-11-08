@@ -13,14 +13,16 @@ import {
 	type RichTextRun,
 } from "@levitate/tui-kit";
 import { BACKWARD_KEYS, CONTENT_KEYS, NAV_KEYS, VIEWER_KEYS } from "../keymap";
-import { PAGES, pageContent, resolveDocsLinkTarget } from "../../../docs";
+import type { Docs } from "../../../docs";
 import { layoutPage, type Line } from "../../../layout/page";
 import { InstallSidebar } from "../components/sidebar";
 import { installStatusSegments } from "../components/status-bar";
 import { useInstallNavigation } from "../hooks/use-install-navigation";
 
 type InstallViewerScreenProps = {
-	/** Title of the page list (the launcher names the distro's docs). */
+	/** The docs of the distro the launcher named. */
+	docs: Docs;
+	/** Title of the page list. */
 	title: string;
 	initialIndex: number;
 };
@@ -32,10 +34,10 @@ function drawn(line: Line, selected: number | undefined): RichTextRun[] {
 	);
 }
 
-export function InstallViewerScreen({ title, initialIndex }: InstallViewerScreenProps) {
+export function InstallViewerScreen({ docs, title, initialIndex }: InstallViewerScreenProps) {
 	const { exit } = useApp();
 	const shell = useShellLayout();
-	const navigation = useInstallNavigation(initialIndex);
+	const navigation = useInstallNavigation(docs, initialIndex);
 	const { write } = useStdout();
 	// When only one pane fits (the install screen's docs pane), start on the page itself.
 	const focus = useFocusPlane({ initial: shell.narrow ? "content" : "navigation" });
@@ -43,9 +45,9 @@ export function InstallViewerScreen({ title, initialIndex }: InstallViewerScreen
 	const [actionIndex, setActionIndex] = useState(0);
 	const [runtimeNote, setRuntimeNote] = useState<string | undefined>(undefined);
 
-	const currentItem = PAGES[navigation.safeIndex]!;
+	const currentItem = docs.pages[navigation.safeIndex]!;
 	const columns = shell.content.textColumns;
-	const content = pageContent(currentItem.slug);
+	const content = docs.content(currentItem.slug);
 	const page = useMemo(() => layoutPage(content, columns), [content, columns]);
 	const actions = page.anchors;
 	// The footer wraps onto as many lines as the pane's width needs; the page gets the rest.
@@ -53,7 +55,7 @@ export function InstallViewerScreen({ title, initialIndex }: InstallViewerScreen
 		shell,
 		installStatusSegments({
 			page: navigation.safeIndex + 1,
-			pageCount: PAGES.length,
+			pageCount: docs.pages.length,
 			focus: focus.plane,
 			action: actions.length > 0 ? `${actionIndex + 1}/${actions.length}` : undefined,
 			note: runtimeNote,
@@ -102,7 +104,7 @@ export function InstallViewerScreen({ title, initialIndex }: InstallViewerScreen
 			copyAction();
 			return;
 		}
-		const target = resolveDocsLinkTarget(action.href, currentItem.slug);
+		const target = docs.resolveLink(action.href, currentItem.slug);
 		if (!target.ok) {
 			setRuntimeNote(`invalid docs link target: '${action.href}' (${target.reason})`);
 			return;
@@ -153,7 +155,7 @@ export function InstallViewerScreen({ title, initialIndex }: InstallViewerScreen
 			navTitle={title}
 			nav={
 				<InstallSidebar
-					items={PAGES}
+					items={docs.pages}
 					selectedIndex={navigation.safeIndex}
 					maxWidth={(layout.nav ?? layout.content).textColumns}
 					mode={sidebarMode}

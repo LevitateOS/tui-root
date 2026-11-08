@@ -28,6 +28,8 @@
 		"inspect": {
 			"pages": {
 				"list": [
+					"--os-name",
+					"LevitateOS",
 					"--pages"
 				],
 				"arg": "--slug"
@@ -39,6 +41,10 @@
 				{
 					"name": "content focused",
 					"about": "Tab moves focus from the page list into the page.",
+					"args": [
+						"--os-name",
+						"LevitateOS"
+					],
 					"steps": [
 						{
 							"keys": "\\t"
@@ -48,6 +54,10 @@
 				{
 					"name": "next page",
 					"about": "Moving through the guide page by page.",
+					"args": [
+						"--os-name",
+						"LevitateOS"
+					],
 					"steps": [
 						{
 							"keys": "l",
@@ -61,10 +71,10 @@
 				},
 				{
 					"name": "acorn pages",
-					"about": "On AcornOS (--product acorn, or ID=acornos in /etc/os-release) the guide is AcornOS's.",
+					"about": "On AcornOS the launcher passes --os-name AcornOS, and the guide is AcornOS's.",
 					"args": [
-						"--product",
-						"acorn"
+						"--os-name",
+						"AcornOS"
 					],
 					"steps": [
 						{
@@ -74,18 +84,18 @@
 					]
 				},
 				{
-					"name": "acorn counterpart",
-					"about": "A LevitateOS page's slug opens its AcornOS counterpart, so other apps' links work on both.",
+					"name": "acorn same slugs",
+					"about": "AcornOS's pages have the same slugs as LevitateOS's, so other apps' links work on both.",
 					"args": [
-						"--product",
-						"acorn",
+						"--os-name",
+						"AcornOS",
 						"--slug",
 						"installation-disk"
 					],
 					"steps": [
 						{
 							"keys": "j",
-							"expect": "││AcornOS Disk Preparation  lines 2-"
+							"expect": "Disk Preparation  lines 2-"
 						}
 					]
 				},
@@ -93,6 +103,8 @@
 					"name": "tabs in code",
 					"about": "A page whose code blocks hold tabs (recfstab), drawn without breaking the layout.",
 					"args": [
+						"--os-name",
+						"LevitateOS",
 						"--slug",
 						"recfstab"
 					],
@@ -107,6 +119,8 @@
 					"name": "selected command",
 					"about": "Selecting a command on the disk page, ready to copy into the shell beside it.",
 					"args": [
+						"--os-name",
+						"LevitateOS",
 						"--slug",
 						"installation-disk"
 					],

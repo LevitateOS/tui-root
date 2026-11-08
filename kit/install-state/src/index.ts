@@ -19,9 +19,9 @@ export type { DiskResult, RecordedStep as StepName, StepResults };
 export type BaseResult = StepResults["base"];
 
 export const STATE_SCHEMA = 1;
-export const DEFAULT_STATE_PATH = "/run/levitate-install/state.json";
+export const DEFAULT_STATE_PATH = "/run/install/state.json";
 /** Points the apps at another state file (stories, tests, a second install). */
-export const STATE_PATH_ENV = "LEVITATE_INSTALL_STATE";
+export const STATE_PATH_ENV = "INSTALL_STATE";
 
 /** The install steps whose results are kept, in order. */
 export const STEP_NAMES = RECORDED_STEPS;

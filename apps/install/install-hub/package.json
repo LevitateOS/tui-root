@@ -36,7 +36,7 @@
 					"name": "fresh install",
 					"about": "Nothing done yet: the preflight checks come first.",
 					"env": {
-						"LEVITATE_INSTALL_STATE": "fixtures/no-state.json"
+						"INSTALL_STATE": "fixtures/no-state.json"
 					},
 					"steps": [
 						{
@@ -56,7 +56,7 @@
 					"name": "steps wait their turn",
 					"about": "Starting a step before the ones it needs says which comes first.",
 					"env": {
-						"LEVITATE_INSTALL_STATE": "fixtures/no-state.json"
+						"INSTALL_STATE": "fixtures/no-state.json"
 					},
 					"steps": [
 						{
@@ -77,7 +77,7 @@
 					"name": "disk done",
 					"about": "After disk-plan: the base step opens base-system on the disk's target.",
 					"env": {
-						"LEVITATE_INSTALL_STATE": "fixtures/disk-done.json"
+						"INSTALL_STATE": "fixtures/disk-done.json"
 					},
 					"steps": [
 						{
@@ -105,7 +105,7 @@
 					"name": "mutable boot",
 					"about": "A mutable disk, configured: the boot step names the root device.",
 					"env": {
-						"LEVITATE_INSTALL_STATE": "fixtures/mutable-configured.json"
+						"INSTALL_STATE": "fixtures/mutable-configured.json"
 					},
 					"steps": [
 						{
@@ -125,7 +125,7 @@
 						"AcornOS"
 					],
 					"env": {
-						"LEVITATE_INSTALL_STATE": "fixtures/disk-done.json"
+						"INSTALL_STATE": "fixtures/disk-done.json"
 					},
 					"steps": [
 						{

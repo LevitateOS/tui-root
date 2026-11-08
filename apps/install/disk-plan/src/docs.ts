@@ -1,14 +1,14 @@
-import { contentBySlug } from "@levitate/docs-content";
+import { sharedPages, type SharedSlug } from "@levitate/docs-content";
+import { guideRef, guideTitle } from "@levitate/docs-content/install";
 
 /** A place in the docs: page and section titles as the docs have them, and the slug that opens it. */
 export type DocsRef = { slug: string; page: string; section?: string };
 
-/** Looks the page (and section) up in the docs, so a renamed one fails loudly here
- * instead of leaving a dead reference on screen. */
-function docs(slug: string, section?: string): DocsRef {
-	const content = contentBySlug[slug];
-	if (!content)
-		throw new Error(`disk-plan refers to docs page '${slug}', which the docs don't have`);
+/** A section of a shared docs page, checked at startup, so a renamed one fails loudly
+ * instead of leaving a dead reference on screen. Install guide steps are typed by the
+ * procedure instead, and every distro has them under the same slug and title. */
+function shared(slug: SharedSlug, section?: string): DocsRef {
+	const content = sharedPages[slug];
 	if (section !== undefined && !content.sections.some((s) => s.title === section)) {
 		throw new Error(
 			`disk-plan refers to section '${section}' of docs page '${slug}', which it doesn't have`,
@@ -17,11 +17,13 @@ function docs(slug: string, section?: string): DocsRef {
 	return { slug, page: content.title, section };
 }
 
+const chooseDisk = guideRef("installation-disk", "Identify Target Disk");
+
 /** Where to read about what went wrong. */
 export const DOCS = {
 	/** Choosing the disk: what to check when recpart refuses one. */
-	chooseDisk: docs("installation-disk", "2. Identify Target Disk"),
+	chooseDisk: { ...chooseDisk, page: guideTitle(chooseDisk.slug) },
 	/** What recpart's error codes mean. */
-	recpartErrors: docs("recpart", "Error Codes"),
-	recpart: docs("recpart"),
+	recpartErrors: shared("recpart", "Error Codes"),
+	recpart: shared("recpart"),
 } as const;

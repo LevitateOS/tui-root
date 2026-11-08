@@ -80,8 +80,7 @@ function Refusal({ text }: { text: string }): ReactNode {
 	);
 }
 
-/** Where to read more, with the command that opens each page (the install screen's docs
- * pane, or install-docs on its own). */
+/** Where to read more: the page and section of the docs (the install screen's docs pane). */
 function ReadDocs({ refs }: { refs: readonly DocsRef[] }): ReactNode {
 	return (
 		<Box flexDirection="column" marginTop={1}>
@@ -89,15 +88,10 @@ function ReadDocs({ refs }: { refs: readonly DocsRef[] }): ReactNode {
 				Read in the docs
 			</UiText>
 			{refs.map((ref) => (
-				<Box key={`${ref.slug}-${ref.section ?? ""}`} flexDirection="column">
-					<UiText>
-						{ref.page}
-						{ref.section ? ` › ${ref.section}` : ""}
-					</UiText>
-					<Box paddingLeft={2}>
-						<UiText intent="dimText">{`install-docs --slug ${ref.slug}`}</UiText>
-					</Box>
-				</Box>
+				<UiText key={`${ref.slug}-${ref.section ?? ""}`}>
+					{ref.page}
+					{ref.section ? ` › ${ref.section}` : ""}
+				</UiText>
 			))}
 		</Box>
 	);
@@ -159,7 +153,7 @@ export function Welcome({ session }: { session: Session }): ReactNode {
 	const phases = [...new Set(pages.flatMap((p) => (p.phase ? [p.phase] : [])))];
 	return (
 		<Page
-			title="Prepare a disk for LevitateOS"
+			title="Prepare the install disk"
 			subtitle="recpart partitions, formats and mounts the disk. Every command it would run is shown before anything is written."
 		>
 			<Section title="How it goes">

@@ -43,7 +43,7 @@
 						"/mnt"
 					],
 					"env": {
-						"LEVITATE_INSTALL_STATE": "/tmp/levitate-base-system-story/state.json"
+						"INSTALL_STATE": "/tmp/install-base-system-story/state.json"
 					},
 					"steps": [
 						{
@@ -75,7 +75,7 @@
 					"name": "from the disk step",
 					"about": "After disk-plan: the target and its mounts come from the install state file's disk step, so no --target is needed.",
 					"env": {
-						"LEVITATE_INSTALL_STATE": "fixtures/state-disk-done.json"
+						"INSTALL_STATE": "fixtures/state-disk-done.json"
 					},
 					"steps": [
 						{
@@ -95,7 +95,7 @@
 						"/mnt"
 					],
 					"env": {
-						"LEVITATE_INSTALL_STATE": "/tmp/levitate-base-system-story/state.json",
+						"INSTALL_STATE": "/tmp/install-base-system-story/state.json",
 						"RECSTRAP_FIXTURE_PACE": "1"
 					},
 					"steps": [
@@ -121,7 +121,7 @@
 						"/mnt"
 					],
 					"env": {
-						"LEVITATE_INSTALL_STATE": "/tmp/levitate-base-system-story/state.json",
+						"INSTALL_STATE": "/tmp/install-base-system-story/state.json",
 						"RECSTRAP_FIXTURE": "not-empty"
 					},
 					"steps": [
@@ -143,7 +143,7 @@
 						"/mnt"
 					],
 					"env": {
-						"LEVITATE_INSTALL_STATE": "/tmp/levitate-base-system-story/state.json",
+						"INSTALL_STATE": "/tmp/install-base-system-story/state.json",
 						"RECSTRAP_FIXTURE": "copy-fails"
 					},
 					"steps": [
@@ -173,7 +173,7 @@
 						"/mnt"
 					],
 					"env": {
-						"LEVITATE_INSTALL_STATE": "/tmp/levitate-base-system-story/state.json",
+						"INSTALL_STATE": "/tmp/install-base-system-story/state.json",
 						"RECFSTAB_FIXTURE": "conflict"
 					},
 					"steps": [
@@ -211,7 +211,7 @@
 						"/mnt"
 					],
 					"env": {
-						"LEVITATE_INSTALL_STATE": "/tmp/levitate-base-system-story/state.json",
+						"INSTALL_STATE": "/tmp/install-base-system-story/state.json",
 						"RECFSTAB_FIXTURE": "no-esp"
 					},
 					"steps": [
@@ -237,7 +237,7 @@
 					"name": "no target",
 					"about": "Started before the disk step and without --target: the overview says where the target comes from, and nothing runs.",
 					"env": {
-						"LEVITATE_INSTALL_STATE": "/tmp/levitate-base-system-story/none.json"
+						"INSTALL_STATE": "/tmp/install-base-system-story/none.json"
 					},
 					"steps": [
 						{

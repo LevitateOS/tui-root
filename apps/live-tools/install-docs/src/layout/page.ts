@@ -242,7 +242,14 @@ function table(
 	const header = block.headers.map((cell) =>
 		inline(page, cell, "heading").map((run) => ({ ...run, bold: true })),
 	);
-	const rows = block.rows.map((row) => row.map((cell) => inline(page, cell, "text")));
+	// The monospace column (commands, paths) reads as code, as on the website.
+	const rows = block.rows.map((row) =>
+		row.map((cell, c) =>
+			c === block.monospaceCol
+				? inline(page, cell, "text").map((run) => ({ ...run, intent: "code" as const }))
+				: inline(page, cell, "text"),
+		),
+	);
 	const columns = Math.max(header.length, ...rows.map((row) => row.length));
 	if (columns === 0) return;
 	const natural = Array.from({ length: columns }, (_, c) =>
@@ -337,7 +344,7 @@ function note(
 	indent: number,
 ): void {
 	const colors = NOTE_COLORS[block.variant];
-	const intent = block.variant === "info" ? "info" : "warning";
+	const intent = ({ info: "info", warning: "warning", danger: "error" } as const)[block.variant];
 	const background = colors.backgroundColor;
 	const content = inline(page, block.content, intent);
 	if (width < 4) {
@@ -419,38 +426,21 @@ function layoutBlock(page: Page, block: ContentBlock, width: number, indent: num
 				}
 			});
 			return;
-		case "conversation":
-			for (const message of block.messages) {
-				const role: Run =
-					message.role === "ai"
-						? { text: "AI:", intent: "info", bold: true }
-						: { text: "User:", intent: "accent", bold: true };
-				const background = { backgroundIntent: "panelBackground" } as const;
-				prefixed(
-					page,
-					role,
-					inline(page, message.text, "text").map((run) => ({ ...run, ...background })),
-					w,
-					indent,
-				);
-				for (const item of message.list ?? []) {
-					prefixed(
-						page,
-						{ text: "•", intent: "text" },
-						inline(page, item, "text").map((run) => ({ ...run, ...background })),
-						w - LIST_INDENT,
-						indent + LIST_INDENT,
-					);
-				}
-			}
-			return;
 		case "interactive":
 			if (block.intro) {
 				for (const line of wrapRuns(inline(page, block.intro, "dimText"), w))
 					page.push(line, indent);
 			}
 			for (const step of block.steps) {
-				commandLines(page, [[{ text: step.command, color: COMMAND_COLORS.prompt }]], w, indent);
+				// Each step's command can be selected and copied, like a command block's.
+				const anchor = page.anchor({ kind: "command", command: step.command, line: -1 });
+				commandLines(
+					page,
+					[[{ text: step.command, color: COMMAND_COLORS.prompt }]],
+					w,
+					indent,
+					anchor,
+				);
 				for (const line of wrapRuns(inline(page, step.description, "text"), w))
 					page.push(line, indent);
 			}
