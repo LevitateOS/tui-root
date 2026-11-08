@@ -1,6 +1,6 @@
 import { closeSync, openSync, readdirSync, readSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { runCommand } from "@levitate/tui-kit";
+import { errorMessage, runCommand } from "@levitate/tui-kit";
 import type { Status } from "../generated/recab";
 import { parseRecabStatusJson, recabError, type RecabError } from "../domain/recab";
 
@@ -55,8 +55,9 @@ export function checkPath(path: string, want: "image" | "file"): string | null {
 		const stat = statSync(full);
 		if (!stat.isFile() && !(want === "image" && stat.isBlockDevice()))
 			return want === "image" ? "not a file or a partition" : "not a file";
-	} catch {
-		return "doesn't exist";
+	} catch (error) {
+		// Only a missing path is "doesn't exist"; anything else (EACCES, ELOOP) says what it is.
+		return (error as NodeJS.ErrnoException).code === "ENOENT" ? "doesn't exist" : errorMessage(error);
 	}
 	if (want === "image" && isErofs(full) === false)
 		return "not an EROFS image (no EROFS superblock); pass the system's .erofs image";

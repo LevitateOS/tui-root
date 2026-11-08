@@ -2,7 +2,13 @@ import type { Keymap } from "@levitate/tui-kit";
 
 /** Keys while nothing is being asked. */
 export const MAIN_KEYS = [
-	{ action: "move", keys: ["up", "k", "down", "j"], hint: "j/k", label: "select" },
+	{
+		action: "move",
+		keys: ["up", "k", "down", "j"],
+		back: ["up", "k"],
+		hint: "j/k",
+		label: "select",
+	},
 	{ action: "run", keys: ["enter"], label: "run the selected change" },
 	{ action: "try", keys: ["t"], label: "go to: try the other slot" },
 	{ action: "commit", keys: ["c"], label: "go to: commit" },
@@ -16,7 +22,12 @@ export const MAIN_KEYS = [
 ] as const satisfies Keymap;
 
 /** The MAIN_KEYS the footer shows; the rest are in `--help` and on the rail. */
-export const FOOTER_ACTIONS: ReadonlySet<string> = new Set(["move", "run", "refresh", "quit"]);
+export const FOOTER_ACTIONS: readonly (typeof MAIN_KEYS)[number]["action"][] = [
+	"move",
+	"run",
+	"refresh",
+	"quit",
+];
 
 /** Keys while a change waits for a yes. */
 export const CONFIRM_KEYS = [

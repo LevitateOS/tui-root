@@ -4,7 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { startCommand, type CommandResult } from "@levitate/tui-kit";
 import type { Slot, Status } from "../generated/recab";
 import { checkPath, completePath, readRecabStatus, type StatusRead } from "../app/recab-runner";
-import { stageArgv, type ActionId, type ActionPlan, type StageAnswers } from "../domain/actions";
+import {
+	stageArgv,
+	TAKES_MACHINE_DOWN,
+	type ActionId,
+	type ActionPlan,
+	type StageAnswers,
+} from "../domain/actions";
 
 export type StageField = keyof StageAnswers;
 
@@ -73,7 +79,7 @@ export function useRecab() {
 		]);
 		void startCommand(argv).result.then(async (result) => {
 			setRuns((all) => all.map((run) => (run.id === id ? { ...run, result } : run)));
-			const after = action === "reboot" ? null : await refresh();
+			const after = TAKES_MACHINE_DOWN[action] ? null : await refresh();
 			setRuns((all) => all.map((run) => (run.id === id ? { ...run, after } : run)));
 			busy.current = false;
 		});

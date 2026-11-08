@@ -1,7 +1,6 @@
-import { mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { runCommand, type CommandResult } from "@levitate/tui-kit";
+import { runCommand, runDir, type CommandResult } from "@levitate/tui-kit";
 import {
 	CONFIRM_TOKEN,
 	DISK_LIST_SCHEMA_VERSION,
@@ -52,26 +51,18 @@ function layoutArgs(layout: string | null): string[] {
 	return layout ? ["--layout", layout] : [];
 }
 
-let layoutDirMade = false;
-
-/** Writes `layout` where recpart can read it (a directory of this process's, removed when
- * it exits). The name is the content's hash, so a changed
+/** Writes `layout` where recpart can read it (this run's directory, removed when it
+ * ends). The name is the content's hash, so a changed
  * layout is a changed command and the plan runs again. */
 export function writeLayout(layout: ManualLayout): string {
 	return writeDocument("layout", layout);
 }
 
-/** Writes `value` as JSON to this run's temporary directory (removed on exit), named by
+/** Writes `value` as JSON to this run's temporary directory (removed when it ends), named by
  * its content, and returns the path: an explicit layout, or the plan apply must match. */
 export function writeDocument(kind: "layout" | "plan", value: unknown): string {
 	const text = `${JSON.stringify(value, null, "\t")}\n`;
-	const dir = join(tmpdir(), `disk-plan-${process.pid}`);
-	if (!layoutDirMade) {
-		mkdirSync(dir, { recursive: true });
-		process.on("exit", () => rmSync(dir, { recursive: true, force: true }));
-		layoutDirMade = true;
-	}
-	const path = join(dir, `${kind}-${Bun.hash(text).toString(16)}.json`);
+	const path = join(runDir("disk-plan"), `${kind}-${Bun.hash(text).toString(16)}.json`);
 	writeFileSync(path, text);
 	return path;
 }

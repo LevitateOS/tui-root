@@ -5,19 +5,18 @@
  */
 import { measureElement, type DOMElement } from "ink";
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { useKeymap, type Keymap } from "../../runtime/keymap";
+import { movesBack, useKeymap, type Keymap } from "../../runtime/keymap";
 
 /** Scrolls a page by about a pane, from either pane. */
 export const PAGE_SCROLL_KEYS = [
 	{
 		action: "scroll",
-		keys: ["C-u", "pageup", "space", "C-d", "pagedown"],
-		hint: "space/PgUp",
-		label: "scroll page",
+		keys: ["b", "C-u", "pageup", "space", "C-d", "pagedown"],
+		back: ["b", "C-u", "pageup"],
+		hint: "space/b",
+		label: "scroll a page",
 	},
 ] as const satisfies Keymap;
-
-const SCROLL_UP = new Set(["C-u", "pageup"]);
 
 export type PageHeight = {
 	/** Put on the page's outermost box. */
@@ -59,7 +58,10 @@ export function usePageScroll(
 				setOffset((value) =>
 					Math.max(
 						0,
-						Math.min(maxOffset, value + (SCROLL_UP.has(key) ? -1 : 1) * Math.max(1, rows - 2)),
+						Math.min(
+							maxOffset,
+							value + (movesBack(PAGE_SCROLL_KEYS, key) ? -1 : 1) * Math.max(1, rows - 2),
+						),
 					),
 				),
 		},

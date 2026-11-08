@@ -1,3 +1,4 @@
+import { formatBytes } from "@levitate/tui-kit";
 /**
  * The editor's guidance: plain names for roles, what the mode still needs, and the one
  * next step that gets there, including a quick setup that fills free space with the
@@ -5,7 +6,6 @@
  * plan still decides whether a layout is valid.
  */
 import type { InspectResult, InstallMode, PartitionInfo, Role } from "../generated/recpart";
-import { formatBytes } from "./recpart";
 import {
 	MIB,
 	project,
@@ -15,6 +15,7 @@ import {
 	type Projection,
 	type Segment,
 } from "./layout";
+import { shortDevice } from "@levitate/tui-kit";
 
 const GIB_MB = 1024;
 /** recpart's default A/B root slot, and the smallest it accepts. */
@@ -123,7 +124,7 @@ export function quickSetup(
 				},
 			};
 			steps.push({
-				what: `${efi.device.replace(/^\/dev\//, "")} becomes the EFI partition`,
+				what: `${shortDevice(efi.device)} becomes the EFI partition`,
 				detail: "kept as it is, so what boots from it now keeps booting",
 			});
 		}
@@ -205,3 +206,6 @@ export function bestShrink(
 	}
 	return best;
 }
+
+/** What the editor sets up in the free space, for each mode ("set up A/B", "set up the system"). */
+export const SETUP_NAME: Record<InstallMode, string> = { ab: "A/B", mutable: "the system" };

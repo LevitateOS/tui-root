@@ -1,6 +1,6 @@
 /** The commands the base step runs, and the install state file it reads and writes. */
 import { readState, recordStep, statePath, type BaseResult } from "@levitate/install-state";
-import { type CommandResult } from "@levitate/tui-kit";
+import { errorMessage, type CommandResult } from "@levitate/tui-kit";
 import { FSTAB_SCHEMA_VERSION, readErrorPayload, type FstabResult } from "../generated/recstrap";
 import type { Failure, Run, Saved, Target } from "../domain/base";
 
@@ -75,7 +75,7 @@ export function saveBaseStep(result: BaseResult): Saved {
 		return {
 			kind: "failed",
 			path,
-			message: error instanceof Error ? error.message : String(error),
+			message: errorMessage(error),
 		};
 	}
 }

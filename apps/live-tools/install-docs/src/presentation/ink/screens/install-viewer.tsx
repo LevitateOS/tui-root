@@ -8,11 +8,12 @@ import {
 	useKeymap,
 	useScrollState,
 	fitFooter,
+	movesBack,
 	useShellLayout,
 	type NavListMode,
 	type RichTextRun,
 } from "@levitate/tui-kit";
-import { BACKWARD_KEYS, CONTENT_KEYS, NAV_KEYS, VIEWER_KEYS } from "../keymap";
+import { CONTENT_KEYS, NAV_KEYS, VIEWER_KEYS } from "../keymap";
 import type { Docs } from "../../../docs";
 import { layoutPage, type Line } from "../../../layout/page";
 import { InstallSidebar } from "../components/sidebar";
@@ -36,6 +37,7 @@ function drawn(line: Line, selected: number | undefined): RichTextRun[] {
 
 export function InstallViewerScreen({ docs, title, initialIndex }: InstallViewerScreenProps) {
 	const { exit } = useApp();
+	const back = (key: string) => movesBack([...NAV_KEYS, ...CONTENT_KEYS], key);
 	const shell = useShellLayout();
 	const navigation = useInstallNavigation(docs, initialIndex);
 	const { write } = useStdout();
@@ -125,20 +127,20 @@ export function InstallViewerScreen({ docs, title, initialIndex }: InstallViewer
 	useKeymap(
 		NAV_KEYS,
 		{
-			page: (key) => showPage(() => navigation.movePage(BACKWARD_KEYS.has(key) ? -1 : 1)),
-			section: (key) => showPage(() => navigation.moveSection(BACKWARD_KEYS.has(key) ? -1 : 1)),
-			scroll: (key) => scroll.scrollBy(BACKWARD_KEYS.has(key) ? -1 : 1),
-			pageScroll: (key) => scroll.scrollBy(BACKWARD_KEYS.has(key) ? -pageJump : pageJump),
+			page: (key) => showPage(() => navigation.movePage(back(key) ? -1 : 1)),
+			section: (key) => showPage(() => navigation.moveSection(back(key) ? -1 : 1)),
+			scroll: (key) => scroll.scrollBy(back(key) ? -1 : 1),
+			pageScroll: (key) => scroll.scrollBy(back(key) ? -pageJump : pageJump),
 		},
 		{ active: focus.isNavigation },
 	);
 	useKeymap(
 		CONTENT_KEYS,
 		{
-			action: (key) => moveAction(BACKWARD_KEYS.has(key) ? -1 : 1),
+			action: (key) => moveAction(back(key) ? -1 : 1),
 			activate: activateAction,
 			copy: copyAction,
-			pageScroll: (key) => scroll.scrollBy(BACKWARD_KEYS.has(key) ? -pageJump : pageJump),
+			pageScroll: (key) => scroll.scrollBy(back(key) ? -pageJump : pageJump),
 			top: () => scroll.toTop(),
 			bottom: () => scroll.toBottom(),
 		},

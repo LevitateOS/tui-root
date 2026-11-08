@@ -6,23 +6,22 @@ import {
 	fitFooter,
 	keymapStatusSegments,
 	PAGE_SCROLL_KEYS,
-	resolveIntentColor,
 	textStatusSegment,
 	textWidth,
 	truncateLine,
+	useIntentColor,
 	useKeymap,
 	usePageHeight,
 	usePageScroll,
 	useShellLayout,
-	useTuiColors,
-	useTuiTheme,
 	useTuiViewport,
 	type ColorIntent,
 } from "@levitate/tui-kit";
 import {
 	currentPage,
 	PAGE_IDS,
-	PAGE_TITLE,
+	PAGES,
+	STEP_PAGES,
 	pageState,
 	waitsFor,
 	type PageId,
@@ -151,7 +150,7 @@ export function BaseScreen({
 				nav={
 					<Rail session={session} page={page} width={(layout.nav ?? layout.content).textColumns} />
 				}
-				contentTitle={`${PAGE_TITLE[page]}${scroll.more}`}
+				contentTitle={`${PAGES[page].title}${scroll.more}`}
 				content={
 					<Box
 						ref={pageHeight.ref}
@@ -182,13 +181,20 @@ const MARK: Record<PageState, { mark: string; intent: ColorIntent }> = {
 	waiting: { mark: "○", intent: "dimText" },
 };
 
-const RAIL_LABEL: Record<PageId, string> = {
-	overview: "Overview",
-	check: "1 Check",
-	copy: "2 Copy",
-	fstab: "3 fstab",
-	done: "Done",
-};
+/** The rail's name for a page: the steps numbered in order. */
+function railLabel(id: PageId): string {
+	const step = (STEP_PAGES as readonly PageId[]).indexOf(id);
+	return step < 0 ? PAGES[id].short : `${step + 1} ${PAGES[id].short}`;
+}
+
+/** The legend under the rail, two marks a line, from the marks themselves. */
+const LEGEND = Object.entries(MARK)
+	.map(([state, { mark }]) => `${mark} ${state}`)
+	.reduce<string[]>((lines, entry, i) => {
+		if (i % 2 === 0) lines.push(entry);
+		else lines[lines.length - 1] += ` ${entry}`;
+		return lines;
+	}, []);
 
 /** The steps in order, each with how far it has got. */
 function Rail({
@@ -200,13 +206,11 @@ function Rail({
 	page: PageId;
 	width: number;
 }): ReactNode {
-	const theme = useTuiTheme();
-	const colors = useTuiColors();
-	const color = (intent: ColorIntent) => resolveIntentColor(theme, intent, colors);
+	const color = useIntentColor();
 	const item = (id: PageId) => {
 		const selected = id === page;
 		const { mark, intent } = MARK[pageState(session, id)];
-		const text = truncateLine(RAIL_LABEL[id], Math.max(1, width - 5));
+		const text = truncateLine(railLabel(id), Math.max(1, width - 5));
 		return (
 			<Text key={id}>
 				<Text color={color("accent")}>{selected ? "▸ " : "  "}</Text>
@@ -226,14 +230,14 @@ function Rail({
 					STEPS
 				</Text>
 			</Box>
-			{item("check")}
-			{item("copy")}
-			{item("fstab")}
+			{STEP_PAGES.map(item)}
 			<Box marginTop={1}>{item("done")}</Box>
 			<Box marginTop={1} flexDirection="column">
-				<Text color={color("dimText")}>✓ done ◐ running</Text>
-				<Text color={color("dimText")}>● ready ○ waiting</Text>
-				<Text color={color("dimText")}>✗ failed</Text>
+				{LEGEND.map((line) => (
+					<Text key={line} color={color("dimText")}>
+						{line}
+					</Text>
+				))}
 			</Box>
 		</Box>
 	);

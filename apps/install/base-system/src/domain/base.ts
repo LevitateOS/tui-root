@@ -68,13 +68,17 @@ export type PageId = (typeof PAGE_IDS)[number];
 
 export type PageState = "done" | "running" | "failed" | "ready" | "waiting";
 
-export const PAGE_TITLE: Record<PageId, string> = {
-	overview: "Overview",
-	check: "Check the target",
-	copy: "Copy the system",
-	fstab: "Write the fstab",
-	done: "Done",
+/** Each page's title, and the short name the rail gives it. */
+export const PAGES: Record<PageId, { title: string; short: string }> = {
+	overview: { title: "Overview", short: "Overview" },
+	check: { title: "Check the target", short: "Check" },
+	copy: { title: "Copy the system", short: "Copy" },
+	fstab: { title: "Write the fstab", short: "fstab" },
+	done: { title: "Done", short: "Done" },
 };
+
+/** The pages that are steps, in order; the rail numbers them. */
+export const STEP_PAGES = ["check", "copy", "fstab"] as const satisfies readonly PageId[];
 
 /** How far each step has got, for the rail. */
 export function pageState(session: Session, page: PageId): PageState {
@@ -132,22 +136,6 @@ export function copyFraction(copy: Copy): number | null {
 	if (copy.kind === "ok") return 1;
 	if (copy.kind === "idle" || !copy.start || copy.start.total_entries === 0) return null;
 	return Math.min(1, copy.entries / copy.start.total_entries);
-}
-
-const UNITS = ["B", "KiB", "MiB", "GiB", "TiB"];
-
-export function formatBytes(bytes: number): string {
-	let value = bytes;
-	let unit = 0;
-	while (value >= 1024 && unit < UNITS.length - 1) {
-		value /= 1024;
-		unit++;
-	}
-	return `${unit === 0 ? value : value.toFixed(1)} ${UNITS[unit]}`;
-}
-
-export function formatCount(n: number): string {
-	return n.toLocaleString("en-US");
 }
 
 /** `m:ss`, or `h:mm:ss` past an hour. */

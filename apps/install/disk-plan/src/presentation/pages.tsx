@@ -1,21 +1,23 @@
 import { Box, Text } from "ink";
 import type { ReactNode } from "react";
 import {
+	keyFor,
 	Callout,
 	Commands,
 	Facts,
+	formatBytes,
 	Heading,
 	inkBorderStyle,
-	resolveIntentColor,
 	Section,
 	SelectableGrid,
+	shortDevice,
 	StepList,
-	type StepStatus,
 	Table,
 	truncateLines,
 	UiText,
-	useTuiColors,
+	useIntentColor,
 	useTuiTheme,
+	type StepStatus,
 } from "@levitate/tui-kit";
 import {
 	CONFIRM_TOKEN,
@@ -38,12 +40,13 @@ import {
 	type Run,
 	type Session,
 } from "../flow";
-import { describeSignature, formatBytes, known } from "../domain/recpart";
+import { describeSignature, known } from "../domain/recpart";
 import { DOCS, type DocsRef } from "../docs";
 import type { Saved } from "../app/install-state";
 import type { Then } from "@levitate/install-state";
-import { commands, STEP_INFO } from "@levitate/docs-content/install";
+import { commands, MODE_NAME, STEP_INFO } from "@levitate/docs-content/install";
 import { DiskBar, type BarPart } from "./disk-bar";
+import { CONFIRM_KEYS } from "./keymap";
 import { DISK_CHANGED } from "../machine";
 
 const MB = 1024 * 1024;
@@ -181,14 +184,15 @@ export function Welcome({ session }: { session: Session }): ReactNode {
 						["Disk", diskSummary(session.disk)],
 						[
 							"Layout",
-							`${session.mode === "ab" ? "A/B" : "mutable"}, ${session.method === "erase" ? "erasing the whole disk" : "keeping some of it"}`,
+							`${MODE_NAME[session.mode]}, ${session.method === "erase" ? "erasing the whole disk" : "keeping some of it"}`,
 						],
 					]}
 				/>
 			</Section>
 			<Callout tone="info" title="Nothing is written until the Confirm step">
 				<UiText>
-					The disk is only touched after you type {CONFIRM_TOKEN} there and press Enter.
+					The disk is only touched after you type {CONFIRM_TOKEN} there and press{" "}
+					{keyFor(CONFIRM_KEYS, "apply")}.
 				</UiText>
 			</Callout>
 		</Page>
@@ -208,8 +212,8 @@ export function TargetDisk({
 	width: number;
 	listing: { kind: "running" } | { kind: "error"; message: string } | { kind: "done" };
 }): ReactNode {
+	const color = useIntentColor();
 	const theme = useTuiTheme();
-	const colors = useTuiColors();
 	return (
 		<Page
 			title="Choose a disk"
@@ -238,10 +242,10 @@ export function TargetDisk({
 						flexDirection="column"
 						paddingX={1}
 						borderStyle={inkBorderStyle(theme.chrome.borderGlyphSet)}
-						borderColor={resolveIntentColor(theme, isSelected ? "accent" : "panelBorder", colors)}
+						borderColor={color(isSelected ? "accent" : "panelBorder")}
 					>
 						<Text>
-							<Text bold color={resolveIntentColor(theme, isSelected ? "accent" : "text", colors)}>
+							<Text bold color={color(isSelected ? "accent" : "text")}>
 								{isSelected ? "▸ " : "  "}
 								{diskPath(choice)}
 							</Text>
@@ -300,8 +304,8 @@ function ChoiceCard({
 	tag?: string;
 	children: ReactNode;
 }): ReactNode {
+	const color = useIntentColor();
 	const theme = useTuiTheme();
-	const colors = useTuiColors();
 	return (
 		<Box
 			width="100%"
@@ -309,14 +313,14 @@ function ChoiceCard({
 			flexDirection="column"
 			paddingX={1}
 			borderStyle={inkBorderStyle(theme.chrome.borderGlyphSet)}
-			borderColor={resolveIntentColor(theme, selected ? "accent" : "panelBorder", colors)}
+			borderColor={color(selected ? "accent" : "panelBorder")}
 		>
 			<Text>
-				<Text bold color={resolveIntentColor(theme, selected ? "accent" : "text", colors)}>
+				<Text bold color={color(selected ? "accent" : "text")}>
 					{selected ? "● " : "○ "}
 					{title}
 				</Text>
-				{tag ? <Text color={resolveIntentColor(theme, "dimText", colors)}> {tag}</Text> : null}
+				{tag ? <Text color={color("dimText")}> {tag}</Text> : null}
 			</Text>
 			{children}
 		</Box>
@@ -444,7 +448,7 @@ function DiskContents({
 				{ title: "In use", optional: true },
 			]}
 			rows={parts.map((part) => [
-				part.device.replace(/^\/dev\//, ""),
+				shortDevice(part.device),
 				formatBytes(part.size_bytes),
 				part.filesystem ?? "",
 				part.fs_label ?? part.label ?? "",
@@ -489,7 +493,7 @@ export function DiskUse({
 				render={(m, selected) =>
 					m === "erase" ? (
 						<ChoiceCard selected={selected} title="Erase the whole disk" tag="simplest">
-							<UiText>{`The ${mode === "ab" ? "A/B" : "mutable"} partitions take all of it.`}</UiText>
+							<UiText>{`The ${MODE_NAME[mode]} partitions take all of it.`}</UiText>
 							<UiText intent={parts?.length || signatures.length ? "error" : "dimText"}>
 								{lost}
 							</UiText>
@@ -574,7 +578,7 @@ function barParts(plan: PartitionPlan): BarPart[] {
 			label:
 				entry.role === "other"
 					? (entry.mountpoint ?? entry.device)
-					: (entry.role ?? entry.device.replace(/^\/dev\//, "")),
+					: (entry.role ?? shortDevice(entry.device)),
 			detail: formatBytes(after.size_bytes),
 			size: after.size_bytes,
 		});
@@ -723,9 +727,8 @@ export function DestructiveConfirm({ session }: { session: Session }): ReactNode
 	const disk = session.disk;
 	const listed = disk?.kind === "listed" ? disk.disk : null;
 	const unlocked = canApply(session);
-	const theme = useTuiTheme();
-	const colors = useTuiColors();
-	const dim = resolveIntentColor(theme, "dimText", colors);
+	const color = useIntentColor();
+	const dim = color("dimText");
 	const rest = CONFIRM_TOKEN.length - session.token.length;
 	const plan = session.plan.kind === "ok" ? session.plan.value : null;
 	const lost = plan?.summary.filter((e) => e.change === "erased" || e.change === "formatted") ?? [];
@@ -759,7 +762,7 @@ export function DestructiveConfirm({ session }: { session: Session }): ReactNode
 							: []),
 						[
 							"Layout",
-							`${session.mode === "ab" ? "A/B" : "mutable"}, ${session.method === "erase" ? "erasing the whole disk" : "keeping some of it"}`,
+							`${MODE_NAME[session.mode]}, ${session.method === "erase" ? "erasing the whole disk" : "keeping some of it"}`,
 						],
 						...(plan?.erased_signatures?.length
 							? ([["Also erased", plan.erased_signatures.map(describeSignature).join(", ")]] as [
@@ -778,14 +781,14 @@ export function DestructiveConfirm({ session }: { session: Session }): ReactNode
 			<Section title={`Type ${CONFIRM_TOKEN} to unlock`}>
 				<Text>
 					<Text color={dim}>› </Text>
-					<Text bold color={resolveIntentColor(theme, unlocked ? "success" : "error", colors)}>
+					<Text bold color={color(unlocked ? "success" : "error")}>
 						{session.token}
 					</Text>
 					<Text color={dim}>{"_".repeat(Math.max(0, rest))}</Text>
 				</Text>
 				{unlocked ? (
 					<UiText bold intent="success">
-						Unlocked. Enter starts the apply.
+						Unlocked. {keyFor(CONFIRM_KEYS, "apply")} starts the apply.
 					</UiText>
 				) : (
 					<UiText intent="dimText">Locked: Backspace corrects a typo.</UiText>

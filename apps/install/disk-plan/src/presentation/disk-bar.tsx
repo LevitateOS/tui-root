@@ -1,13 +1,7 @@
 /** The disk drawn as one bar of its partitions. */
 import { Box, Text } from "ink";
 import { useContext, type ReactNode } from "react";
-import {
-	ContentWidth,
-	resolveIntentColor,
-	useTuiColors,
-	useTuiTheme,
-	type ColorIntent,
-} from "@levitate/tui-kit";
+import { ContentWidth, useIntentColor, type ColorIntent } from "@levitate/tui-kit";
 
 /** Colours that tell neighbouring partitions apart. */
 const PART_INTENTS: readonly ColorIntent[] = ["accent", "success", "warning", "info", "link"];
@@ -20,8 +14,7 @@ export type BarPart = { label: string; detail: string; size: number | null };
  */
 export function DiskBar({ parts, total }: { parts: readonly BarPart[]; total: number }): ReactNode {
 	const width = useContext(ContentWidth);
-	const theme = useTuiTheme();
-	const colors = useTuiColors();
+	const color = useIntentColor();
 	const fixed = parts.reduce((sum, part) => sum + (part.size ?? 0), 0);
 	const rest = Math.max(0, total - fixed);
 	const sizes = parts.map((part) => part.size ?? rest);
@@ -30,13 +23,12 @@ export function DiskBar({ parts, total }: { parts: readonly BarPart[]; total: nu
 	const cells = sizes.map((size) => 1 + Math.floor((spare * size) / Math.max(1, total)));
 	const short = width - cells.reduce((a, b) => a + b, 0);
 	if (cells.length > 0) cells[sizes.indexOf(Math.max(...sizes))]! += Math.max(0, short);
-	const color = (i: number) =>
-		resolveIntentColor(theme, PART_INTENTS[i % PART_INTENTS.length]!, colors);
+	const partColor = (i: number) => color(PART_INTENTS[i % PART_INTENTS.length]!);
 	return (
 		<Box flexDirection="column">
 			<Text>
 				{cells.map((n, i) => (
-					<Text key={i} color={color(i)}>
+					<Text key={i} color={partColor(i)}>
 						{"█".repeat(n)}
 					</Text>
 				))}
@@ -44,9 +36,9 @@ export function DiskBar({ parts, total }: { parts: readonly BarPart[]; total: nu
 			<Box flexDirection="row" flexWrap="wrap" columnGap={3}>
 				{parts.map((part, i) => (
 					<Text key={part.label}>
-						<Text color={color(i)}>■ </Text>
+						<Text color={partColor(i)}>■ </Text>
 						<Text bold>{part.label}</Text>
-						<Text color={resolveIntentColor(theme, "dimText", colors)}> {part.detail}</Text>
+						<Text color={color("dimText")}> {part.detail}</Text>
 					</Text>
 				))}
 			</Box>

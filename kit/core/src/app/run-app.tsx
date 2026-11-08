@@ -34,14 +34,16 @@ export type AppSpec = {
 	/**
 	 * Builds the screen from the parsed flags, or returns undefined after printing
 	 * something itself (a non-interactive flag). Throw `UsageError` for bad input.
+	 * `carried` is what `afterExit` returned, when the screen is shown again.
 	 */
-	run: (args: Args) => ReactElement | undefined;
+	run: (args: Args, carried?: unknown) => ReactElement | undefined;
 	/**
-	 * Runs when the screen ends, before the process exits. Returning true shows the
-	 * screen again, built anew by `run`: an app that hands the terminal to another
-	 * program for a while runs it here.
+	 * Runs when the screen ends, before the process exits, with what the screen handed
+	 * off (`useHandOff`; undefined when it just ended). An app that hands the terminal
+	 * to another program runs it here. Returning a value shows the screen again, built
+	 * by `run` with that value; returning undefined ends the app.
 	 */
-	afterExit?: () => boolean;
+	afterExit?: (handedOff: unknown, args: Args) => unknown;
 };
 
 function helpText(spec: AppSpec): string {
@@ -135,10 +137,16 @@ export function runApp(spec: AppSpec, argv: readonly string[] = process.argv.sli
 	if (!process.stdin.isTTY || !process.stdout.isTTY) {
 		fail(2, "needs a terminal on stdin and stdout");
 	}
+	let handedOff: unknown;
+	let exitScreen: (() => void) | undefined;
 	const app = {
 		name: spec.name,
 		theme: spec.theme ?? defaultTuiTheme,
 		colors: detectColorRuntime(process.env),
+		handOff: (value: unknown) => {
+			handedOff = value;
+			exitScreen?.();
+		},
 	};
 	let crash: Error | undefined;
 	process.on("exit", () => {
@@ -157,13 +165,21 @@ export function runApp(spec: AppSpec, argv: readonly string[] = process.argv.sli
 			// KeyboardProvider handles Ctrl-C, so a screen's quit binding can refuse it.
 			{ exitOnCtrlC: false },
 		);
+		exitScreen = () => instance.unmount();
 		instance.waitUntilExit().then(
 			() => {
-				const again = !crash && spec.afterExit?.() ? spec.run(args) : undefined;
+				const value = handedOff;
+				handedOff = undefined;
+				const carried = crash ? undefined : spec.afterExit?.(value, args);
+				const again = carried === undefined ? undefined : spec.run(args, carried);
 				if (again) show(again);
 				else process.exit();
 			},
-			() => process.exit(),
+			(error: unknown) => {
+				// Ink ended with an error that bypassed RecordCrash: still a crash.
+				console.error(`${spec.name}: ${errorMessage(error)}`);
+				process.exit(1);
+			},
 		);
 	};
 	show(element);

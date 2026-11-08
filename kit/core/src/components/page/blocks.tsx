@@ -6,7 +6,7 @@
  */
 import { Box, Text } from "ink";
 import { createContext, useContext, type ReactNode } from "react";
-import { useTuiColors, useTuiTheme } from "../../app/app-provider";
+import { useIntentColor, useTuiColors, useTuiTheme } from "../../app/app-provider";
 import { inkBorderStyle } from "../../chrome/glyphs";
 import { UiText } from "../../primitives/display/text";
 import { resolveIntentColor } from "../../theme/colors";
@@ -17,7 +17,7 @@ import { textWidth, truncateLine } from "../../utils/strings";
 export const ContentWidth = createContext(80);
 
 function useIntent(intent: ColorIntent): string | undefined {
-	return resolveIntentColor(useTuiTheme(), intent, useTuiColors());
+	return useIntentColor()(intent);
 }
 
 /** The page's title, and one line on what this step is for. */

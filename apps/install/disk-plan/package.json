@@ -255,11 +255,11 @@
 					"steps": [
 						{
 							"keys": "jjj\\r\\x1b[B\\r",
-							"expect": "Next: press a to set up A/B in the 64.0 GB free"
+							"expect": "Next: press a to set up A/B in the 64.0 GiB free"
 						},
 						{
 							"keys": "",
-							"expect": "new EFI partition: 1.0 GB"
+							"expect": "new EFI partition: 1.0 GiB"
 						},
 						{
 							"keys": "a",
@@ -288,11 +288,11 @@
 						},
 						{
 							"keys": "",
-							"expect": "for the new system: 83.3 GB"
+							"expect": "for the new system: 83.3 GiB"
 						},
 						{
 							"keys": "\\r",
-							"expect": "Next: press a to set up A/B in the 83.3 GB free"
+							"expect": "Next: press a to set up A/B in the 83.3 GiB free"
 						},
 						{
 							"keys": "a",
@@ -333,7 +333,7 @@
 						},
 						{
 							"keys": "107264M",
-							"expect": "Windows: 150.0 GB"
+							"expect": "Windows: 150.0 GiB"
 						},
 						{
 							"keys": "\\rn30G\\rj\\rjn30G\\rjj\\rjn\\rjjj\\r",
@@ -366,7 +366,7 @@
 						},
 						{
 							"keys": "",
-							"expect": "vdv4 (xfs, 467.4 GB, 66.5 GB used): XFS can only grow, never shrink"
+							"expect": "vdv4 (xfs, 467.4 GiB, 66.5 GiB used): XFS can only grow, never shrink"
 						},
 						{
 							"keys": "",

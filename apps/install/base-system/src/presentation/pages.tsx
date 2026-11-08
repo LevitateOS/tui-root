@@ -3,6 +3,7 @@
 import { Box } from "ink";
 import type { ReactNode } from "react";
 import {
+	keyFor,
 	Callout,
 	Commands,
 	Facts,
@@ -15,6 +16,8 @@ import {
 	UiText,
 	type ColorIntent,
 	type StepStatus,
+	formatBytes,
+	formatCount,
 } from "@levitate/tui-kit";
 import { statePath, type Then } from "@levitate/install-state";
 import { guideSteps, guideTitle, STEP_INFO } from "@levitate/docs-content/install";
@@ -22,8 +25,6 @@ import type { FstabResult } from "../generated/recstrap";
 import {
 	conflicts,
 	copyFraction,
-	formatBytes,
-	formatCount,
 	formatDuration,
 	pageState,
 	remaining,
@@ -33,6 +34,7 @@ import {
 	type Session,
 } from "../domain/base";
 import type { Prompt } from "./use-base";
+import { MAIN_KEYS } from "./keymap";
 
 function Hint({ children }: { children: ReactNode }): ReactNode {
 	return <UiText intent="dimText">{children}</UiText>;
@@ -148,7 +150,7 @@ export function OverviewPage({
 					]}
 				/>
 			</Section>
-			{target ? <Hint>Enter goes to the step the install is at.</Hint> : null}
+			{target ? <Hint>{keyFor(MAIN_KEYS, "go")} goes to the step the install is at.</Hint> : null}
 		</Box>
 	);
 }
@@ -183,7 +185,7 @@ export function CheckPage({ session }: { session: Session }): ReactNode {
 							]}
 						/>
 					</Callout>
-					<Hint>Enter goes on to the copy.</Hint>
+					<Hint>{keyFor(MAIN_KEYS, "go")} goes on to the copy.</Hint>
 				</Box>
 			)}
 		</Box>
@@ -218,8 +220,8 @@ export function CopyPage({ session, now }: { session: Session; now: number }): R
 							</Section>
 						) : null}
 						<Hint>
-							Enter starts the copy. It takes a few minutes, and the screen stays here until it
-							finishes.
+							{keyFor(MAIN_KEYS, "go")} starts the copy. It takes a few minutes, and the screen
+							stays here until it finishes.
 						</Hint>
 					</Box>
 				)}
@@ -279,7 +281,7 @@ export function CopyPage({ session, now }: { session: Session; now: number }): R
 						]}
 					/>
 				</Callout>
-				<Hint>Enter goes on to the fstab.</Hint>
+				<Hint>{keyFor(MAIN_KEYS, "go")} goes on to the fstab.</Hint>
 			</Box>
 		);
 	}
@@ -298,7 +300,7 @@ export function CopyPage({ session, now }: { session: Session; now: number }): R
 			<Callout tone="warning" title="The target holds part of a system now">
 				<UiText>
 					recstrap won't copy onto it again until it's empty. Run disk-plan again to format it (or
-					empty it by hand), then press Enter here to check it again.
+					empty it by hand), then press {keyFor(MAIN_KEYS, "go")} here to check it again.
 				</UiText>
 			</Callout>
 		</Box>
@@ -395,7 +397,7 @@ export function FstabPage({
 			<Box flexDirection="column">
 				{heading}
 				<FailureCallout title="recfstab couldn't describe the mounts" failure={fstab.failure} />
-				<Hint>r reads the mounts again.</Hint>
+				<Hint>{keyFor(MAIN_KEYS, "again")} reads the mounts again.</Hint>
 			</Box>
 		);
 	const value = fstab.value;
@@ -436,8 +438,8 @@ export function FstabPage({
 				<UiText intent="warning">Writing {value.fstab_path}…</UiText>
 			) : write.kind === "ok" || prompt ? null : (
 				<Hint>
-					Enter writes these entries to {value.fstab_path || path}
-					{replaced.length > 0 ? `, replacing ${replaced.length} lines` : ""}. r reads the mounts
+					{keyFor(MAIN_KEYS, "go")} writes these entries to {value.fstab_path || path}
+					{replaced.length > 0 ? `, replacing ${replaced.length} lines` : ""}. {keyFor(MAIN_KEYS, "again")} reads the mounts
 					again.
 				</Hint>
 			)}
@@ -463,7 +465,7 @@ export function DonePage({ session, then }: { session: Session; then: Then }): R
 					<UiText>
 						Next: {STEP_INFO.setup.title.toLowerCase()}. {STEP_INFO.setup.about}{" "}
 						{then === "hub"
-							? "Enter or q goes back to the install steps."
+							? `${keyFor(MAIN_KEYS, "go")} or ${keyFor(MAIN_KEYS, "quit")} goes back to the install steps.`
 							: `The install guide has it (${guideTitle("installation-config")}).`}
 					</UiText>
 				</Callout>

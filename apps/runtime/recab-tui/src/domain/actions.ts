@@ -15,6 +15,18 @@ export type ActionId = "try" | "commit" | "rollback" | "stage" | "reboot";
 
 export const ACTION_IDS: readonly ActionId[] = ["try", "commit", "rollback", "stage", "reboot"];
 
+/**
+ * Whether the action takes the machine down: its run is not followed by reading the
+ * status again, and quitting while it runs is allowed.
+ */
+export const TAKES_MACHINE_DOWN: Record<ActionId, boolean> = {
+	try: false,
+	commit: false,
+	rollback: false,
+	stage: false,
+	reboot: true,
+};
+
 export type Verdict =
 	| { kind: "ready" }
 	| { kind: "no-change"; reason: string }

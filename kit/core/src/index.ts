@@ -1,5 +1,11 @@
 // The kit's public surface: exactly what the apps import.
-export { useAppName, useTuiColors, useTuiTheme, useTuiViewport } from "./app/app-provider";
+export {
+	useHandOff,
+	useIntentColor,
+	useTuiColors,
+	useTuiTheme,
+	useTuiViewport,
+} from "./app/app-provider";
 export { glyphs, inkBorderStyle } from "./chrome/glyphs";
 export type { BorderStyle } from "./chrome/glyphs";
 export {
@@ -16,11 +22,7 @@ export {
 export type { Column, StepStatus, Tone } from "./components/page/blocks";
 export { PAGE_SCROLL_KEYS, usePageHeight, usePageScroll } from "./components/page/page-scroll";
 export type { PageHeight } from "./components/page/page-scroll";
-export {
-	keymapStatusSegments,
-	scopeStatusSegment,
-	textStatusSegment,
-} from "./components/feedback/status-line";
+export { keymapStatusSegments, textStatusSegment } from "./components/feedback/status-line";
 export type { StatusSegment } from "./components/feedback/status-line";
 export { SelectableGrid } from "./components/navigation/selectable-grid";
 export { useFocusPlane } from "./hooks/use-focus-plane";
@@ -37,11 +39,20 @@ export { AppShell, fitFooter, useShellLayout } from "./surfaces/shell";
 export { parseHexColor, resolveIntentColor } from "./theme/colors";
 export { createTheme } from "./theme/create-theme";
 export type { ColorIntent, ThemeColor, TuiTheme } from "./theme/tokens";
-export { textWidth, truncateLine } from "./utils/strings";
+export { errorMessage, textWidth, truncateLine } from "./utils/strings";
+export { formatBytes, formatCount, shortDevice } from "./utils/format";
 export { appendRun, runsText, truncateLines, wrapRuns } from "./utils/runs";
 export type { RichTextRun } from "./utils/runs";
-export { useKeymap } from "./runtime/keymap";
+export { keyFor, movesBack, useKeymap } from "./runtime/keymap";
 export type { Keymap } from "./runtime/keymap";
 export { runApp, UsageError } from "./app/run-app";
-export { runCommand, startCommand } from "./app/command";
-export type { CommandOptions, CommandResult, RunningCommand } from "./app/command";
+export { runDir } from "./app/run-dir";
+export type { Args } from "./app/run-app";
+export {
+	describeTerminalRun,
+	runCommand,
+	runInTerminal,
+	startCommand,
+	waitForEnter,
+} from "./app/command";
+export type { CommandOptions, CommandResult, RunningCommand, TerminalRun } from "./app/command";

@@ -5,20 +5,18 @@ import {
 	ContentWidth,
 	fitFooter,
 	keymapStatusSegments,
-	resolveIntentColor,
+	PAGE_SCROLL_KEYS,
 	startCommand,
 	textStatusSegment,
 	useAsyncTask,
 	useFocusPlane,
 	useGridNavigation,
+	useIntentColor,
 	useKeymap,
 	usePageHeight,
 	usePageScroll,
 	useShellLayout,
-	useTuiColors,
-	useTuiTheme,
 	useTuiViewport,
-	PAGE_SCROLL_KEYS,
 	type ColorIntent,
 	type RunningCommand,
 } from "@levitate/tui-kit";
@@ -87,6 +85,7 @@ import {
 	Welcome,
 } from "./pages";
 import { useRecpartRun } from "./use-recpart";
+import { MODE_NAME } from "@levitate/docs-content/install";
 
 /** The editor's keys the footer shows (the rest are beside the selected row). */
 const EDITOR_FOOTER: ReadonlySet<string> = new Set(["select", "setup", "undo", "next", "back"]);
@@ -425,14 +424,13 @@ const STATE_MARK: Record<StepState, { mark: string; intent: ColorIntent }> = {
 /** Every step under its phase, marked done, current, failed or still ahead, with the
  * choices made so far beside their steps. */
 function Rail({ view, session }: { view: PageId; session: Session }): ReactNode {
-	const theme = useTuiTheme();
-	const colors = useTuiColors();
+	const color = useIntentColor();
 	const pages = shownPages(session);
 	const phases = [...new Set(pages.flatMap((p) => (p.phase ? [p.phase] : [])))];
 	const changes = session.layout?.actions.length ?? 0;
 	const choice: Partial<Record<PageId, string>> = {
 		"target-disk": session.disk ? diskPath(session.disk) : undefined,
-		system: session.mode === "ab" ? "A/B" : "mutable",
+		system: MODE_NAME[session.mode],
 		"disk-use": session.method === "erase" ? "erase all" : "keep some",
 		partitions: session.layout?.new_table
 			? "new table"
@@ -440,7 +438,6 @@ function Rail({ view, session }: { view: PageId; session: Session }): ReactNode 
 				? `${changes} change${changes === 1 ? "" : "s"}`
 				: undefined,
 	};
-	const color = (intent: ColorIntent) => resolveIntentColor(theme, intent, colors);
 	return (
 		<Box flexDirection="column">
 			<Text color={color(view === "welcome" ? "accent" : "navItem")} bold={view === "welcome"}>

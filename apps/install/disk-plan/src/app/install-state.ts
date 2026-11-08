@@ -1,3 +1,4 @@
+import { errorMessage } from "@levitate/tui-kit";
 import { recordStep, statePath, type DiskResult } from "@levitate/install-state";
 import type { ApplyResult, InstallMode } from "../generated/recpart";
 
@@ -31,7 +32,7 @@ export function saveDiskStep(disk: string, mode: InstallMode, applied: ApplyResu
 		return {
 			kind: "failed",
 			path,
-			message: error instanceof Error ? error.message : String(error),
+			message: errorMessage(error),
 		};
 	}
 }

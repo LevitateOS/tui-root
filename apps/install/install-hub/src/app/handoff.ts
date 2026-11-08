@@ -1,30 +1,24 @@
 /**
- * Handing the terminal to a step: the hub's screen ends with a pending action, the
- * action runs with the terminal to itself, and the screen starts again (runApp's `then`),
- * reading the state file afresh.
+ * Handing the terminal to a step: the hub's screen hands its action off (the kit's
+ * `useHandOff`), `runAction` runs it with the terminal to itself, and the screen starts
+ * again with the notice it returns, reading the state file afresh.
  */
-import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { shellQuote } from "@levitate/docs-content/install";
 import { emptyState, readState, recordStep, type InstallState } from "@levitate/install-state";
+import { describeTerminalRun, errorMessage, runInTerminal, waitForEnter } from "@levitate/tui-kit";
 import type { Action, Record_ } from "../domain/steps";
 
-let pending: Action | null = null;
-/** The last thing that went wrong outside the screen, shown when it comes back. */
-let lastNotice: string | null = null;
-
-export function handOff(action: Action): void {
-	pending = action;
-}
-
-export function takeNotice(): string | null {
-	const notice = lastNotice;
-	lastNotice = null;
-	return notice;
+/** Where the hub runs: the live system's root (stories point it at a fixture tree) and the install shell. */
+export interface Live {
+	root: string;
+	shell: string;
 }
 
 /** Whether `path` exists on the live system, for the preflight checks. */
-export function exists(path: string): boolean {
-	return existsSync(path);
+export function exists(live: Live, path: string): boolean {
+	return existsSync(join(live.root, path));
 }
 
 /** The install state, or why it can't be used (the hub then refuses every step). */
@@ -32,10 +26,7 @@ export function loadState(): { state: InstallState; error: string | null } {
 	try {
 		return { state: readState(), error: null };
 	} catch (error) {
-		return {
-			state: emptyState(),
-			error: error instanceof Error ? error.message : String(error),
-		};
+		return { state: emptyState(), error: errorMessage(error) };
 	}
 }
 
@@ -44,12 +35,8 @@ export function record(entry: Record_): string | null {
 		recordStep(entry.step, entry.result);
 		return null;
 	} catch (error) {
-		return `couldn't save the step: ${error instanceof Error ? error.message : String(error)}`;
+		return `couldn't save the step: ${errorMessage(error)}`;
 	}
-}
-
-function shell(): string {
-	return process.env.SHELL || "/bin/sh";
 }
 
 function say(lines: readonly string[]): void {
@@ -57,26 +44,14 @@ function say(lines: readonly string[]): void {
 	for (const line of lines) process.stdout.write(`${line}\n`);
 }
 
-function waitForEnter(): void {
-	spawnSync(
-		"/bin/sh",
-		["-c", "printf '\\nPress Enter to go back to the install steps. '; read _"],
-		{
-			stdio: "inherit",
-		},
-	);
-}
-
-/** Runs the pending action, if any; true to show the hub again. */
-export function runPending(): boolean {
-	const action = pending;
-	pending = null;
-	if (!action) return false;
+/** Runs `action` with the terminal to itself; what to tell the user when the hub comes back, if anything. */
+export function runAction(action: Action, live: Live): string | null {
 	switch (action.kind) {
 		case "app": {
-			const result = spawnSync(action.argv[0]!, action.argv.slice(1), { stdio: "inherit" });
-			if (result.error) lastNotice = `couldn't start ${action.argv[0]}: ${result.error.message}`;
-			break;
+			const run = runInTerminal(action.argv);
+			return run.kind === "exited" && run.status === 0
+				? null
+				: `${action.argv[0]} ended: ${describeTerminalRun(run)}`;
 		}
 		case "shell": {
 			say(
@@ -86,36 +61,31 @@ export function runPending(): boolean {
 							"",
 							...action.lines.map((line) => `  ${line}`),
 							"",
-							"Type exit to go back, then mark the step done with m.",
+							"Type exit to go back.",
 							"",
 						]
 					: ["The install steps wait while you work in this shell. Type exit to go back.", ""],
 			);
-			spawnSync(shell(), ["-l"], { stdio: "inherit" });
-			break;
+			const run = runInTerminal([live.shell, "-l"]);
+			return run.kind === "not-started" ? `couldn't open ${live.shell}: ${run.error}` : null;
 		}
 		case "run": {
 			say([]);
+			// Each line is shown, then run; the first failure stops the rest.
 			const script = action.lines
-				.map((line) => `printf '$ %s\\n' '${line.replace(/'/g, `'\\''`)}'\n${line} || exit $?`)
+				.map((line) => `printf '$ %s\\n' ${shellQuote(line)}\n${line} || exit $?`)
 				.join("\n");
-			const result = spawnSync("/bin/sh", ["-c", script], { stdio: "inherit" });
-			const ok = result.status === 0;
-			process.stdout.write(
-				ok
-					? "\nDone.\n"
-					: `\nStopped: exit status ${result.status ?? result.signal ?? "unknown"}.\n`,
-			);
-			if (ok && action.record) lastNotice = record(action.record);
-			else if (!ok) lastNotice = "the step's commands failed; their output was above";
-			waitForEnter();
-			break;
+			const run = runInTerminal([live.shell, "-c", script]);
+			const ok = run.kind === "exited" && run.status === 0;
+			process.stdout.write(ok ? "\nDone.\n" : `\nStopped: ${describeTerminalRun(run)}.\n`);
+			waitForEnter("\nPress Enter to go back to the install steps. ");
+			if (!ok) return "the step's commands failed; their output was above";
+			return action.record ? record(action.record) : null;
 		}
 		case "record":
 		case "none":
-			break;
+			return null;
 	}
-	return true;
 }
 
 /** Leaves the hub for a shell and comes back. */

@@ -1,25 +1,29 @@
 import { Box, Text, useApp } from "ink";
 import { useState, type ReactNode } from "react";
 import {
+	movesBack,
 	AppShell,
 	ContentWidth,
 	fitFooter,
 	keymapStatusSegments,
 	PAGE_SCROLL_KEYS,
-	resolveIntentColor,
 	textStatusSegment,
 	textWidth,
 	truncateLine,
+	useIntentColor,
 	useKeymap,
 	usePageHeight,
 	usePageScroll,
 	useShellLayout,
-	useTuiColors,
-	useTuiTheme,
 	useTuiViewport,
-	type ColorIntent,
 } from "@levitate/tui-kit";
-import { ACTION_IDS, planAction, type ActionId, type ActionPlan } from "../domain/actions";
+import {
+	ACTION_IDS,
+	planAction,
+	TAKES_MACHINE_DOWN,
+	type ActionId,
+	type ActionPlan,
+} from "../domain/actions";
 import { CONFIRM_KEYS, FOOTER_ACTIONS, MAIN_KEYS, TEXT_KEYS } from "./keymap";
 import { ActionPage, HistoryPage, OverviewPage, VerdictMark } from "./pages";
 import { useRecab } from "./use-recab";
@@ -58,7 +62,7 @@ export function RecabScreen(): ReactNode {
 		MAIN_KEYS,
 		{
 			move: (key) => {
-				const step = key === "up" || key === "k" ? -1 : 1;
+				const step = movesBack(MAIN_KEYS, key) ? -1 : 1;
 				go(VIEWS[(VIEWS.indexOf(view) + step + VIEWS.length) % VIEWS.length]!);
 			},
 			run: () => {
@@ -77,7 +81,7 @@ export function RecabScreen(): ReactNode {
 				void recab.refresh();
 			},
 			quit: () =>
-				recab.running && recab.running.action !== "reboot"
+				recab.running && !TAKES_MACHINE_DOWN[recab.running.action]
 					? setNotice(`can't quit while ${recab.running.argv.join(" ")} is running`)
 					: exit(),
 		},
@@ -106,7 +110,7 @@ export function RecabScreen(): ReactNode {
 				? TEXT_KEYS.filter((b) => b.action !== "complete")
 				: prompt
 					? TEXT_KEYS
-					: MAIN_KEYS.filter((b) => FOOTER_ACTIONS.has(b.action));
+					: MAIN_KEYS.filter((b) => FOOTER_ACTIONS.includes(b.action));
 	const pageHeight = usePageHeight(view);
 	const scrollable = !prompt && pageHeight.height > shell.content.textRows - 2;
 	const layout = fitFooter(shell, [
@@ -192,9 +196,7 @@ function Rail({
 	runs: number;
 	width: number;
 }): ReactNode {
-	const theme = useTuiTheme();
-	const colors = useTuiColors();
-	const color = (intent: ColorIntent) => resolveIntentColor(theme, intent, colors);
+	const color = useIntentColor();
 	const item = (id: View, label: string, mark: ReactNode, trailing: string) => {
 		const selected = id === view;
 		const room = Math.max(1, width - 5 - textWidth(trailing) - 1);

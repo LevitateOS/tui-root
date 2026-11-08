@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { errorMessage } from "../utils/strings";
 
 export type CommandResult = {
@@ -73,4 +74,38 @@ export function runCommand(
 	options: CommandOptions = {},
 ): Promise<CommandResult> {
 	return startCommand(argv, options).result;
+}
+
+/** How a program run in the terminal ended. */
+export type TerminalRun =
+	| { kind: "exited"; status: number }
+	| { kind: "signalled"; signal: string }
+	| { kind: "not-started"; error: string };
+
+/**
+ * Runs `argv` with the terminal to itself (stdin, stdout and stderr inherited), after
+ * the app's screen has ended: a step app, a shell, a script. Waits for it to end.
+ */
+export function runInTerminal(argv: readonly string[]): TerminalRun {
+	const result = spawnSync(argv[0]!, argv.slice(1), { stdio: "inherit" });
+	if (result.error) return { kind: "not-started", error: result.error.message };
+	if (result.signal) return { kind: "signalled", signal: result.signal };
+	return { kind: "exited", status: result.status ?? 1 };
+}
+
+/** What `run` says about its end, for the user: "exit status 1", "killed by SIGTERM". */
+export function describeTerminalRun(run: TerminalRun): string {
+	switch (run.kind) {
+		case "exited":
+			return `exit status ${run.status}`;
+		case "signalled":
+			return `killed by ${run.signal}`;
+		case "not-started":
+			return `didn't start: ${run.error}`;
+	}
+}
+
+/** Prints `prompt` and waits for Enter, with the terminal to itself. */
+export function waitForEnter(prompt: string): void {
+	spawnSync("/bin/sh", ["-c", 'printf "%s" "$1"; read _', "sh", prompt], { stdio: "inherit" });
 }

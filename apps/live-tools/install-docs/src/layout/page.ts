@@ -1,5 +1,7 @@
 import type { ContentBlock, DocsContent, InlineNode, RichText } from "@levitate/docs-content";
+import { CONTENT_KEYS } from "../presentation/ink/keymap";
 import {
+	keyFor,
 	appendRun,
 	runsText,
 	textWidth,
@@ -229,7 +231,8 @@ function commandLines(
 
 /** The copy hint that fits in `free` cells after a selected command, or none. */
 function copyHint(free: number): string {
-	return [" (c to copy)", " (c)"].find((hint) => hint.length <= free) ?? "";
+	const key = keyFor(CONTENT_KEYS, "copy");
+	return [` (${key} to copy)`, ` (${key})`].find((hint) => hint.length <= free) ?? "";
 }
 
 function table(

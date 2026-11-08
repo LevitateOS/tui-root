@@ -47,20 +47,6 @@ export function statusLines(
 	return lines;
 }
 
-export function scopeStatusSegment(scope: string, intent: ColorIntent = "accent"): StatusSegment {
-	const normalized = scope.trim().length > 0 ? scope.trim() : "tui";
-	return {
-		id: `scope-${normalized}`,
-		atoms: [
-			{
-				text: `[${normalized}]`,
-				intent,
-				bold: true,
-			},
-		],
-	};
-}
-
 export function hotkeyStatusSegment(
 	id: string,
 	key: string,

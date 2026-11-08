@@ -14,6 +14,7 @@ import {
 	Table,
 	truncateLines,
 	UiText,
+	useIntentColor,
 	useTuiColors,
 	useTuiTheme,
 	type ColorIntent,
@@ -40,8 +41,8 @@ function useIntent(intent: ColorIntent): string | undefined {
  * the machine's state. */
 function SlotCards({ status }: { status: Status }): ReactNode {
 	const width = useContext(ContentWidth);
+	const color = useIntentColor();
 	const theme = useTuiTheme();
-	const colors = useTuiColors();
 	const side = width >= 44;
 	const cards = SLOTS.map((slot) => ({ slot, tags: slotTags(status, slot) }));
 	const lines = Math.max(...cards.map((card) => card.tags.length));
@@ -49,7 +50,7 @@ function SlotCards({ status }: { status: Status }): ReactNode {
 		<Box flexDirection={side ? "row" : "column"} columnGap={1} marginBottom={1}>
 			{cards.map(({ slot, tags }) => {
 				const running = slot === status.active_slot;
-				const edge = resolveIntentColor(theme, running ? "accent" : "panelBorder", colors);
+				const edge = color(running ? "accent" : "panelBorder");
 				return (
 					<Box
 						key={slot}
@@ -63,7 +64,7 @@ function SlotCards({ status }: { status: Status }): ReactNode {
 							{running ? "● " : "○ "}Slot {slot}
 						</Text>
 						{tags.map((tag) => (
-							<Text key={tag.text} color={resolveIntentColor(theme, tag.intent, colors)}>
+							<Text key={tag.text} color={color(tag.intent)}>
 								{tag.text}
 							</Text>
 						))}

@@ -1,6 +1,5 @@
 import { Box, Text } from "ink";
-import { useTuiColors, useTuiTheme } from "../../app/app-provider";
-import { resolveIntentColor } from "../../theme/colors";
+import { useIntentColor } from "../../app/app-provider";
 import type { ColorIntent } from "../../theme/tokens";
 import { clampIndex } from "../../utils/clamp";
 import { padRight, truncateLine } from "../../utils/strings";
@@ -75,9 +74,7 @@ export function NavList({
 	markers,
 	sectionIntent = "navHeading",
 }: NavListProps) {
-	const theme = useTuiTheme();
-	const colors = useTuiColors();
-	const color = (intent: ColorIntent) => resolveIntentColor(theme, intent, colors);
+	const color = useIntentColor();
 	const style: Record<Row["kind"], { color?: string; background?: string; bold?: boolean }> = {
 		section: { color: color(sectionIntent), bold: true },
 		collapsed: { color: color("dimText") },

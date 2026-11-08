@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { useKeymap, type Keymap } from "@levitate/tui-kit";
+import { formatBytes, useKeymap, type Keymap } from "@levitate/tui-kit";
 import {
 	type Filesystem,
 	type InspectResult,
 	type InstallMode,
 	type Role,
 } from "../generated/recpart";
-import { formatBytes } from "../domain/recpart";
 import {
 	editOf,
 	MIB,
@@ -31,6 +30,8 @@ import {
 	type Setup,
 } from "../domain/setup";
 import { CHOICE_KEYS, MORE_ROOM, PARTITION_KEYS, ROOM_KEYS, TEXT_KEYS } from "./keymap";
+import { shortDevice } from "@levitate/tui-kit";
+import { SETUP_NAME } from "../domain/setup";
 
 type KeyBinding = Keymap[number];
 
@@ -235,12 +236,12 @@ export function usePartitionEditor({
 		const spare = maxMb - minMb;
 		const room = Math.min(spare, Math.max(neededMb(mode), Math.floor(spare / 2)));
 		const label = part.fs_label ?? part.label;
-		const name = `${part.device.replace(/^\/dev\//, "")}${label ? ` ("${label}")` : ""}`;
+		const name = `${shortDevice(part.device)}${label ? ` ("${label}")` : ""}`;
 		const at = segments.indexOf(target);
 		ask({
 			kind: "room",
 			title: `Make room: shrink ${name}`,
-			name: label ?? part.device.replace(/^\/dev\//, ""),
+			name: label ?? shortDevice(part.device),
 			sizeMb: entry.edit.op === "resize" ? nowMb : maxMb - room,
 			nowMb: Math.floor(part.size_bytes / MIB),
 			minMb,
@@ -291,10 +292,7 @@ export function usePartitionEditor({
 				);
 			if (result.steps.length === 0)
 				return setNotice("the system already has every partition it needs");
-			commit(
-				() => result.edits,
-				`set up ${mode === "ab" ? "A/B" : "the system"} in the free space (u undoes it)`,
-			);
+			commit(() => result.edits, `set up ${SETUP_NAME[mode]} in the free space (u undoes it)`);
 		},
 		create: () => {
 			if (segment?.kind !== "free") return;

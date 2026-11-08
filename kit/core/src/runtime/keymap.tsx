@@ -23,6 +23,8 @@ export type KeyBinding<A extends string = string> = {
 	label: string;
 	/** How a footer shows the keys; defaults to all of them joined with "/". `--help` always lists all. */
 	hint?: string;
+	/** Of `keys`, the ones that move backward (up, left, previous); the others move forward. */
+	back?: readonly KeyName[];
 };
 
 export type Keymap<A extends string = string> = readonly KeyBinding<A>[];
@@ -164,6 +166,19 @@ function allKeys(binding: KeyBinding): string {
 	return binding.keys
 		.map((key) => KEY_DISPLAY[key] ?? (key.startsWith("C-") ? `Ctrl-${key.slice(2)}` : key))
 		.join("/");
+}
+
+/** Whether `key` moves backward in the binding of `keymap` it belongs to. */
+export function movesBack(keymap: Keymap, key: KeyName): boolean {
+	return keymap.some((binding) => binding.keys.includes(key) && binding.back?.includes(key));
+}
+
+/** The key that does `action`, as prose names it ("press {keyFor(KEYS, "mark")}"): its first key. */
+export function keyFor<A extends string>(keymap: Keymap<A>, action: A): string {
+	const binding = keymap.find((b) => b.action === action);
+	if (!binding) throw new Error(`no binding for '${action}'`);
+	const key = binding.keys[0]!;
+	return KEY_DISPLAY[key] ?? (key.startsWith("C-") ? `Ctrl-${key.slice(2)}` : key);
 }
 
 /** How a footer shows a binding's keys: its `hint`, or all its keys. */

@@ -8,6 +8,8 @@ import {
 	type ManualLayout,
 	type PartitionPlan,
 } from "./generated/recpart";
+import { keyFor } from "@levitate/tui-kit";
+import { CONFIRM_KEYS } from "./presentation/keymap";
 
 /** A disk recpart listed, or a `--disk` it did not list (kept so the choice never silently moves). */
 export type DiskChoice =
@@ -199,7 +201,10 @@ export const PAGES: readonly Page[] = [
 		title: "Confirm",
 		phase: "Apply",
 		interactive: true,
-		gate: { rule: `${CONFIRM_TOKEN} is typed, then Enter starts the apply`, holds: canApply },
+		gate: {
+			rule: `${CONFIRM_TOKEN} is typed, then ${keyFor(CONFIRM_KEYS, "apply")} starts the apply`,
+			holds: canApply,
+		},
 		// Only the apply action leaves this page forwards.
 		next: () => null,
 		back: () => "preflight-checks",

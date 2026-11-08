@@ -6,31 +6,27 @@ import {
 	Callout,
 	ContentWidth,
 	Facts,
-	resolveIntentColor,
+	formatBytes,
 	Section,
+	shortDevice,
 	Table,
 	UiText,
-	useTuiColors,
-	useTuiTheme,
+	useIntentColor,
 	type ColorIntent,
 	type Tone,
 } from "@levitate/tui-kit";
 import type { InspectResult, InstallMode, PartitionPlan } from "../generated/recpart";
 import type { Run } from "../flow";
-import { describeSignature, formatBytes } from "../domain/recpart";
+import { describeSignature } from "../domain/recpart";
 import { MIB, requiredRoles, type Projection, type Segment } from "../domain/layout";
-import { neededMb, roleLabel, ROLE_NAME, ROLE_PURPOSE } from "../domain/setup";
+import { neededMb, roleLabel, ROLE_NAME, ROLE_PURPOSE, SETUP_NAME } from "../domain/setup";
 import { sizeAnswer, type PartitionEditor, type Prompt } from "./use-partition-editor";
 
 function useIntent(intent: ColorIntent): string | undefined {
-	return resolveIntentColor(useTuiTheme(), intent, useTuiColors());
+	return useIntentColor()(intent);
 }
 
-const MODE_NAME: Record<InstallMode, string> = { ab: "A/B", mutable: "the system" };
-
-function short(device: string): string {
-	return device.replace(/^\/dev\//, "");
-}
+const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /** What the Change column says, and how loudly. */
 function change(segment: Segment): { text: string; tone: ColorIntent | null } {
@@ -53,7 +49,7 @@ function change(segment: Segment): { text: string; tone: ColorIntent | null } {
 function name(segment: Segment): string {
 	if (segment.kind === "free") return "free space";
 	if (segment.kind === "new") return "(new)";
-	return short(segment.part.device);
+	return shortDevice(segment.part.device);
 }
 
 /** What is on it: filesystem and label. */
@@ -81,8 +77,7 @@ function SegmentBar({
 	selected: number;
 }): ReactNode {
 	const width = useContext(ContentWidth);
-	const theme = useTuiTheme();
-	const colors = useTuiColors();
+	const color = useIntentColor();
 	const total = Math.max(1, projection.usableEnd - projection.usableStart);
 	const segments = projection.segments;
 	const spare = Math.max(0, width - segments.length);
@@ -102,7 +97,7 @@ function SegmentBar({
 						: SEGMENT_INTENTS[partIndex++ % SEGMENT_INTENTS.length]!;
 				const glyph = segment.kind === "free" ? "·" : i === selected ? "█" : "▒";
 				return (
-					<Text key={i} color={resolveIntentColor(theme, intent, colors)} bold={i === selected}>
+					<Text key={i} color={color(intent)} bold={i === selected}>
 						{glyph.repeat(cells[i]!)}
 					</Text>
 				);
@@ -232,7 +227,7 @@ type Guide = { tone: Tone; title: string; lines: ReactNode[] };
 
 /** The one next step: make room, fill the free space, fix what recpart refuses, or go on. */
 function guide(editor: PartitionEditor, mode: InstallMode, plan: Run<PartitionPlan>): Guide {
-	const name = MODE_NAME[mode];
+	const name = SETUP_NAME[mode];
 	if (editor.missing.length === 0) {
 		if (plan.kind === "ok")
 			return {
@@ -283,10 +278,10 @@ function guide(editor: PartitionEditor, mode: InstallMode, plan: Run<PartitionPl
 			tone: "info",
 			title: `Next: press s to make room for ${name}`,
 			lines: [
-				`There isn't ${need} of free space in one place, which ${mode === "ab" ? "A/B" : "the system"} needs.`,
+				`There isn't ${need} of free space in one place, which ${SETUP_NAME[mode]} needs.`,
 				<Text key="s">
 					{"s shrinks "}
-					<Text bold>{`${short(shrink.part.device)}${label ? ` ("${label}")` : ""}`}</Text>
+					<Text bold>{`${shortDevice(shrink.part.device)}${label ? ` ("${label}")` : ""}`}</Text>
 					{` without touching its files: it can give up to ${formatBytes(shrink.spareMb * MIB)}. You choose how much with ← and →.`}
 				</Text>,
 			],
@@ -303,18 +298,18 @@ function guide(editor: PartitionEditor, mode: InstallMode, plan: Run<PartitionPl
 		tone: "warning",
 		title: "No partition here can be made smaller",
 		lines: [
-			`${mode === "ab" ? "A/B" : "The system"} needs ${need} of free space, and there is none.`,
+			`${capital(SETUP_NAME[mode])} needs ${need} of free space, and there is none.`,
 			...(big.length ? big : stuck).map((part) => (
 				<Text key={part.device}>
 					{"• "}
-					<Text bold>{short(part.device)}</Text>
+					<Text bold>{shortDevice(part.device)}</Text>
 					{` (${[part.filesystem, formatBytes(part.size_bytes), part.used_bytes !== null ? `${formatBytes(part.used_bytes)} used` : null].filter(Boolean).join(", ")}): ${part.resize_blocker!.split("; ")[0]}`}
 				</Text>
 			)),
 			...(root
 				? [
 						<UiText key="root" intent="dimText">
-							{`This disk holds the system running now (/ is ${short(root.device)}), so its partitions are in use. From the live ISO they aren't, but XFS still can't shrink.`}
+							{`This disk holds the system running now (/ is ${shortDevice(root.device)}), so its partitions are in use. From the live ISO they aren't, but XFS still can't shrink.`}
 						</UiText>,
 					]
 				: []),
@@ -355,7 +350,7 @@ function Selected({
 	if (segment.kind === "free") {
 		what = `${formatBytes(segment.size)} of free space`;
 		chips = [
-			...(has("setup") ? [{ hotkey: "a", label: `Set up ${MODE_NAME[mode]} here` }] : []),
+			...(has("setup") ? [{ hotkey: "a", label: `Set up ${SETUP_NAME[mode]} here` }] : []),
 			{ hotkey: "n", label: "New partition here" },
 		];
 	} else if (segment.kind === "new") {
@@ -370,7 +365,7 @@ function Selected({
 		const part = segment.part;
 		const label = part.fs_label ?? part.label;
 		what = [
-			`${short(part.device)}: ${formatBytes(part.size_bytes)} now`,
+			`${shortDevice(part.device)}: ${formatBytes(part.size_bytes)} now`,
 			part.filesystem ?? "no filesystem",
 			label ? `"${label}"` : null,
 			part.used_bytes !== null ? `${formatBytes(part.used_bytes)} used` : null,
@@ -466,7 +461,7 @@ export function PartitionEditorPage({
 				? [
 						s.kind === "new"
 							? `new, ${formatBytes(s.size)}`
-							: `${short(s.part.device)}, ${change(s).text}`,
+							: `${shortDevice(s.part.device)}, ${change(s).text}`,
 					]
 				: [],
 		);
@@ -521,7 +516,7 @@ export function PartitionEditorPage({
 						{[
 							...projection.erased.map(
 								(p) =>
-									`${short(p.device)} ${formatBytes(p.size_bytes)}${p.filesystem ? ` ${p.filesystem}` : ""}`,
+									`${shortDevice(p.device)} ${formatBytes(p.size_bytes)}${p.filesystem ? ` ${p.filesystem}` : ""}`,
 							),
 							...(editor.edits.newTable
 								? (inspect.value.signatures ?? []).map(
@@ -532,7 +527,7 @@ export function PartitionEditorPage({
 					</UiText>
 				</Section>
 			) : null}
-			<Section title={`${mode === "ab" ? "A/B" : "The system"} needs`}>
+			<Section title={`${capital(SETUP_NAME[mode])} needs`}>
 				<Facts
 					rows={requiredRoles(mode).map((role) => {
 						const held = holdersOf(role);

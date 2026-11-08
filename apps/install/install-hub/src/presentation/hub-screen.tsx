@@ -8,8 +8,9 @@ import {
 	Facts,
 	fitFooter,
 	keymapStatusSegments,
+	keyFor,
+	movesBack,
 	PAGE_SCROLL_KEYS,
-	resolveIntentColor,
 	Section,
 	textStatusSegment,
 	UiText,
@@ -17,16 +18,16 @@ import {
 	useKeymap,
 	usePageHeight,
 	usePageScroll,
+	useHandOff,
+	useIntentColor,
 	useShellLayout,
-	useTuiColors,
-	useTuiTheme,
 	type ColorIntent,
 } from "@levitate/tui-kit";
 import { statePath } from "@levitate/install-state";
 import type { Distro } from "@levitate/docs-content/distros";
-import { exists, handOff, loadState, record, SHELL_ACTION, takeNotice } from "../app/handoff";
+import { exists, loadState, record, SHELL_ACTION, type Live } from "../app/handoff";
 import { guideTitle } from "@levitate/docs-content/install";
-import { installSteps, type Step, type StepStatus } from "../domain/steps";
+import { installSteps, type Action, type Step, type StepStatus } from "../domain/steps";
 import { HUB_KEYS } from "./keymap";
 
 const MARK: Record<StepStatus, { mark: string; intent: ColorIntent }> = {
@@ -35,12 +36,22 @@ const MARK: Record<StepStatus, { mark: string; intent: ColorIntent }> = {
 	blocked: { mark: "○", intent: "dimText" },
 };
 
-export function HubScreen({ distro }: { distro: Distro }): ReactNode {
+export function HubScreen({
+	distro,
+	live,
+	notice: carried,
+}: {
+	distro: Distro;
+	live: Live;
+	/** What went wrong while the hub was away (a step app that failed), if anything. */
+	notice: string | null;
+}): ReactNode {
 	const { exit } = useApp();
+	const handOff = useHandOff<Action>();
 	const [loaded, setLoaded] = useState(loadState);
-	const [notice, setNotice] = useState<string | null>(() => takeNotice() ?? loaded.error);
+	const [notice, setNotice] = useState<string | null>(() => carried ?? loaded.error);
 	// An unusable state file stops every step: doing one would build on an unknown install.
-	const steps = installSteps(distro, loaded.state, exists).map((step) =>
+	const steps = installSteps(distro, loaded.state, (path) => exists(live, path)).map((step) =>
 		loaded.error
 			? {
 					...step,
@@ -57,10 +68,6 @@ export function HubScreen({ distro }: { distro: Distro }): ReactNode {
 	);
 	const focus = useFocusPlane({ initial: "content" });
 	const step = steps[selected]!;
-	const leave = (action: Parameters<typeof handOff>[0]) => {
-		handOff(action);
-		exit();
-	};
 	const reload = (error: string | null) => {
 		setLoaded(loadState());
 		setNotice(error);
@@ -69,7 +76,7 @@ export function HubScreen({ distro }: { distro: Distro }): ReactNode {
 	useKeymap(HUB_KEYS, {
 		move: (key) =>
 			setSelected((i) =>
-				key === "up" || key === "k" ? Math.max(0, i - 1) : Math.min(steps.length - 1, i + 1),
+				movesBack(HUB_KEYS, key) ? Math.max(0, i - 1) : Math.min(steps.length - 1, i + 1),
 			),
 		start: () => {
 			if (loaded.error) return setNotice(loaded.error);
@@ -83,7 +90,7 @@ export function HubScreen({ distro }: { distro: Distro }): ReactNode {
 				reload(record(action.record));
 				return setSelected((i) => Math.min(steps.length - 1, i + 1));
 			}
-			leave(action);
+			handOff(action);
 		},
 		mark: () => {
 			const action = step.action;
@@ -94,7 +101,7 @@ export function HubScreen({ distro }: { distro: Distro }): ReactNode {
 			reload(record(action.record));
 			setSelected((i) => Math.min(steps.length - 1, i + 1));
 		},
-		shell: () => leave(SHELL_ACTION),
+		shell: () => handOff(SHELL_ACTION),
 		focus: () => focus.togglePlane(),
 		quit: () => exit(),
 	});
@@ -102,8 +109,10 @@ export function HubScreen({ distro }: { distro: Distro }): ReactNode {
 	const shell = useShellLayout({ navWidth: 22 });
 	const pageHeight = usePageHeight(`${step.id}:${step.status}`);
 	const scrollable = pageHeight.height > shell.content.textRows - 2;
+	// Tab switches panes only when one pane shows at a time.
+	const keys = HUB_KEYS.filter((binding) => shell.narrow || binding.action !== "focus");
 	const layout = fitFooter(shell, [
-		...keymapStatusSegments(scrollable ? [...HUB_KEYS, ...PAGE_SCROLL_KEYS] : HUB_KEYS),
+		...keymapStatusSegments(scrollable ? [...keys, ...PAGE_SCROLL_KEYS] : keys),
 		...(notice ? [textStatusSegment("notice", notice, "warning")] : []),
 	]);
 	const scroll = usePageScroll(pageHeight, layout.content.textRows, true);
@@ -131,9 +140,7 @@ export function HubScreen({ distro }: { distro: Distro }): ReactNode {
 }
 
 function StepRail({ steps, selected }: { steps: readonly Step[]; selected: number }): ReactNode {
-	const theme = useTuiTheme();
-	const colors = useTuiColors();
-	const color = (intent: ColorIntent) => resolveIntentColor(theme, intent, colors);
+	const color = useIntentColor();
 	return (
 		<Box flexDirection="column">
 			{steps.map((step, i) => {
@@ -188,17 +195,19 @@ function StepPage({ step, statePath }: { step: Step; statePath: string }): React
 				</Section>
 			) : null}
 			{action.kind === "app" ? (
-				<Section title="Enter starts">
+				<Section title={`${keyFor(HUB_KEYS, "start")} starts`}>
 					<Commands lines={[action.argv.join(" ")]} />
 				</Section>
 			) : action.kind === "run" ? (
-				<Section title="Enter runs">
+				<Section title={`${keyFor(HUB_KEYS, "start")} runs`}>
 					<Commands lines={action.lines} />
 				</Section>
 			) : action.kind === "shell" ? (
-				<Section title="In the shell (Enter opens it)">
+				<Section title={`In the shell (${keyFor(HUB_KEYS, "start")} opens it)`}>
 					<Commands lines={action.lines} />
-					<UiText intent="dimText">Then press m here to mark the step done.</UiText>
+					<UiText intent="dimText">
+						Then press {keyFor(HUB_KEYS, "mark")} here to mark the step done.
+					</UiText>
 				</Section>
 			) : action.kind === "none" ? (
 				<UiText intent="dimText">{action.why}</UiText>

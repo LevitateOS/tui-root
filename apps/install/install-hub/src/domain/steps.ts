@@ -1,6 +1,8 @@
 import type { Distro } from "@levitate/docs-content/distros";
+import { formatCount } from "@levitate/tui-kit";
 import {
 	installSteps as procedure,
+	MODE_NAME,
 	type GuideRef,
 	type InstallStepId,
 } from "@levitate/docs-content/install";
@@ -38,8 +40,6 @@ export interface Step {
 	guide: GuideRef;
 }
 
-const MODE_NAME = { ab: "A/B", mutable: "mutable" } as const;
-
 /** What the hub records for a step that its own action completes. */
 function recordFor(id: InstallStepId, state: InstallState): Record_ | undefined {
 	const disk = state.steps.disk?.result;
@@ -66,7 +66,7 @@ function summary(id: InstallStepId, state: InstallState): string | undefined {
 			if (!base) return undefined;
 			return base.result.entries === null
 				? `copied to ${base.result.target}`
-				: `${base.result.entries.toLocaleString("en-US")} files copied to ${base.result.target}, fstab written`;
+				: `${formatCount(base.result.entries)} files copied to ${base.result.target}, fstab written`;
 		case "setup":
 			return state.steps.setup ? "marked done" : undefined;
 		case "boot":
