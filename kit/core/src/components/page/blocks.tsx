@@ -103,8 +103,8 @@ export function Facts({ rows }: { rows: ReadonlyArray<[string, ReactNode]> }): R
 	const dim = useIntent("dimText");
 	return (
 		<Box flexDirection="column">
-			{rows.map(([label, value]) => (
-				<Text key={label}>
+			{rows.map(([label, value], index) => (
+				<Text key={`${index}-${label}`}>
 					<Text color={dim}>{label.padEnd(labelWidth)}</Text>
 					{"  "}
 					{value}
