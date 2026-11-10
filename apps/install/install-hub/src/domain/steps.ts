@@ -1,5 +1,5 @@
 import type { Distro } from "@levitate/docs-content/distros";
-import { formatCount } from "@levitate/tui-kit";
+import { formatCount, shortDevice } from "@levitate/tui-kit";
 import {
 	installSteps as procedure,
 	MODE_NAME,
@@ -34,8 +34,10 @@ export interface Step {
 	status: StepStatus;
 	/** What it did, once done. */
 	summary?: string;
-	/** Checks or facts to show. */
-	checks?: readonly { ok: boolean; label: string; fix?: string }[];
+	/** When it finished, as the state file recorded it (ISO 8601). */
+	doneAt?: string;
+	/** Checks to show: what was looked for, where, and what to do when it is missing. */
+	checks?: readonly { ok: boolean; label: string; path: string; fix?: string }[];
 	action: Action;
 	/** Where the guide beside the hub has the step in full. */
 	guide: GuideRef;
@@ -54,6 +56,25 @@ function recordFor(id: InstallStepId, state: InstallState): Record_ | undefined 
 			return disk ? { step: "boot", result: { mode: disk.mode } } : undefined;
 		default:
 			return undefined;
+	}
+}
+
+/** What a finished step leaves, short enough for the end of its row in the rail. */
+export function railValue(id: InstallStepId, state: InstallState): string {
+	const { preflight, disk, base, setup, boot } = state.steps;
+	switch (id) {
+		case "preflight":
+			return preflight ? "UEFI" : "";
+		case "disk":
+			return disk ? shortDevice(disk.result.disk) : "";
+		case "base":
+			return base ? "copied" : "";
+		case "setup":
+			return setup ? (setup.result.user ?? (setup.result.manual ? "by hand" : "set")) : "";
+		case "boot":
+			return boot ? MODE_NAME[boot.result.mode] : "";
+		case "finish":
+			return "";
 	}
 }
 
@@ -108,6 +129,7 @@ export function installSteps(
 				about: step.about,
 				guide: step.guide,
 				summary: summary(step.id, state),
+				doneAt: step.id === "finish" ? undefined : state.steps[step.id]?.done_at,
 			};
 			const run = step.run;
 			switch (run.kind) {
@@ -115,6 +137,7 @@ export function installSteps(
 					const checks = run.checks.map((check) => ({
 						ok: exists(check.path),
 						label: check.label,
+						path: check.path,
 						fix: check.fix,
 					}));
 					return {
@@ -122,7 +145,7 @@ export function installSteps(
 						checks,
 						action:
 							checks.every((check) => check.ok) && record
-								? { kind: "record", label: "continue", record }
+								? { kind: "record", label: "Continue to the disk", record }
 								: { kind: "none", why: "Fix the failed checks first." },
 					};
 				}
@@ -133,7 +156,7 @@ export function installSteps(
 							kind: "app",
 							// The app ends by sending the user back here, not to a shell.
 							argv: [...run.argv, "--then", "hub"],
-							label: `open ${run.argv[0]}`,
+							label: `Start ${run.argv[0]}`,
 							byHand: record,
 						},
 					};
@@ -142,7 +165,7 @@ export function installSteps(
 						...base,
 						action: {
 							kind: "run",
-							label: step.id === "finish" ? "unmount and reboot" : "run this",
+							label: step.id === "finish" ? "Unmount and reboot" : "Install the boot loader",
 							lines: run.lines,
 							record,
 						},

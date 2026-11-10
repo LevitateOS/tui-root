@@ -23,8 +23,10 @@ function liveFrom(args: Args): Live {
 runApp({
 	name: "install-hub",
 	summary: manifest.description,
-	// The distro being installed: its colours.
-	theme: (args) => brandTheme(brandOf(DISTROS.find((d) => d.osName === args["os-name"]))),
+	// The distro being installed: its colours. The hub runs in half of the install screen,
+	// so both panes stay side by side down to 60 columns.
+	theme: (args) =>
+		brandTheme(brandOf(DISTROS.find((d) => d.osName === args["os-name"])), {}, { minColumns: 60 }),
 	flags: [
 		{
 			name: "os-name",

@@ -42,7 +42,7 @@
 					},
 					"steps": [
 						{
-							"expect": "Check that this machine can take the install."
+							"expect": "Can this machine take the install?"
 						},
 						{
 							"keys": "",
@@ -67,7 +67,7 @@
 					"steps": [
 						{
 							"keys": "jj",
-							"expect": "Waits for the steps before it."
+							"expect": "Waits for the preflight and the disk."
 						},
 						{
 							"keys": "\\r",
@@ -99,7 +99,7 @@
 					},
 					"steps": [
 						{
-							"expect": "Fix the failed checks first."
+							"expect": "This boot cannot take the install"
 						}
 					]
 				},
@@ -111,7 +111,7 @@
 					},
 					"steps": [
 						{
-							"expect": "$ base-system"
+							"expect": "Start base-system"
 						},
 						{
 							"keys": "",
@@ -119,11 +119,11 @@
 						},
 						{
 							"keys": "k",
-							"expect": "/dev/vda, A/B, at /mnt"
+							"expect": "/dev/vda, A/B"
 						},
 						{
 							"keys": "jjj",
-							"expect": "--boot ab --slot-a /dev/vda2 --slot-b /dev/vda3"
+							"expect": "LevitateOS (slot B)"
 						}
 					],
 					"args": [
@@ -156,6 +156,34 @@
 					]
 				},
 				{
+					"name": "ready to reboot",
+					"about": "Every step done: the finish page shows the machine as a card.",
+					"env": {
+						"INSTALL_STATE": "fixtures/all-done.json"
+					},
+					"steps": [
+						{
+							"expect": "Ready to reboot"
+						},
+						{
+							"keys": "k",
+							"expect": "The boot loader is installed"
+						},
+						{
+							"keys": "j",
+							"expect": "studio"
+						}
+					],
+					"args": [
+						"--os-name",
+						"LevitateOS",
+						"--shell",
+						"/bin/sh",
+						"--live-root",
+						"fixtures/live"
+					]
+				},
+				{
 					"name": "acorn",
 					"about": "On AcornOS the launcher names it; the configuration step opens system-setup, and says how to mark it done when it was typed by hand.",
 					"args": [
@@ -167,15 +195,15 @@
 						"fixtures/live"
 					],
 					"env": {
-						"INSTALL_STATE": "fixtures/disk-done.json"
+						"INSTALL_STATE": "fixtures/base-done.json"
 					},
 					"steps": [
 						{
-							"expect": "AcornOS install"
+							"expect": "◆ AcornOS"
 						},
 						{
-							"keys": "j",
-							"expect": "$ system-setup"
+							"keys": "",
+							"expect": "Start system-setup"
 						},
 						{
 							"keys": "",
