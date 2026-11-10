@@ -33,17 +33,24 @@ content from it instead of repeating the geometry. `AppShell` draws exactly that
 layout, under a header and over the footer:
 
 - **The header** is a band on the brand's colour, fading into the surface: whose app it
-  is (`theme.brand`), then the app's name and where in it you are. Under it is one
-  segment a step when the app passes its `progress`, else a rule.
+  is (`theme.brand`), then the app's name and where in it you are. Under it is a rule,
+  or, for an app that asks the layout for `steps` and passes its `progress`, a step
+  line a full row thick with a row of space above and below.
 - **A pane** is a surface, not a box: its background, a blank row above and below the
   body, padding beside it. Every cell carries the pane's background, so a screenshot
   shows no terminal colour.
-- **The footer** shows each key as a keycap; a segment marked `end` sits at the end of
-  its line.
+- **The footer** shows each key as a keycap, with a row of its surface under them; a
+  segment marked `end` sits at the end of its line.
 
 A brand (`brandTheme`) is a name and three colours on top of the default theme: the
-accent, a second accent and the band. The default colours are the website's. Text is
-measured in terminal cells with `string-width`, as Ink does.
+accent, a second accent and the band. The default colours are the website's. On a
+terminal without 24-bit colour each is matched to the nearest of the 256-colour palette
+here (`nearest256`): left to chalk, the dark greens come out teal.
+
+Inside a pane, Ink gives a `Text` nested in another the pane's background, not the outer
+`Text`'s. A row with its own background therefore sets it on every part (see `StepPath`).
+
+Text is measured in terminal cells with `string-width`, as Ink does.
 
 ## Quick Start
 

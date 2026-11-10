@@ -1,17 +1,51 @@
+import chalk from "chalk";
 import type { ColorIntent, ThemeColor, TuiTheme } from "./tokens";
 
 /**
- * Whether the app draws colour at all. How many colours the terminal has is chalk's
- * business (Ink colours text through it, and it reads TERM/COLORTERM/FORCE_COLOR);
- * chalk does not read NO_COLOR, so this does.
+ * Whether the app draws colour at all, and how many colours the terminal has. chalk
+ * (which Ink colours text through) works the second out from TERM/COLORTERM/FORCE_COLOR;
+ * it does not read NO_COLOR, so this does.
  */
 export type ColorRuntime = {
 	enabled: boolean;
+	/** `256` when the terminal has no 24-bit colour: the theme's colours are then matched
+	 * to its palette here, since chalk's own conversion turns the dark greens teal. */
+	depth: "truecolor" | "256";
 };
 
 /** https://no-color.org: a non-empty NO_COLOR turns colour off. */
 export function detectColorRuntime(env: Record<string, string | undefined>): ColorRuntime {
-	return { enabled: !env.NO_COLOR };
+	return { enabled: !env.NO_COLOR, depth: chalk.level >= 3 ? "truecolor" : "256" };
+}
+
+/** The 256-colour palette past the first 16: a 6x6x6 cube, then 24 greys. */
+const CUBE = [0, 95, 135, 175, 215, 255];
+const PALETTE: [number, number, number][] = [
+	...CUBE.flatMap((r) => CUBE.flatMap((g) => CUBE.map((b): [number, number, number] => [r, g, b]))),
+	...Array.from({ length: 24 }, (_, i): [number, number, number] => [
+		8 + 10 * i,
+		8 + 10 * i,
+		8 + 10 * i,
+	]),
+];
+
+/** The palette index (16..255) of the colour nearest `hex`. */
+export function nearest256(hex: string): number {
+	const [r, g, b] = [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16)) as [
+		number,
+		number,
+		number,
+	];
+	let best = 0;
+	let least = Infinity;
+	PALETTE.forEach(([pr, pg, pb], i) => {
+		const distance = (pr - r) ** 2 + (pg - g) ** 2 + (pb - b) ** 2;
+		if (distance < least) {
+			least = distance;
+			best = i;
+		}
+	});
+	return 16 + best;
 }
 
 /** `#rgb`, `#rrggbb` or `#rrggbbaa` (alpha dropped) as lower-case `#rrggbb`, or undefined. */
@@ -27,7 +61,8 @@ export function parseHexColor(input: string): `#${string}` | undefined {
 	return undefined;
 }
 
-/** A colour for Ink's `color`/`backgroundColor`: hex, or undefined for "no colour". */
+/** A colour for Ink's `color`/`backgroundColor`: hex, the nearest palette colour on a
+ * 256-colour terminal, or undefined for "no colour". */
 export function resolveColor(
 	color: ThemeColor | string | undefined,
 	runtime: ColorRuntime,
@@ -35,7 +70,8 @@ export function resolveColor(
 	if (!runtime.enabled || color === undefined || color === "inherit") {
 		return undefined;
 	}
-	return parseHexColor(color);
+	const hex = parseHexColor(color);
+	return hex && runtime.depth === "256" ? `ansi256(${nearest256(hex)})` : hex;
 }
 
 export function resolveIntentColor(

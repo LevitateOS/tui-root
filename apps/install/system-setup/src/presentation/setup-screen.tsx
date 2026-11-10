@@ -44,7 +44,11 @@ export function SetupScreen({
 }): ReactNode {
 	const { exit } = useApp();
 	const { columns } = useTuiViewport();
-	const shell = useShellLayout({ navWidth: columns < 110 ? 26 : 32, navFlush: true });
+	const shell = useShellLayout({
+		navWidth: columns < 110 ? 26 : 32,
+		navFlush: true,
+		steps: true,
+	});
 	const setup = useSetup(target);
 	const { session, prompt, page } = setup;
 	const [notice, setNotice] = useState<string | null>(null);

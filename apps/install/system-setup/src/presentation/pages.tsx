@@ -257,13 +257,22 @@ function PickRow({
 	const region = label.lastIndexOf("/") + 1;
 	const pad = " ".repeat(Math.max(0, room - textWidth(label) + 1));
 	if (selected) {
+		// Each part names the bar's colours itself: a nested Text would take the pane's
+		// background and leave the place and the time dark on dark.
+		const bar = { backgroundColor: color("selectionBackground"), color: color("selection") };
 		return (
-			<Text backgroundColor={color("selectionBackground")} color={color("selection")}>
+			<Text {...bar}>
 				{" "}
 				{label.slice(0, region)}
-				<Text bold>{label.slice(region)}</Text>
+				<Text bold {...bar}>
+					{label.slice(region)}
+				</Text>
 				{pad}
-				{clock ? <Text bold>{clock.time}</Text> : null}
+				{clock ? (
+					<Text bold {...bar}>
+						{clock.time}
+					</Text>
+				) : null}
 				{clock ? `  ${clock.offset} ` : ""}
 			</Text>
 		);
@@ -326,7 +335,8 @@ function ZoneCard({
 		place,
 		found.flatMap((name) => places.get(name) ?? []),
 	);
-	const KIND = { sea: "navBorder", land: "panelBorder", lit: "accent", pin: "highlight" } as const;
+	// Land stands clear of the card; the zones a search found and the pin stand clear of it.
+	const KIND = { sea: "navBorder", land: "dimText", lit: "accent", pin: "highlight" } as const;
 	const fact = (label: string, value: string, bold = false) => (
 		<Text>
 			<Text color={color("dimText")}>{label}</Text>
@@ -359,7 +369,11 @@ function ZoneCard({
 				{map.map((line, row) => (
 					<Text key={row}>
 						{line.map((cell, column) => (
-							<Text key={column} bold={cell.kind === "pin"} color={color(KIND[cell.kind])}>
+							<Text
+								key={column}
+								bold={cell.kind === "pin" || cell.kind === "lit"}
+								color={color(KIND[cell.kind])}
+							>
 								{cell.text}
 							</Text>
 						))}

@@ -16,7 +16,7 @@ export type TuiAppContextValue = {
 const AppContext = createContext<TuiAppContextValue>({
 	name: "tui",
 	theme: defaultTuiTheme,
-	colors: { enabled: true },
+	colors: { enabled: true, depth: "truecolor" },
 	handOff: () => {
 		throw new Error("useHandOff needs runApp");
 	},

@@ -2,6 +2,9 @@
  * Steps as a path you travel down: a mark for each, a line joining them, what was
  * answered beside them, and the one you are at on a raised bar with an accent edge.
  * It draws to both edges of its pane (`useShellLayout({ navFlush: true })`).
+ *
+ * In a pane with a background, Ink gives a Text nested in another the pane's background,
+ * not the outer Text's: each part of the raised row therefore names the row's own.
  */
 import { Box, Text } from "ink";
 import type { ReactNode } from "react";
@@ -60,19 +63,26 @@ export function StepPath({
 				return (
 					<Box key={step.id} flexDirection="column">
 						<Text backgroundColor={background}>
-							<Text color={color("accent")}>{here ? "▌" : " "}</Text>
+							<Text color={color("accent")} backgroundColor={background}>
+								{here ? "▌" : " "}
+							</Text>
 							{" ".repeat(MARK_COLUMN - 1)}
-							<Text color={color(here && step.state !== "done" ? "accent" : intent)} bold={here}>
+							<Text
+								color={color(here && step.state !== "done" ? "accent" : intent)}
+								backgroundColor={background}
+								bold={here}
+							>
 								{here && step.state !== "done" && step.state !== "failed" ? "◉" : mark}
 							</Text>
 							{" ".repeat(LABEL_COLUMN - MARK_COLUMN - 1)}
 							<Text
 								bold={here}
 								color={color(here ? "text" : step.state === "waiting" ? "dimText" : "navItem")}
+								backgroundColor={background}
 							>
 								{label}
 							</Text>
-							<Text color={color("dimText")}>
+							<Text color={color("dimText")} backgroundColor={background}>
 								{" ".repeat(Math.max(0, room - textWidth(label) - textWidth(value)))}
 								{value}
 							</Text>

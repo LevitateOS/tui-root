@@ -64,14 +64,16 @@ export function SearchField({
 	const color = useIntentColor();
 	const used = 1 + textWidth(label) + 2 + textWidth(text) + 1;
 	const end = trailing && used + textWidth(trailing) + 2 <= width ? trailing : "";
+	// Each part names the field's background: a nested Text would take the pane's.
+	const field = color("raisedBackground");
 	return (
-		<Text backgroundColor={color("raisedBackground")}>
-			<Text color={color("navHeading")}>{` ${label}  `}</Text>
-			<Text bold color={color("text")}>
+		<Text backgroundColor={field}>
+			<Text color={color("navHeading")} backgroundColor={field}>{` ${label}  `}</Text>
+			<Text bold color={color("text")} backgroundColor={field}>
 				{text}
 			</Text>
 			<Text backgroundColor={color("accent")}> </Text>
-			<Text color={color("navHeading")}>
+			<Text color={color("navHeading")} backgroundColor={field}>
 				{" ".repeat(Math.max(0, width - used - textWidth(end) - (end ? 1 : 0)))}
 				{end}
 				{end ? " " : ""}

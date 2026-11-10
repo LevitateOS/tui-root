@@ -2,7 +2,7 @@ import { Box, Text } from "ink";
 import type { ReactNode } from "react";
 import { useTuiColors, useTuiTheme, useTuiViewport } from "../app/app-provider";
 import type { FocusPlane } from "../hooks/use-focus-plane";
-import { mixColors, resolveIntentColor } from "../theme/colors";
+import { mixColors, parseHexColor, resolveColor, resolveIntentColor } from "../theme/colors";
 import type { ColorIntent, TuiTheme } from "../theme/tokens";
 import { statusLines, type StatusSegment } from "../components/feedback/status-line";
 import { RichTextLine } from "../primitives/display/rich-text";
@@ -12,8 +12,10 @@ import { textWidth, truncateLine } from "../utils/strings";
 /** Below this the shell shows "Terminal too small" instead of a pane. */
 const MIN_COLUMNS = 24;
 const MIN_ROWS = 8;
-/** The header: the band, and the progress line (or a rule) under it. */
+/** The header: the band, then a rule; or, with steps, a row of space, the step line (a
+ * full row thick) and another row of space. */
 const HEADER_ROWS = 2;
+const HEADER_ROWS_WITH_STEPS = 4;
 /** A pane: a blank row, the body, a blank row; a column of padding beside its own. */
 const PANE_TOP_ROWS = 1;
 const PANE_BOTTOM_ROWS = 1;
@@ -21,6 +23,8 @@ const SIDE_COLUMNS = 2;
 /** The footer's rows before `fitFooter`, its side padding, and the share of the terminal it may take. */
 const FOOTER_ROWS = 1;
 const FOOTER_PADDING_X = 1;
+/** A row of the footer's surface under the keys, so they do not sit on the screen's edge. */
+const FOOTER_PADDING_BOTTOM = 1;
 const FOOTER_MAX_SHARE = 1 / 2;
 /** The band fades from the brand's colour into the surface over this share of the width. */
 const BAND_FADE = 0.7;
@@ -45,6 +49,8 @@ export type ShellLayout = {
 	gap: number;
 	/** The nav body draws to the pane's edges (no side padding). */
 	navFlush: boolean;
+	/** The header's rows: more when it carries a step line. */
+	headerRows: number;
 	/** The footer's lines (set by `fitFooter`). */
 	footer: RichTextRun[][];
 };
@@ -64,14 +70,16 @@ function pane(theme: TuiTheme, outerWidth: number, outerHeight: number, flush = 
  * theme's `navWidth` beside a content pane when the terminal is at least
  * `layout.minColumns` wide, else one full-width pane. Apps size what they draw from the
  * pane layouts this returns. `navFlush` gives the nav body the pane's whole width (a
- * list that draws its own selection bar to both edges).
+ * list that draws its own selection bar to both edges). `steps` makes room in the header
+ * for the step line the app gives `AppShell` as `progress`.
  */
 export function useShellLayout(
-	options: { navWidth?: number; navFlush?: boolean } = {},
+	options: { navWidth?: number; navFlush?: boolean; steps?: boolean } = {},
 ): ShellLayout {
 	const theme = useTuiTheme();
 	const { columns, rows } = useTuiViewport();
-	const paneHeight = Math.max(1, rows - FOOTER_ROWS - HEADER_ROWS);
+	const headerRows = options.steps ? HEADER_ROWS_WITH_STEPS : HEADER_ROWS;
+	const paneHeight = Math.max(1, rows - FOOTER_ROWS - FOOTER_PADDING_BOTTOM - headerRows);
 	const gap = theme.chrome.framePaneGap;
 	const narrow = columns < theme.layout.minColumns;
 	const navWidth = Math.min(
@@ -86,6 +94,7 @@ export function useShellLayout(
 		rows,
 		gap,
 		navFlush,
+		headerRows,
 		nav: narrow ? undefined : pane(theme, navWidth, paneHeight, navFlush),
 		content: pane(theme, narrow ? columns : columns - navWidth - gap, paneHeight),
 		footer: [],
@@ -173,11 +182,14 @@ type Cell = { text: string; intent: ColorIntent; bold?: boolean };
  */
 function Header({
 	columns,
+	rows,
 	app,
 	place,
 	progress,
 }: {
 	columns: number;
+	/** The rows the layout gave the header; the step line needs `HEADER_ROWS_WITH_STEPS`. */
+	rows: number;
 	app: string;
 	place: string;
 	progress?: Progress;
@@ -186,7 +198,6 @@ function Header({
 	const colors = useTuiColors();
 	const color = (intent: ColorIntent) => resolveIntentColor(theme, intent, colors);
 	const surface = color("navBackground");
-	const band = color("band");
 
 	// The line as cells, so each takes its place on the fade.
 	const cells: Cell[] = Array.from({ length: columns }, () => ({ text: " ", intent: "text" }));
@@ -210,8 +221,11 @@ function Header({
 	}
 
 	const fade = Math.max(1, Math.floor(columns * BAND_FADE));
+	// The fade is mixed from the theme's colours, then matched to the terminal's.
+	const from = parseHexColor(theme.colors.band);
+	const to = parseHexColor(theme.colors.navBackground);
 	const background = (column: number) =>
-		band && surface ? mixColors(band, surface, column / fade) : undefined;
+		from && to ? resolveColor(mixColors(from, to, column / fade), colors) : undefined;
 	// Runs of cells that share a style, two columns of the fade at a time.
 	const runs: { key: number; text: string; cell: Cell; background?: string }[] = [];
 	cells.forEach((cell, column) => {
@@ -227,10 +241,12 @@ function Header({
 		else runs.push({ key: step, text: cell.text, cell, background: background(step) });
 	});
 
-	const segments = progress ? Math.max(1, progress.total) : 0;
+	const steps = progress && rows >= HEADER_ROWS_WITH_STEPS ? progress : undefined;
+	const segments = steps ? Math.max(1, steps.total) : 0;
 	const width = segments ? Math.max(1, Math.floor((columns - 2 - (segments - 1)) / segments)) : 0;
+	const blank = <Text backgroundColor={surface}>{" ".repeat(columns)}</Text>;
 	return (
-		<Box flexDirection="column" flexShrink={0} height={HEADER_ROWS} width={columns}>
+		<Box flexDirection="column" flexShrink={0} height={rows} width={columns}>
 			<Text>
 				{runs.map((run, i) => (
 					<Text
@@ -243,31 +259,34 @@ function Header({
 					</Text>
 				))}
 			</Text>
-			<Text backgroundColor={surface}>
-				{progress ? (
-					<>
-						<Text> </Text>
+			{steps ? (
+				<>
+					{blank}
+					<Text backgroundColor={surface}>
+						<Text backgroundColor={surface}> </Text>
 						{Array.from({ length: segments }, (_, i) => (
 							<Text
 								key={i}
+								backgroundColor={surface}
 								color={color(
-									i < progress.done
-										? "success"
-										: i === progress.current
-											? "accent"
-											: "contentBorder",
+									i < steps.done ? "success" : i === steps.current ? "accent" : "navBorder",
 								)}
 							>
-								{"━".repeat(width)}
+								{"█".repeat(width)}
 								{i < segments - 1 ? " " : ""}
 							</Text>
 						))}
-						<Text>{" ".repeat(Math.max(0, columns - 1 - segments * width - (segments - 1)))}</Text>
-					</>
-				) : (
-					<Text color={color("navBorder")}>{"─".repeat(columns)}</Text>
-				)}
-			</Text>
+						<Text backgroundColor={surface}>
+							{" ".repeat(Math.max(0, columns - 1 - segments * width - (segments - 1)))}
+						</Text>
+					</Text>
+					{blank}
+				</>
+			) : (
+				<Text backgroundColor={surface} color={color("navBorder")}>
+					{"─".repeat(columns)}
+				</Text>
+			)}
 		</Box>
 	);
 }
@@ -282,7 +301,8 @@ type AppShellProps = {
 	/** Where in the app you are, after its name in the band. */
 	contentTitle: string;
 	content: ReactNode;
-	/** Steps for the line under the band; without them it is a rule. */
+	/** Steps for the line under the band (the layout must be made with `steps`); without
+	 * them it is a rule. */
 	progress?: Progress;
 };
 
@@ -313,7 +333,13 @@ export function AppShell({
 	);
 	return (
 		<Box flexDirection="column" width={layout.columns} height={layout.rows}>
-			<Header columns={layout.columns} app={navTitle} place={contentTitle} progress={progress} />
+			<Header
+				columns={layout.columns}
+				rows={layout.headerRows}
+				app={navTitle}
+				place={contentTitle}
+				progress={progress}
+			/>
 			<Box flexDirection="row" flexShrink={0}>
 				{layout.nav ? navPane(layout.nav, layout.navFlush) : null}
 				{layout.nav && layout.gap > 0 ? (
@@ -327,9 +353,10 @@ export function AppShell({
 			</Box>
 			<Box
 				flexDirection="column"
-				height={Math.max(FOOTER_ROWS, layout.footer.length)}
+				height={Math.max(FOOTER_ROWS, layout.footer.length) + FOOTER_PADDING_BOTTOM}
 				flexShrink={0}
 				paddingX={FOOTER_PADDING_X}
+				paddingBottom={FOOTER_PADDING_BOTTOM}
 				backgroundColor={resolveIntentColor(theme, "footerBackground", colors)}
 			>
 				{layout.footer.map((line, i) => (
