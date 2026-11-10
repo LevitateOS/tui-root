@@ -1,23 +1,29 @@
-import { Box, Text, useApp } from "ink";
+import { Box, useApp } from "ink";
 import { useEffect, useMemo, useReducer, useRef, type ReactNode } from "react";
 import {
 	AppShell,
 	ContentWidth,
+	HEADING_ROWS,
 	fitFooter,
 	keymapStatusSegments,
 	PAGE_SCROLL_KEYS,
+	shortDevice,
+	StepPath,
 	startCommand,
 	textStatusSegment,
 	useAsyncTask,
 	useFocusPlane,
 	useGridNavigation,
-	useIntentColor,
 	useKeymap,
 	usePageHeight,
 	usePageScroll,
 	useShellLayout,
 	useTuiViewport,
-	type ColorIntent,
+	type PageAction,
+	type PageNote,
+	type PathState,
+	type PathStep,
+	type Progress,
 	type RunningCommand,
 } from "@levitate/tui-kit";
 import {
@@ -33,7 +39,6 @@ import {
 import {
 	applyCommand,
 	inspectCommand,
-	LIST_DISKS,
 	listDisks,
 	planCommand,
 	resolveDiskPath,
@@ -52,13 +57,13 @@ import {
 	METHODS,
 	page,
 	position,
+	refusals,
 	shownPages,
 	stepState,
 	type DiskChoice,
 	type PageId,
-	type Run,
+	type Method,
 	type Session,
-	type StepState,
 } from "../flow";
 import {
 	CONFIRM_KEYS,
@@ -80,18 +85,28 @@ import {
 	PlanPreview,
 	PreflightChecks,
 	ResultHandoff,
+	StepNumber,
 	SystemChoice,
 	TargetDisk,
 	Welcome,
 } from "./pages";
 import { useRecpartRun } from "./use-recpart";
 import { MODE_NAME } from "@levitate/docs-content/install";
+import { CONFIRM_TOKEN } from "../generated/recpart";
 
-/** The editor's keys the footer shows (the rest are beside the selected row). */
-const EDITOR_FOOTER: ReadonlySet<string> = new Set(["select", "setup", "undo", "next", "back"]);
-
-/** About this many columns show a disk card's path, size and model. */
-const DISK_CARD_COLUMNS = 40;
+/** The editor's keys the footer shows; the rest are named on the page. */
+const EDITOR_FOOTER: ReadonlySet<string> = new Set([
+	"select",
+	"setup",
+	"room",
+	"create",
+	"remove",
+	"resize",
+	"format",
+	"role",
+	"undo",
+	"next",
+]);
 
 type DiskPlanScreenProps = {
 	/** `--disk`, or "" to choose from recpart's list. */
@@ -111,7 +126,12 @@ export function DiskPlanScreen({
 	// The rail gives way on a narrow terminal (the install screen's half), so pages keep
 	// room for their tables.
 	const { columns: terminalColumns } = useTuiViewport();
-	const shell = useShellLayout({ navWidth: terminalColumns < 110 ? 28 : 38 });
+	const shell = useShellLayout({
+		navWidth: terminalColumns < 110 ? 28 : 34,
+		navFlush: true,
+		steps: true,
+		action: true,
+	});
 	const focus = useFocusPlane({ initial: "navigation" });
 	const [machine, dispatch] = useReducer(advance, defaultMode, start);
 	const {
@@ -138,11 +158,7 @@ export function DiskPlanScreen({
 			? [{ kind: "unlisted", path: wanted }, ...listed]
 			: listed;
 	}, [listing, wanted]);
-	const columns = Math.max(
-		1,
-		Math.min(4, Math.floor(shell.content.textColumns / DISK_CARD_COLUMNS)),
-	);
-	const diskNav = useGridNavigation({ count: choices.length, columns });
+	const diskNav = useGridNavigation({ count: choices.length, columns: 1 });
 	useEffect(() => {
 		if (listing.kind === "done" && wanted) {
 			const resolved = resolveDiskPath(wanted);
@@ -179,13 +195,21 @@ export function DiskPlanScreen({
 	const manualLayout = method === "edit" && inspected ? toLayout(inspected, editor.edits) : null;
 	const layoutJson = manualLayout ? JSON.stringify(manualLayout) : null;
 	const layoutFile = useMemo(() => (manualLayout ? writeLayout(manualLayout) : null), [layoutJson]);
-	const plan = useRecpartRun<PartitionPlan>(
-		path && (method === "edit" ? reached("partitions") && layoutFile : reached("plan-preview"))
+	// The mode's template over the whole disk: what erasing leaves, shown beside the
+	// choice and, when erasing, the plan itself.
+	const templatePlan = useRecpartRun<PartitionPlan>(
+		path && reached("disk-use") ? planCommand(path, mode, null) : null,
+		PLAN_SCHEMA_VERSION,
+		reads,
+	);
+	const editedPlan = useRecpartRun<PartitionPlan>(
+		path && method === "edit" && reached("partitions") && layoutFile
 			? planCommand(path, mode, layoutFile)
 			: null,
 		PLAN_SCHEMA_VERSION,
 		reads,
 	);
+	const plan = method === "edit" ? editedPlan : templatePlan;
 	// The plan as reviewed: apply must find the disk giving exactly this plan.
 	const planFile = useMemo(
 		() => (plan.kind === "ok" ? writeDocument("plan", plan.value) : null),
@@ -303,48 +327,38 @@ export function DiskPlanScreen({
 			: listing.kind === "done"
 				? ({ kind: "done" } as const)
 				: ({ kind: "running" } as const);
-	const listRun: Run<unknown> =
-		listing.kind === "running" || listing.kind === "idle"
-			? { kind: "running", argv: LIST_DISKS }
-			: listing.kind === "done"
-				? { kind: "ok", argv: LIST_DISKS, value: listing.value }
-				: {
-						kind: "failed",
-						argv: LIST_DISKS,
-						exitCode: null,
-						output: listing.message,
-						error: null,
-					};
+	const railPages = shownPages(session).filter((p) => p.phase);
+	const stepIndex = railPages.findIndex((p) => p.id === (showFailure ? "apply-progress" : view));
+	// The step's number: none on the overview or the failure view.
+	const stepNumber =
+		view === "welcome" || view === "failure-diagnostics" ? undefined : stepIndex + 1;
+	// What the page may use under its heading, for a list that has to fit.
+	const pageRows = Math.max(1, shell.content.textRows - HEADING_ROWS);
 	const body: Record<PageId, () => ReactNode> = {
 		welcome: () => <Welcome session={session} />,
 		"target-disk": () => (
 			<TargetDisk
 				choices={choices}
 				selected={diskNav.safeIndex}
-				columns={columns}
-				width={shell.content.textColumns}
+				rows={pageRows}
 				listing={listingState}
 			/>
 		),
-		system: () => (
-			<SystemChoice mode={mode} defaultMode={defaultMode} width={shell.content.textColumns} />
-		),
+		system: () => <SystemChoice modes={INSTALL_MODES} mode={mode} defaultMode={defaultMode} />,
 		"disk-use": () => (
 			<DiskUse
 				method={method}
 				mode={mode}
-				path={path}
 				inspect={inspect}
-				width={shell.content.textColumns}
+				erasePlan={templatePlan}
+				methods={METHODS as readonly [Method, Method]}
 			/>
 		),
 		partitions: () => (
 			<PartitionEditorPage inspect={inspect} editor={editor} mode={mode} plan={plan} />
 		),
 		"plan-preview": () => <PlanPreview plan={plan} />,
-		"command-preview": () => (
-			<CommandPreview log={[listRun, plan, dryRun, apply]} dryRun={dryRun} />
-		),
+		"command-preview": () => <CommandPreview dryRun={dryRun} />,
 		"preflight-checks": () => <PreflightChecks session={session} />,
 		"destructive-confirm": () => <DestructiveConfirm session={session} />,
 		"apply-progress": () => <ApplyProgress apply={apply} dryRun={dryRun} />,
@@ -359,9 +373,8 @@ export function DiskPlanScreen({
 		...(pageId === "destructive-confirm"
 			? CONFIRM_KEYS
 			: contentFocus && pageId === "partitions"
-				? // The selected row's actions are on the page; the footer keeps the rest.
-					// (or below the fold, when the page scrolls).
-					editor.keys.filter((b) => editor.prompt || pageScrolls || EDITOR_FOOTER.has(b.action))
+				? // The selected row's actions are on the footer, as the keys that do something now.
+					editor.keys.filter((b) => editor.prompt || EDITOR_FOOTER.has(b.action))
 				: contentFocus
 					? [
 							...CONTENT_KEYS,
@@ -375,8 +388,6 @@ export function DiskPlanScreen({
 	];
 	const typing = (pageId === "destructive-confirm" && !showFailure) || prompting;
 	const scrollable = !typing && pageScrolls;
-	const railPages = shownPages(session).filter((p) => p.phase);
-	const step = railPages.findIndex((p) => p.id === view);
 	const layout = fitFooter(shell, [
 		textStatusSegment(
 			"focus",
@@ -385,100 +396,183 @@ export function DiskPlanScreen({
 		),
 		...keymapStatusSegments(scrollable ? [...keys, ...PAGE_SCROLL_KEYS] : keys),
 		...(notice ? [textStatusSegment("notice", notice, "warning")] : []),
+		textStatusSegment(
+			"where",
+			where(view, session, choices.length, path),
+			apply.kind === "running" ? "warning" : view === "failure-diagnostics" ? "error" : "dimText",
+			false,
+			true,
+		),
 	]);
 	const scroll = usePageScroll(pageHeight, layout.content.textRows, !typing);
 	return (
 		<ContentWidth.Provider value={layout.content.textColumns}>
-			<AppShell
-				layout={layout}
-				focus={contentFocus ? "content" : "navigation"}
-				navTitle="Steps"
-				nav={<Rail view={view} session={session} />}
-				contentTitle={`${
-					step >= 0
-						? `Step ${step + 1} of ${railPages.length} · ${page(view).title}`
-						: page(view).title
-				}${scroll.more}`}
-				content={
-					<Box
-						ref={pageHeight.ref}
-						flexDirection="column"
-						flexShrink={0}
-						marginTop={-scroll.offset}
-					>
-						{body[view]()}
-					</Box>
-				}
-			/>
+			<StepNumber.Provider value={stepNumber}>
+				<AppShell
+					layout={layout}
+					focus={contentFocus ? "content" : "navigation"}
+					navTitle="Disk"
+					nav={
+						<StepPath
+							steps={pathSteps(view, session)}
+							selected={showFailure || view === "failure-diagnostics" ? "apply-progress" : view}
+							width={(layout.nav ?? layout.content).textColumns}
+							rows={(layout.nav ?? layout.content).textRows}
+						/>
+					}
+					contentTitle={`${
+						view === "welcome"
+							? "Overview"
+							: view === "failure-diagnostics"
+								? "Failure"
+								: `step ${stepIndex + 1} of ${railPages.length}`
+					}${scroll.more}`}
+					progress={progress(
+						session,
+						railPages.map((p) => p.id),
+						view,
+					)}
+					action={action({
+						view,
+						session,
+						contentFocus,
+						prompting,
+						handoff: then,
+					})}
+					content={
+						<Box
+							ref={pageHeight.ref}
+							flexDirection="column"
+							flexShrink={0}
+							marginTop={-scroll.offset}
+						>
+							{body[view]()}
+						</Box>
+					}
+				/>
+			</StepNumber.Provider>
 		</ContentWidth.Provider>
 	);
 }
 
-const STATE_MARK: Record<StepState, { mark: string; intent: ColorIntent }> = {
-	done: { mark: "✓", intent: "success" },
-	current: { mark: "▸", intent: "accent" },
-	failed: { mark: "✗", intent: "error" },
-	pending: { mark: "○", intent: "dimText" },
+/** What the footer's far end says: where things stand on this page. */
+function where(view: PageId, session: Session, disks: number, path: string | null): string {
+	if (view === "target-disk") return `${disks} disk${disks === 1 ? "" : "s"}`;
+	if (view === "welcome") return path ?? "no disk yet";
+	if (session.apply.kind === "running") return "writing";
+	if (view === "failure-diagnostics") return "stopped";
+	if (view === "result-handoff" && session.apply.kind === "ok")
+		return session.apply.value.handoff.install_target;
+	return path ?? "";
+}
+
+/** The step line under the band: a segment a step, filled as far as the steps are done in
+ * order, the one you are at in the accent. */
+function progress(session: Session, ids: readonly PageId[], view: PageId): Progress {
+	const open = ids.findIndex((id) => stepState(id, view, session) !== "done");
+	const here = ids.indexOf(view === "failure-diagnostics" ? "apply-progress" : view);
+	return {
+		total: ids.length,
+		done: open < 0 ? ids.length : open,
+		current: here < 0 ? undefined : here,
+	};
+}
+
+/** The page's one thing to press, or the one quiet line in its place. */
+const ENTER_VERBS: Partial<Record<PageId, readonly [nav: string, content: string]>> = {
+	"target-disk": ["Choose a disk", "Use this disk"],
+	system: ["Choose how the system updates", "Go on"],
+	"disk-use": ["Choose what happens to the disk", "Go on"],
+	partitions: ["Edit the partitions", "Go on"],
 };
 
-/** Every step under its phase, marked done, current, failed or still ahead, with the
- * choices made so far beside their steps. */
-function Rail({ view, session }: { view: PageId; session: Session }): ReactNode {
-	const color = useIntentColor();
-	const pages = shownPages(session);
-	const phases = [...new Set(pages.flatMap((p) => (p.phase ? [p.phase] : [])))];
+function action({
+	view,
+	session,
+	contentFocus,
+	prompting,
+	handoff,
+}: {
+	view: PageId;
+	session: Session;
+	contentFocus: boolean;
+	prompting: boolean;
+	handoff: Then;
+}): PageAction | PageNote {
+	if (prompting) return { note: "Enter accepts, Esc cancels." };
+	if (view === "failure-diagnostics") return { note: "F or k goes back to the apply." };
+	if (view === "destructive-confirm")
+		return canApply(session)
+			? { label: "Write to the disk", key: "Enter" }
+			: { note: `Type ${CONFIRM_TOKEN} to unlock the write.` };
+	const verbs = ENTER_VERBS[view];
+	if (verbs) return { label: contentFocus ? verbs[1] : verbs[0], key: "Enter" };
+	switch (view) {
+		case "welcome":
+			return { note: "j chooses a disk." };
+		case "apply-progress":
+			return session.apply.kind === "running"
+				? { note: "recpart is writing; wait for it.", intent: "warning" }
+				: { note: "j goes on, k goes back." };
+		case "result-handoff":
+			return {
+				note:
+					handoff === "hub"
+						? "q goes back to the install steps, which start the next one."
+						: "Run the command above to copy the system.",
+			};
+		default:
+			return { note: "j goes on, k goes back." };
+	}
+}
+
+/** Short words for each step's answer, at the rail's end. */
+function pathValue(id: PageId, session: Session): string {
 	const changes = session.layout?.actions.length ?? 0;
-	const choice: Partial<Record<PageId, string>> = {
-		"target-disk": session.disk ? diskPath(session.disk) : undefined,
-		system: MODE_NAME[session.mode],
-		"disk-use": session.method === "erase" ? "erase all" : "keep some",
-		partitions: session.layout?.new_table
-			? "new table"
-			: changes
-				? `${changes} change${changes === 1 ? "" : "s"}`
-				: undefined,
+	switch (id) {
+		case "target-disk":
+			return session.disk ? shortDevice(diskPath(session.disk)) : "";
+		case "system":
+			return MODE_NAME[session.mode];
+		case "disk-use":
+			return session.method === "erase" ? "erase all" : "keep some";
+		case "partitions":
+			return session.layout?.new_table
+				? "new table"
+				: changes
+					? `${changes} edit${changes === 1 ? "" : "s"}`
+					: "";
+		case "plan-preview": {
+			const n =
+				session.plan.kind === "ok"
+					? session.plan.value.summary.filter((e) => e.change !== "untouched").length
+					: 0;
+			return n ? `${n} change${n === 1 ? "" : "s"}` : "";
+		}
+		case "command-preview":
+			return session.dryRun.kind === "ok" ? `${session.dryRun.value.steps.length}` : "";
+		case "preflight-checks":
+			return session.dryRun.kind === "ok" && refusals(session).length === 0 ? "passed" : "";
+		default:
+			return "";
+	}
+}
+
+/** Every step as a row of the path: its mark, and its answer once the step is reached. */
+function pathSteps(view: PageId, session: Session): PathStep[] {
+	const reachedPos = position(view === "failure-diagnostics" ? "apply-progress" : view);
+	const state = (id: PageId): PathState => {
+		const mark = stepState(id, view, session);
+		if (mark === "done") return "done";
+		if (mark === "failed") return "failed";
+		if (mark === "current")
+			return id === "apply-progress" && session.apply.kind === "running" ? "running" : "ready";
+		return "waiting";
 	};
-	return (
-		<Box flexDirection="column">
-			<Text color={color(view === "welcome" ? "accent" : "navItem")} bold={view === "welcome"}>
-				{view === "welcome" ? "▸ " : "  "}Overview
-			</Text>
-			{phases.map((phase) => (
-				<Box key={phase} flexDirection="column" marginTop={1}>
-					<Text bold color={color("navHeading")}>
-						{phase.toUpperCase()}
-					</Text>
-					{pages
-						.filter((p) => p.phase === phase)
-						.map((p) => {
-							const state = stepState(p.id, view, session);
-							const { mark, intent } = STATE_MARK[state];
-							return (
-								<Text key={p.id}>
-									<Text color={color(intent)}>{mark} </Text>
-									<Text
-										bold={state === "current"}
-										color={color(
-											state === "current" ? "accent" : state === "pending" ? "dimText" : "navItem",
-										)}
-									>
-										{p.title}
-									</Text>
-									{choice[p.id] ? (
-										<Text color={color("dimText")}>{`  ${choice[p.id]}`}</Text>
-									) : null}
-								</Text>
-							);
-						})}
-				</Box>
-			))}
-			{view === "failure-diagnostics" ? (
-				<Box marginTop={1}>
-					<Text bold color={color("error")}>
-						▸ Failure
-					</Text>
-				</Box>
-			) : null}
-		</Box>
-	);
+	return [page("welcome"), ...shownPages(session).filter((p) => p.phase)].map((p) => ({
+		id: p.id,
+		label: p.title,
+		state: state(p.id),
+		value: position(p.id) <= reachedPos ? pathValue(p.id, session) : "",
+	}));
 }

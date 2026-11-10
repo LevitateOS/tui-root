@@ -1,12 +1,14 @@
-/** The partition editor page: the next step to take, the disk as the edits leave it, what
- * the selected partition can do, and what the system still needs. */
+/** The partition editor page: the disk as the edits leave it with the selected stretch
+ * marked, its table with the selected row as a bar, and what the system still needs
+ * beside it. The row's actions are in the footer's keys. */
 import { Box, Text } from "ink";
 import { useContext, type ReactNode } from "react";
 import {
 	Callout,
 	ContentWidth,
-	Facts,
+	DiskBar,
 	formatBytes,
+	Heading,
 	Section,
 	shortDevice,
 	Table,
@@ -18,13 +20,11 @@ import {
 import type { InspectResult, InstallMode, PartitionPlan } from "../generated/recpart";
 import type { Run } from "../flow";
 import { describeSignature } from "../domain/recpart";
-import { MIB, requiredRoles, type Projection, type Segment } from "../domain/layout";
-import { neededMb, roleLabel, ROLE_NAME, ROLE_PURPOSE, SETUP_NAME } from "../domain/setup";
+import { MIB, requiredRoles, type Segment } from "../domain/layout";
+import { neededMb, roleLabel, ROLE_PURPOSE, SETUP_NAME } from "../domain/setup";
 import { sizeAnswer, type PartitionEditor, type Prompt } from "./use-partition-editor";
-
-function useIntent(intent: ColorIntent): string | undefined {
-	return useIntentColor()(intent);
-}
+import { StepNumber } from "./pages";
+import { Needs, Runs, segmentParts, type Need } from "./pictures";
 
 const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
@@ -65,54 +65,10 @@ function holds(segment: Segment): string {
 	return [fs, label ? `"${label}"` : null].filter(Boolean).join(" ");
 }
 
-const SEGMENT_INTENTS: readonly ColorIntent[] = ["accent", "success", "warning", "info", "link"];
-
-/** The disk as one bar, each segment as wide as its share; free space is dotted and the
- * selected segment is drawn solid. */
-function SegmentBar({
-	projection,
-	selected,
-}: {
-	projection: Projection;
-	selected: number;
-}): ReactNode {
-	const width = useContext(ContentWidth);
-	const color = useIntentColor();
-	const total = Math.max(1, projection.usableEnd - projection.usableStart);
-	const segments = projection.segments;
-	const spare = Math.max(0, width - segments.length);
-	const cells = segments.map((s) => 1 + Math.floor((spare * s.size) / total));
-	const short = width - cells.reduce((a, b) => a + b, 0);
-	if (cells.length > 0) {
-		const biggest = segments.reduce((best, s, i) => (s.size > segments[best]!.size ? i : best), 0);
-		cells[biggest]! += Math.max(0, short);
-	}
-	let partIndex = 0;
-	return (
-		<Text>
-			{segments.map((segment, i) => {
-				const intent: ColorIntent =
-					segment.kind === "free"
-						? "dimText"
-						: SEGMENT_INTENTS[partIndex++ % SEGMENT_INTENTS.length]!;
-				const glyph = segment.kind === "free" ? "·" : i === selected ? "█" : "▒";
-				return (
-					<Text key={i} color={color(intent)} bold={i === selected}>
-						{glyph.repeat(cells[i]!)}
-					</Text>
-				);
-			})}
-		</Text>
-	);
-}
-
 /** The question being asked, with what an answer may be. */
 function PromptBox({ editor }: { editor: PartitionEditor }): ReactNode {
-	const dim = useIntent("dimText");
-	const accent = useIntent("accent");
-	const text = useIntent("text");
-	const ok = useIntent("success");
-	const bad = useIntent("warning");
+	const color = useIntentColor();
+	const raised = color("raisedBackground");
 	const prompt = editor.prompt;
 	if (!prompt) return null;
 	if (prompt.kind === "choice") {
@@ -122,17 +78,23 @@ function PromptBox({ editor }: { editor: PartitionEditor }): ReactNode {
 				{prompt.options.map((option, i) => (
 					<Box key={option.label} flexDirection="row">
 						<Box width={labelWidth} flexShrink={0}>
-							<Text bold={i === prompt.index} color={i === prompt.index ? accent : text}>
+							<Text
+								bold={i === prompt.index}
+								color={color(i === prompt.index ? "accent" : "text")}
+								backgroundColor={raised}
+							>
 								{i === prompt.index ? "▸ " : "  "}
 								{option.label}
 							</Text>
 						</Box>
 						<Box flexGrow={1} flexShrink={1}>
-							<Text color={dim}>{option.help ?? ""}</Text>
+							<Text color={color("dimText")} backgroundColor={raised}>
+								{option.help ?? ""}
+							</Text>
 						</Box>
 					</Box>
 				))}
-				<Text color={dim}>↑/↓ choose · Enter accept · Esc cancel</Text>
+				<UiText intent="dimText">↑/↓ choose · Enter accept · Esc cancel</UiText>
 			</Callout>
 		);
 	}
@@ -140,16 +102,23 @@ function PromptBox({ editor }: { editor: PartitionEditor }): ReactNode {
 	const answer = prompt.kind === "size" ? sizeAnswer(prompt) : null;
 	return (
 		<Callout tone="info" title={prompt.title}>
-			<Text>
-				<Text color={dim}>› </Text>
-				<Text bold>{prompt.text}</Text>
-				<Text color={dim}>_</Text>
-				{answer ? (
-					<Text color={answer.kind === "ok" ? ok : bad}>
-						{answer.kind === "ok" ? `   = ${formatBytes(answer.mb * MIB)}` : `   ${answer.message}`}
-					</Text>
-				) : null}
-			</Text>
+			<Runs
+				runs={[
+					["› ", "dimText"],
+					[prompt.text, "text", true],
+					["_", "dimText"],
+					...(answer
+						? ([
+								[
+									answer.kind === "ok"
+										? `   = ${formatBytes(answer.mb * MIB)}`
+										: `   ${answer.message}`,
+									answer.kind === "ok" ? "success" : "warning",
+								],
+							] as const)
+						: []),
+				]}
+			/>
 			<UiText intent="dimText">
 				{prompt.kind === "size"
 					? `20G, 512M, 50% or rest (a bare number is GiB) · ${formatBytes(prompt.minMb * MIB)} to ${formatBytes(prompt.maxMb * MIB)} · Enter accept · Esc cancel`
@@ -163,10 +132,6 @@ function PromptBox({ editor }: { editor: PartitionEditor }): ReactNode {
  * files drawn solid, and both sizes under it. */
 function RoomSlider({ prompt }: { prompt: Extract<Prompt, { kind: "room" }> }): ReactNode {
 	const width = Math.max(10, useContext(ContentWidth) - 4);
-	const files = useIntent("accent");
-	const dim = useIntent("dimText");
-	const free = useIntent("success");
-	const bad = useIntent("warning");
 	const room = prompt.maxMb - prompt.sizeMb;
 	const cells = (mb: number) => Math.round((mb / Math.max(1, prompt.maxMb)) * (width - 1));
 	const keep = Math.max(1, cells(prompt.sizeMb));
@@ -174,39 +139,42 @@ function RoomSlider({ prompt }: { prompt: Extract<Prompt, { kind: "room" }> }): 
 	const left = `${prompt.name}: ${formatBytes(prompt.sizeMb * MIB)}`;
 	const right = `for the new system: ${formatBytes(room * MIB)}`;
 	const gap = Math.max(1, width - left.length - right.length);
+	const roomTone: ColorIntent = room < prompt.needMb ? "warning" : "success";
 	return (
 		<Callout tone="info" title={prompt.title}>
 			<UiText>Its files stay where they are; only space it doesn't use is given up.</UiText>
 			<Box marginTop={1} flexDirection="column">
-				<Text>
-					<Text color={files}>{"█".repeat(used)}</Text>
-					<Text color={files}>{"▒".repeat(keep - used)}</Text>
-					<Text bold>│</Text>
-					<Text color={free}>{"·".repeat(Math.max(0, width - 1 - keep))}</Text>
-				</Text>
+				<Runs
+					runs={[
+						["█".repeat(used), "accent"],
+						["▒".repeat(keep - used), "accent"],
+						["│", "text", true],
+						["·".repeat(Math.max(0, width - 1 - keep)), "success"],
+					]}
+				/>
 				{left.length + right.length + 1 <= width ? (
-					<Text>
-						<Text bold>{left}</Text>
-						{" ".repeat(gap)}
-						<Text bold color={room < prompt.needMb ? bad : free}>
-							{right}
-						</Text>
-					</Text>
+					<Runs
+						runs={[
+							[left, "text", true],
+							[" ".repeat(gap), "text"],
+							[right, roomTone, true],
+						]}
+					/>
 				) : (
 					<>
-						<Text bold>{left}</Text>
-						<Text bold color={room < prompt.needMb ? bad : free}>
-							{right}
-						</Text>
+						<Runs runs={[[left, "text", true]]} />
+						<Runs runs={[[right, roomTone, true]]} />
 					</>
 				)}
 			</Box>
 			{prompt.text ? (
-				<Text>
-					<Text color={dim}>room › </Text>
-					<Text bold>{prompt.text}</Text>
-					<Text color={dim}>_</Text>
-				</Text>
+				<Runs
+					runs={[
+						["room › ", "dimText"],
+						[prompt.text, "text", true],
+						["_", "dimText"],
+					]}
+				/>
 			) : null}
 			<Box marginTop={1} flexDirection="column">
 				{room < prompt.needMb ? (
@@ -224,6 +192,13 @@ function RoomSlider({ prompt }: { prompt: Extract<Prompt, { kind: "room" }> }): 
 }
 
 type Guide = { tone: Tone; title: string; lines: ReactNode[] };
+
+const TONE_INTENT: Record<Tone, ColorIntent> = {
+	danger: "error",
+	warning: "warning",
+	success: "success",
+	info: "info",
+};
 
 /** The one next step: make room, fill the free space, fix what recpart refuses, or go on. */
 function guide(editor: PartitionEditor, mode: InstallMode, plan: Run<PartitionPlan>): Guide {
@@ -259,11 +234,14 @@ function guide(editor: PartitionEditor, mode: InstallMode, plan: Run<PartitionPl
 			title: `Next: press a to set up ${name} in the ${formatBytes(setup.freeMb * MIB)} free`,
 			lines: [
 				...setup.steps.map((step) => (
-					<Text key={step.what}>
-						{"• "}
-						<Text bold>{step.what}</Text>
-						{`: ${step.detail}`}
-					</Text>
+					<Runs
+						key={step.what}
+						runs={[
+							["• ", "text"],
+							[step.what, "text", true],
+							[`: ${step.detail}`, "text"],
+						]}
+					/>
 				)),
 				<UiText key="own" intent="dimText">
 					Or place them yourself: select free space, n makes a partition, m says what it is for.
@@ -279,11 +257,17 @@ function guide(editor: PartitionEditor, mode: InstallMode, plan: Run<PartitionPl
 			title: `Next: press s to make room for ${name}`,
 			lines: [
 				`There isn't ${need} of free space in one place, which ${SETUP_NAME[mode]} needs.`,
-				<Text key="s">
-					{"s shrinks "}
-					<Text bold>{`${shortDevice(shrink.part.device)}${label ? ` ("${label}")` : ""}`}</Text>
-					{` without touching its files: it can give up to ${formatBytes(shrink.spareMb * MIB)}. You choose how much with ← and →.`}
-				</Text>,
+				<Runs
+					key="s"
+					runs={[
+						["s shrinks ", "text"],
+						[`${shortDevice(shrink.part.device)}${label ? ` ("${label}")` : ""}`, "text", true],
+						[
+							` without touching its files: it can give up to ${formatBytes(shrink.spareMb * MIB)}. You choose how much with ← and →.`,
+							"text",
+						],
+					]}
+				/>,
 			],
 		};
 	}
@@ -300,11 +284,17 @@ function guide(editor: PartitionEditor, mode: InstallMode, plan: Run<PartitionPl
 		lines: [
 			`${capital(SETUP_NAME[mode])} needs ${need} of free space, and there is none.`,
 			...(big.length ? big : stuck).map((part) => (
-				<Text key={part.device}>
-					{"• "}
-					<Text bold>{shortDevice(part.device)}</Text>
-					{` (${[part.filesystem, formatBytes(part.size_bytes), part.used_bytes !== null ? `${formatBytes(part.used_bytes)} used` : null].filter(Boolean).join(", ")}): ${part.resize_blocker!.split("; ")[0]}`}
-				</Text>
+				<Runs
+					key={part.device}
+					runs={[
+						["• ", "text"],
+						[shortDevice(part.device), "text", true],
+						[
+							` (${[part.filesystem, formatBytes(part.size_bytes), part.used_bytes !== null ? `${formatBytes(part.used_bytes)} used` : null].filter(Boolean).join(", ")}): ${part.resize_blocker!.split("; ")[0]}`,
+							"text",
+						],
+					]}
+				/>
 			)),
 			...(root
 				? [
@@ -313,106 +303,47 @@ function guide(editor: PartitionEditor, mode: InstallMode, plan: Run<PartitionPl
 						</UiText>,
 					]
 				: []),
-			<Text key="do">
-				<Text bold>What you can do: </Text>
-				delete a partition you don't need (select it, d; what is on it is lost), install on another
-				disk, or go back (p) and erase this one.
-			</Text>,
+			<Runs
+				key="do"
+				runs={[
+					["What you can do: ", "text", true],
+					[
+						"delete a partition you don't need (select it, d; what is on it is lost), install on another disk, or go back (p) and erase this one.",
+						"text",
+					],
+				]}
+			/>,
 		],
 	};
 }
 
-/** A key and what it does, as on a button. */
-function KeyChip({ hotkey, label, tone }: { hotkey: string; label: string; tone?: ColorIntent }) {
-	const accent = useIntent("accent");
-	const color = useIntent(tone ?? "text");
-	return (
-		<Text>
-			<Text inverse bold color={accent}>{` ${hotkey} `}</Text>
-			<Text color={color}>{` ${label}`}</Text>
-		</Text>
-	);
+/** What the selected row is, as one line. */
+function selectedLine(segment: Segment): string {
+	if (segment.kind === "free") return `${formatBytes(segment.size)} of free space`;
+	if (segment.kind === "new")
+		return `A new ${formatBytes(segment.size)} partition${segment.role ? `: ${roleLabel(segment.role, segment.mountpoint)}` : ""}`;
+	const part = segment.part;
+	const label = part.fs_label ?? part.label;
+	return [
+		`${shortDevice(part.device)}: ${formatBytes(part.size_bytes)} now`,
+		part.filesystem ?? "no filesystem",
+		label ? `"${label}"` : null,
+		part.used_bytes !== null ? `${formatBytes(part.used_bytes)} used` : null,
+		part.mountpoints.length ? `mounted at ${part.mountpoints.join(", ")}` : null,
+	]
+		.filter(Boolean)
+		.join(" · ");
 }
 
-/** The selected row: what it is, and what can be done to it. */
-function Selected({
-	segment,
-	editor,
-	mode,
-}: {
-	segment: Segment;
-	editor: PartitionEditor;
-	mode: InstallMode;
-}): ReactNode {
-	const has = (action: string) => editor.keys.some((binding) => binding.action === action);
-	let what: string;
-	let chips: Array<{ hotkey: string; label: string; tone?: ColorIntent }>;
-	if (segment.kind === "free") {
-		what = `${formatBytes(segment.size)} of free space`;
-		chips = [
-			...(has("setup") ? [{ hotkey: "a", label: `Set up ${SETUP_NAME[mode]} here` }] : []),
-			{ hotkey: "n", label: "New partition here" },
-		];
-	} else if (segment.kind === "new") {
-		what = `A new ${formatBytes(segment.size)} partition${segment.role ? `: ${roleLabel(segment.role, segment.mountpoint)}` : ""}`;
-		chips = [
-			{ hotkey: "m", label: "Use as…" },
-			{ hotkey: "r", label: "Change size" },
-			{ hotkey: "f", label: "Filesystem" },
-			{ hotkey: "d", label: "Remove" },
-		];
-	} else {
-		const part = segment.part;
-		const label = part.fs_label ?? part.label;
-		what = [
-			`${shortDevice(part.device)}: ${formatBytes(part.size_bytes)} now`,
-			part.filesystem ?? "no filesystem",
-			label ? `"${label}"` : null,
-			part.used_bytes !== null ? `${formatBytes(part.used_bytes)} used` : null,
-			part.mountpoints.length ? `mounted at ${part.mountpoints.join(", ")}` : null,
-		]
-			.filter(Boolean)
-			.join(" · ");
-		const resizable = part.min_size_bytes !== null;
-		chips = [
-			{ hotkey: "m", label: "Use as…" },
-			...(resizable
-				? [
-						{
-							hotkey: "r",
-							label: "Make smaller or bigger (keeps its files)",
-						},
-					]
-				: []),
-			{ hotkey: "f", label: "Format (erases it)", tone: "warning" as const },
-			{ hotkey: "d", label: "Delete (erases it)", tone: "warning" as const },
-			...(has("clear") ? [{ hotkey: "x", label: "Leave as it is" }] : []),
-		];
-	}
-	return (
-		<Section title="Selected" trailing="↑/↓ moves">
-			<UiText>{what}</UiText>
-			{segment.kind === "existing" && segment.edit.op !== "keep" ? (
-				<UiText intent="warning">
-					{segment.edit.op === "resize"
-						? `Change: ${change(segment).text} to ${formatBytes(segment.size)}`
-						: `Change: ${change(segment).text}`}
-				</UiText>
-			) : null}
-			{segment.kind === "existing" && segment.part.resize_blocker ? (
-				<UiText intent="dimText">{`Can't be made smaller: ${segment.part.resize_blocker}.`}</UiText>
-			) : null}
-			{segment.kind !== "free" && segment.role ? (
-				<UiText intent="dimText">{`Used as ${roleLabel(segment.role, segment.mountpoint)}: ${ROLE_PURPOSE[segment.role]}`}</UiText>
-			) : null}
-			<Box flexDirection="row" flexWrap="wrap" columnGap={2} marginTop={1}>
-				{chips.map((chip) => (
-					<KeyChip key={chip.hotkey} {...chip} />
-				))}
-			</Box>
-		</Section>
-	);
+/** What the Used as column says: the short name of the role. */
+function used(segment: Segment): string {
+	if (segment.kind === "free" || !segment.role) return "";
+	return ROLE_SHORT[segment.role] ?? roleLabel(segment.role, segment.mountpoint);
 }
+
+/** The width the needs take beside the table, and the least the table keeps. */
+const NEEDS_WIDTH = 23;
+const TABLE_MIN = 41;
 
 export function PartitionEditorPage({
 	inspect,
@@ -425,19 +356,16 @@ export function PartitionEditorPage({
 	mode: InstallMode;
 	plan: Run<PartitionPlan>;
 }): ReactNode {
-	const okColor = useIntent("success");
-	const heading = (
-		<Box flexDirection="column" marginBottom={1}>
-			<UiText bold intent="heading">
-				Edit the partitions
-			</UiText>
-			<UiText intent="dimText">Nothing is written until the Confirm step.</UiText>
-		</Box>
+	const step = useContext(StepNumber);
+	const full = useContext(ContentWidth);
+	const color = useIntentColor();
+	const heading = (subtitle: ReactNode) => (
+		<Heading title="Place the new system" subtitle={subtitle} step={step} />
 	);
 	if (inspect.kind === "failed")
 		return (
 			<Box flexDirection="column">
-				{heading}
+				{heading("Nothing is written until the Confirm step.")}
 				<Callout tone="danger" title="recpart couldn't read the disk">
 					<UiText>{inspect.error ? inspect.error.observed : inspect.output}</UiText>
 					{inspect.error ? <UiText intent="warning">{inspect.error.remediation}</UiText> : null}
@@ -448,100 +376,133 @@ export function PartitionEditorPage({
 	if (inspect.kind !== "ok" || !projection)
 		return (
 			<Box flexDirection="column">
-				{heading}
+				{heading("Nothing is written until the Confirm step.")}
 				<UiText intent="dimText">Reading the disk with recpart inspect …</UiText>
 			</Box>
 		);
-	const { disk, table } = inspect.value;
-	const step = guide(editor, mode, plan);
+	const next = guide(editor, mode, plan);
 	const segment = projection.segments[editor.selected];
-	const holdersOf = (role: string) =>
-		projection.segments.flatMap((s) =>
-			s.kind !== "free" && s.role === role
-				? [
-						s.kind === "new"
-							? `new, ${formatBytes(s.size)}`
-							: `${shortDevice(s.part.device)}, ${change(s).text}`,
-					]
-				: [],
-		);
+	const held = (role: string): Segment | undefined =>
+		projection.segments.find((s) => s.kind !== "free" && s.role === role);
+	const needs: Need[] = requiredRoles(mode).map((role) => {
+		const holder = held(role);
+		return {
+			name: ROLE_SHORT[role] ?? role,
+			got: !holder
+				? "not yet"
+				: holder.kind === "new"
+					? formatBytes(holder.size)
+					: change(holder).text,
+			met: holder !== undefined,
+		};
+	});
+	const beside = full >= TABLE_MIN + NEEDS_WIDTH + 2;
+	const needsTitle = `${SETUP_NAME[mode] === "A/B" ? "A/B" : "The system"} needs`;
+	const table = (
+		<ContentWidth.Provider value={beside ? full - NEEDS_WIDTH - 2 : full}>
+			<Table
+				selected={editor.selected}
+				tones={projection.segments.map((s) => change(s).tone)}
+				columns={[
+					{ title: "Partition" },
+					{ title: "Size", align: "right" },
+					{ title: "Holds", optional: true },
+					{ title: "Used as" },
+					{ title: "Change" },
+				]}
+				rows={projection.segments.map((s) => [
+					name(s),
+					formatBytes(s.size),
+					holds(s),
+					used(s),
+					change(s).text,
+				])}
+			/>
+		</ContentWidth.Provider>
+	);
 	return (
 		<Box flexDirection="column">
-			{heading}
-			<PromptBox editor={editor} />
-			{editor.prompt ? null : (
-				<Callout tone={step.tone} title={step.title}>
-					{step.lines.map((line, i) =>
-						typeof line === "string" ? <UiText key={i}>{line}</UiText> : line,
-					)}
-				</Callout>
+			{heading(
+				editor.prompt ? (
+					"Answer below; Esc cancels. Nothing is written until the Confirm step."
+				) : (
+					<Text color={color(TONE_INTENT[next.tone])}>{next.title}</Text>
+				),
 			)}
-			<Section
-				title={disk.path}
-				trailing={`${formatBytes(disk.size_bytes)} · ${editor.edits.newTable ? "new partition table" : `${table} table`}`}
-			>
-				<SegmentBar projection={projection} selected={editor.selected} />
-				<Box marginTop={1}>
-					<Table
-						selected={editor.selected}
-						tones={projection.segments.map((s) => change(s).tone)}
-						columns={[
-							{ title: "Partition" },
-							{ title: "Size", align: "right" },
-							{ title: "Holds", optional: true },
-							{ title: "Used as" },
-							{ title: "Change" },
-						]}
-						rows={projection.segments.map((s) => [
-							name(s),
-							formatBytes(s.size),
-							holds(s),
-							s.kind === "free" ? "" : roleLabel(s.role, s.mountpoint),
-							change(s).text,
-						])}
-					/>
+			<PromptBox editor={editor} />
+			<DiskBar parts={segmentParts(projection)} selected={editor.selected} />
+			{beside ? (
+				<Box flexDirection="row">
+					{table}
+					<Box width={2} flexShrink={0} />
+					<Needs title={needsTitle} needs={needs} width={NEEDS_WIDTH} />
 				</Box>
-			</Section>
-			{segment && !editor.prompt ? (
-				<Selected segment={segment} editor={editor} mode={mode} />
-			) : null}
-			{editor.notice ? (
-				<Box marginBottom={1}>
-					<UiText intent="warning">{editor.notice}</UiText>
-				</Box>
-			) : null}
-			{projection.erased.length || (editor.edits.newTable && inspect.value.signatures?.length) ? (
-				<Section title="Erased" trailing={`${projection.erased.length}`}>
-					<UiText intent="error">
-						{[
-							...projection.erased.map(
-								(p) =>
-									`${shortDevice(p.device)} ${formatBytes(p.size_bytes)}${p.filesystem ? ` ${p.filesystem}` : ""}`,
-							),
-							...(editor.edits.newTable
-								? (inspect.value.signatures ?? []).map(
-										(sig) => `${describeSignature(sig)} on the whole disk`,
-									)
-								: []),
-						].join(" · ")}
+			) : (
+				<>
+					{table}
+					<Box marginTop={1}>
+						<Needs title={needsTitle} needs={needs} width={full} />
+					</Box>
+				</>
+			)}
+			<Box marginTop={1} flexDirection="column">
+				{editor.prompt
+					? null
+					: next.lines.map((line, i) =>
+							typeof line === "string" ? <UiText key={i}>{line}</UiText> : line,
+						)}
+				{segment && !editor.prompt ? (
+					<UiText intent="dimText">{selectedLine(segment)}</UiText>
+				) : null}
+				{segment?.kind === "existing" && segment.edit.op !== "keep" ? (
+					<UiText intent="warning">
+						{segment.edit.op === "resize"
+							? `Change: ${change(segment).text} to ${formatBytes(segment.size)}`
+							: `Change: ${change(segment).text}`}
 					</UiText>
-				</Section>
+				) : null}
+				{segment?.kind === "existing" && segment.part.resize_blocker ? (
+					<UiText intent="dimText">{`Can't be made smaller: ${segment.part.resize_blocker}.`}</UiText>
+				) : null}
+				{segment && segment.kind !== "free" && segment.role ? (
+					<UiText intent="dimText">{`Used as ${roleLabel(segment.role, segment.mountpoint)}: ${ROLE_PURPOSE[segment.role]}`}</UiText>
+				) : null}
+				{editor.prompt ? null : (
+					<UiText intent="faintText">
+						Also: x leaves a partition as it is, W makes a new table, U undoes everything, p goes
+						back.
+					</UiText>
+				)}
+				{editor.notice ? <UiText intent="warning">{editor.notice}</UiText> : null}
+			</Box>
+			{projection.erased.length || (editor.edits.newTable && inspect.value.signatures?.length) ? (
+				<Box marginTop={1} flexDirection="column">
+					<Section title="Erased" trailing={`${projection.erased.length}`}>
+						<UiText intent="error">
+							{[
+								...projection.erased.map(
+									(p) =>
+										`${shortDevice(p.device)} ${formatBytes(p.size_bytes)}${p.filesystem ? ` ${p.filesystem}` : ""}`,
+								),
+								...(editor.edits.newTable
+									? (inspect.value.signatures ?? []).map(
+											(sig) => `${describeSignature(sig)} on the whole disk`,
+										)
+									: []),
+							].join(" · ")}
+						</UiText>
+					</Section>
+				</Box>
 			) : null}
-			<Section title={`${capital(SETUP_NAME[mode])} needs`}>
-				<Facts
-					rows={requiredRoles(mode).map((role) => {
-						const held = holdersOf(role);
-						return [
-							ROLE_NAME[role],
-							held.length ? (
-								<Text key={role} color={okColor}>{`✓ ${held.join("; ")}`}</Text>
-							) : (
-								`○ not yet: ${ROLE_PURPOSE[role]}`
-							),
-						];
-					})}
-				/>
-			</Section>
 		</Box>
 	);
 }
+
+/** Short names for what the layout needs. */
+const ROLE_SHORT: Partial<Record<string, string>> = {
+	efi: "EFI",
+	root: "System",
+	root_a: "Slot A",
+	root_b: "Slot B",
+	state: "State",
+};

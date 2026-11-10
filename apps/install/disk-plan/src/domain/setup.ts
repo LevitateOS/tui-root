@@ -65,7 +65,7 @@ export function neededMb(mode: InstallMode): number {
 	return mode === "ab" ? 2 * MIN_AB_ROOT_MB + MIN_STATE_MB : MIN_MUTABLE_ROOT_MB;
 }
 
-function isEfi(part: PartitionInfo): boolean {
+export function isEfi(part: PartitionInfo): boolean {
 	return part.type_guid.toUpperCase() === EFI_TYPE;
 }
 

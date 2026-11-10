@@ -40,23 +40,23 @@
 					"steps": [
 						{
 							"keys": "",
-							"expect": "   Overview"
+							"expect": "Prepare the install disk"
 						},
 						{
 							"keys": "j",
-							"expect": "   Step 1 of 9 · Disk"
+							"expect": "Which disk?"
 						},
 						{
 							"keys": "j",
-							"expect": "   Step 2 of 9 · System"
+							"expect": "How is the system updated?"
 						},
 						{
 							"keys": "j",
-							"expect": "   Step 3 of 9 · Disk use"
+							"expect": "What happens to the disk?"
 						},
 						{
 							"keys": "j",
-							"expect": "   Step 4 of 9 · Plan"
+							"expect": "The plan"
 						},
 						{
 							"keys": "",
@@ -64,11 +64,11 @@
 						},
 						{
 							"keys": "j",
-							"expect": "   Step 5 of 9 · Commands"
+							"expect": "The commands"
 						},
 						{
 							"keys": "",
-							"expect": "What apply will run"
+							"expect": "Exactly what the apply will run"
 						},
 						{
 							"keys": "j",
@@ -76,19 +76,19 @@
 						},
 						{
 							"keys": "j",
-							"expect": "   Step 7 of 9 · Confirm"
+							"expect": "Write to the disk?"
 						},
 						{
 							"keys": "q",
-							"expect": "› q______"
+							"expect": "q   ·   ·   ·   ·   ·   ·    locked"
 						},
 						{
 							"keys": "\\x7f",
-							"expect": "› _______"
+							"expect": "·   ·   ·   ·   ·   ·   ·    locked"
 						},
 						{
 							"keys": "DESTROY",
-							"expect": "Unlocked. Enter starts the apply."
+							"expect": "O   Y    unlocked"
 						},
 						{
 							"keys": "\\r",
@@ -96,11 +96,11 @@
 						},
 						{
 							"keys": "j",
-							"expect": "   Step 9 of 9 · Done"
+							"expect": "The disk is ready"
 						},
 						{
 							"keys": "j",
-							"expect": "   Step 9 of 9 · Done"
+							"expect": "The disk is ready"
 						},
 						{
 							"keys": "",
@@ -124,23 +124,23 @@
 					"steps": [
 						{
 							"keys": "",
-							"expect": "   Overview"
+							"expect": "Prepare the install disk"
 						},
 						{
 							"keys": "j",
-							"expect": "   Step 1 of 9 · Disk"
+							"expect": "Which disk?"
 						},
 						{
 							"keys": "j",
-							"expect": "   Step 2 of 9 · System"
+							"expect": "How is the system updated?"
 						},
 						{
 							"keys": "j",
-							"expect": "   Step 3 of 9 · Disk use"
+							"expect": "What happens to the disk?"
 						},
 						{
 							"keys": "j",
-							"expect": "   Step 4 of 9 · Plan"
+							"expect": "The plan"
 						},
 						{
 							"keys": "",
@@ -148,11 +148,11 @@
 						},
 						{
 							"keys": "j",
-							"expect": "   Step 5 of 9 · Commands"
+							"expect": "The commands"
 						},
 						{
 							"keys": "",
-							"expect": "What apply will run"
+							"expect": "Exactly what the apply will run"
 						},
 						{
 							"keys": "j",
@@ -160,19 +160,19 @@
 						},
 						{
 							"keys": "j",
-							"expect": "   Step 7 of 9 · Confirm"
+							"expect": "Write to the disk?"
 						},
 						{
 							"keys": "q",
-							"expect": "› q______"
+							"expect": "q   ·   ·   ·   ·   ·   ·    locked"
 						},
 						{
 							"keys": "\\x7f",
-							"expect": "› _______"
+							"expect": "·   ·   ·   ·   ·   ·   ·    locked"
 						},
 						{
 							"keys": "DESTROY",
-							"expect": "Unlocked. Enter starts the apply."
+							"expect": "O   Y    unlocked"
 						},
 						{
 							"keys": "\\r",
@@ -180,7 +180,7 @@
 						},
 						{
 							"keys": "j",
-							"expect": "   Failure"
+							"expect": "What went wrong"
 						},
 						{
 							"keys": "",
@@ -188,7 +188,7 @@
 						},
 						{
 							"keys": "k",
-							"expect": "   Step 8 of 9 · Apply"
+							"expect": "The apply stopped"
 						}
 					]
 				},
@@ -201,7 +201,7 @@
 					"steps": [
 						{
 							"keys": "jjjjjjj",
-							"expect": "   Step 7 of 9 · Confirm"
+							"expect": "Write to the disk?"
 						},
 						{
 							"keys": "DESTROY\\r",
@@ -213,15 +213,15 @@
 						},
 						{
 							"keys": "R",
-							"expect": "   Step 1 of 9 · Disk"
+							"expect": "Which disk?"
 						},
 						{
 							"keys": "jjjjjj",
-							"expect": "   Step 7 of 9 · Confirm"
+							"expect": "Write to the disk?"
 						},
 						{
 							"keys": "",
-							"expect": "› _______"
+							"expect": "·   ·   ·   ·   ·   ·   ·    locked"
 						}
 					]
 				},
@@ -300,7 +300,7 @@
 						},
 						{
 							"keys": "",
-							"expect": "System slot A  new"
+							"expect": "Slot A   new"
 						},
 						{
 							"keys": "\\rjjj",
@@ -321,7 +321,7 @@
 					"steps": [
 						{
 							"keys": "jjj\\r\\x1b[B\\r",
-							"expect": "   Step 4 of 10 · Partitions"
+							"expect": "Place the new system"
 						},
 						{
 							"keys": "m",
@@ -391,11 +391,11 @@
 						},
 						{
 							"keys": "j",
-							"expect": "Erases all 4 partitions below."
+							"expect": "Erases all 4 partitions."
 						},
 						{
 							"keys": "\\r\\x1b[B",
-							"expect": "Disk use  keep some"
+							"expect": "keep some"
 						}
 					]
 				},

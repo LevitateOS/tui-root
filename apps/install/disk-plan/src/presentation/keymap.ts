@@ -1,12 +1,11 @@
 import type { Keymap } from "@levitate/tui-kit";
-import { CONFIRM_TOKEN } from "../generated/recpart";
 
 /** Keys on every page. */
 export const GLOBAL_KEYS = [
 	{ action: "quit", keys: ["q", "escape", "C-c"], hint: "q", label: "quit" },
 	{ action: "focus", keys: ["tab", "S-tab"], hint: "Tab", label: "switch pane" },
-	{ action: "failure", keys: ["F"], label: "show last failure" },
-	{ action: "refresh", keys: ["R"], label: "read the disks again" },
+	{ action: "failure", keys: ["F"], label: "last failure" },
+	{ action: "refresh", keys: ["R"], label: "read again" },
 ] as const satisfies Keymap;
 
 /** Keys while the page list has focus. */
@@ -15,9 +14,9 @@ export const NAV_KEYS = [
 		action: "page",
 		keys: ["down", "j", "right", "l", "up", "k", "left", "h"],
 		hint: "j/k",
-		label: "next/prev page",
+		label: "step",
 	},
-	{ action: "open", keys: ["enter"], label: "work on this page" },
+	{ action: "open", keys: ["enter"], label: "go on" },
 ] as const satisfies Keymap;
 
 /** Keys while a page's content has focus. */
@@ -31,8 +30,8 @@ export const DISK_KEYS = [
 	{
 		action: "move",
 		keys: ["up", "k", "down", "j", "left", "h", "right", "l"],
-		hint: "arrows/hjkl",
-		label: "choose disk",
+		hint: "↑/↓",
+		label: "select",
 	},
 ] as const satisfies Keymap;
 
@@ -52,18 +51,18 @@ export const PICK_FIRST = new Set(["left", "h", "up", "k"]);
 /** Keys on the partition editor page. */
 export const PARTITION_KEYS = [
 	{ action: "select", keys: ["up", "k", "down", "j"], hint: "↑/↓", label: "select" },
-	{ action: "setup", keys: ["a"], label: "set up the system in free space" },
-	{ action: "room", keys: ["s"], label: "make room (shrink a partition, keeping its files)" },
-	{ action: "create", keys: ["n"], label: "new partition" },
-	{ action: "remove", keys: ["d"], label: "delete" },
+	{ action: "setup", keys: ["a"], label: "set up" },
+	{ action: "room", keys: ["s"], label: "make room" },
+	{ action: "create", keys: ["n"], label: "new" },
+	{ action: "remove", keys: ["d"], label: "remove" },
 	{ action: "resize", keys: ["r"], label: "resize" },
 	{ action: "format", keys: ["f"], label: "format" },
-	{ action: "role", keys: ["m"], label: "use as (role)" },
-	{ action: "clear", keys: ["x"], label: "leave as is" },
-	{ action: "table", keys: ["W"], label: "new partition table (erase all)" },
+	{ action: "role", keys: ["m"], label: "use as" },
+	{ action: "clear", keys: ["x"], label: "leave" },
+	{ action: "table", keys: ["W"], label: "new table" },
 	{ action: "undo", keys: ["u"], label: "undo" },
 	{ action: "reset", keys: ["U"], label: "undo all" },
-	{ action: "next", keys: ["enter"], label: "continue" },
+	{ action: "next", keys: ["enter"], label: "go on" },
 	{ action: "back", keys: ["p"], label: "back" },
 ] as const satisfies Keymap;
 
@@ -96,6 +95,6 @@ export const TEXT_KEYS = [
 
 /** Keys on the destructive-confirm page; everything else typed goes into the token. */
 export const CONFIRM_KEYS = [
-	{ action: "apply", keys: ["enter"], label: `apply (after typing ${CONFIRM_TOKEN})` },
+	{ action: "apply", keys: ["enter"], label: "write, once unlocked" },
 	{ action: "erase", keys: ["backspace", "delete"], label: "erase" },
 ] as const satisfies Keymap;
