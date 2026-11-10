@@ -44,6 +44,11 @@ export type Preparation = {
 	phase: PreparationPhase;
 	completed_steps: number;
 	failure: string | null;
+	/**
+	 * Once synchronized, reopening must never reseed pending system changes.
+	 */
+	synchronized: boolean;
+	synchronization: SyncReport | null;
 };
 
 export type PreparationPhase =
@@ -132,6 +137,31 @@ export type Status = {
 	actions: Array<ActionView>;
 	preparation: Preparation | null;
 	recovery_reason: string | null;
+};
+
+export type SyncReport = {
+	payload_bytes_written: number;
+	payload_bytes_compared: number;
+	range_writes: number;
+	hole_bytes_punched: number;
+	files_created: number;
+	links_created: number;
+	entries_removed: number;
+	metadata_updates: number;
+	identity_bytes_written: number;
+	plan_bytes_written: number;
+	/**
+	 * A killed attempt can have written data before its counters were saved.
+	 * Payload counters cover this attempt; false means earlier writes are unknown.
+	 */
+	accounting_complete: boolean;
+	resumed: boolean;
+	/**
+	 * Filesystem metadata/journal traffic cannot be inferred from payload writes.
+	 */
+	filesystem_metadata_bytes: number | null;
+	filesystem_journal_bytes: number | null;
+	recab_state_bytes: number | null;
 };
 
 export type TrialRecord = {
