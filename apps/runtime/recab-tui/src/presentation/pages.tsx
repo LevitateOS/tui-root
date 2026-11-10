@@ -1,189 +1,244 @@
-/** The pages: the slots at a glance, one change before and after it runs, and the runs
- * so far. */
+/** The pages: every one is built on the two slots drawn as two blocks, with a change
+ * shown before it runs, while it runs and as it left the slots, and the runs so far. */
 import { Box, Text } from "ink";
 import { useContext, type ReactNode } from "react";
 import {
 	Callout,
+	CellGrid,
+	CellRows,
 	Commands,
 	ContentWidth,
 	Facts,
+	Field,
 	Heading,
-	resolveIntentColor,
-	Section,
 	Table,
+	truncateLine,
 	truncateLines,
-	UiText,
 	useIntentColor,
-	useTuiColors,
-	useTuiTheme,
+	useSurfaceBackground,
+	WordSlots,
 	type ColorIntent,
 	type CommandResult,
-	Panel,
 } from "@levitate/tui-kit";
-import { SLOTS, type Slot, type Status } from "../generated/recab";
-import { STATUS_ROWS, type ActionPlan, type Change } from "../domain/actions";
+import type { Slot, Status } from "../generated/recab";
+import { planAction, type ActionPlan, type Change } from "../domain/actions";
 import {
-	bootOrder,
 	formatTime,
 	headline,
 	recabError,
-	slotTags,
+	slotBlock,
 	type RecabError,
+	type SlotBlock,
 } from "../domain/recab";
 import type { StatusRead } from "../app/recab-runner";
-import { FIELD_QUESTION, type Prompt, type Run } from "./use-recab";
+import { FIELD_QUESTION, type Prompt, type Run, type StageField } from "./use-recab";
 
-function useIntent(intent: ColorIntent): string | undefined {
-	return resolveIntentColor(useTuiTheme(), intent, useTuiColors());
-}
-
-/** The two slots side by side (one above the other when narrow), each with its part in
- * the machine's state. */
-function SlotCards({ status }: { status: Status }): ReactNode {
-	const width = useContext(ContentWidth);
+/** A line of text on the surface it sits on. */
+function Line({
+	children,
+	intent = "text",
+	bold = false,
+}: {
+	children: ReactNode;
+	intent?: ColorIntent;
+	bold?: boolean;
+}): ReactNode {
 	const color = useIntentColor();
-	const side = width >= 44;
-	const cards = SLOTS.map((slot) => ({ slot, tags: slotTags(status, slot) }));
-	const lines = Math.max(...cards.map((card) => card.tags.length));
 	return (
-		<Box flexDirection={side ? "row" : "column"} columnGap={1} marginBottom={1}>
-			{cards.map(({ slot, tags }) => {
-				const running = slot === status.active_slot;
-				const edge = color(running ? "accent" : "panelBorder");
-				return (
-					<Panel
-						key={slot}
-						width={side ? Math.floor((width - 1) / 2) : width}
-						edge={running ? "accent" : "panelBorder"}
-					>
-						<Text bold color={edge}>
-							{running ? "● " : "○ "}Slot {slot}
-						</Text>
-						{tags.map((tag) => (
-							<Text key={tag.text} color={color(tag.intent)}>
-								{tag.text}
-							</Text>
-						))}
-						{Array.from({ length: lines - tags.length }, (_, i) => (
-							<Text key={`pad${i}`}> </Text>
-						))}
-					</Panel>
-				);
-			})}
-		</Box>
+		<Text bold={bold} color={color(intent)} backgroundColor={color(useSurfaceBackground())}>
+			{children}
+		</Text>
 	);
 }
 
-function ErrorCallout({
+const BLOCK_ROWS = 5;
+const BLOCK_GAP = 3;
+/** The content width the fork needs to draw its two ways out beside the chip. */
+const FORK_WIDE = 64;
+
+const BAR: Record<SlotBlock["state"], ColorIntent> = {
+	running: "accent",
+	next: "highlight",
+	idle: "panelBorder",
+};
+
+/** The slots as blocks side by side: a bar in the slot's state with its letter and its
+ * part in the next boot, then what it is and where it stands. */
+function SlotBlocks({ blocks }: { blocks: readonly SlotBlock[] }): ReactNode {
+	const width = useContext(ContentWidth);
+	const grid = new CellGrid(width, BLOCK_ROWS + 1, useSurfaceBackground());
+	const each = Math.floor((width - BLOCK_GAP * (blocks.length - 1)) / blocks.length);
+	blocks.forEach((block, i) => {
+		const x = i * (each + BLOCK_GAP);
+		const lit = block.state !== "idle";
+		for (let row = 0; row < BLOCK_ROWS; row++) grid.fill(row, x, each, "raisedBackground");
+		grid.fill(0, x, each, BAR[block.state]);
+		grid.put(0, x + 2, block.slot, lit ? "contentBackground" : "text", undefined, true);
+		if (block.tag)
+			grid.put(
+				0,
+				x + each - block.tag.length - 2,
+				block.tag,
+				lit ? "contentBackground" : "dimText",
+				undefined,
+				lit,
+			);
+		const room = each - 4;
+		const device = block.device && block.device.length + 2 < room ? block.device : "";
+		grid.put(2, x + 2, truncateLine(block.role, room - (device ? device.length + 1 : 0)), "text");
+		if (device) grid.put(2, x + each - 2 - device.length, device, "dimText");
+		grid.put(3, x + 2, truncateLine(block.standing.text, room), block.standing.intent);
+	});
+	return <CellRows grid={grid} />;
+}
+
+/** Both slots of a status as blocks. */
+function StatusBlocks({ status }: { status: Status }): ReactNode {
+	return <SlotBlocks blocks={[slotBlock(status, "A"), slotBlock(status, "B")]} />;
+}
+
+/** A trial boot as a fork: one line in, two ways out. */
+function Fork({ target, fallback }: { target: Slot; fallback: Slot }): ReactNode {
+	const width = useContext(ContentWidth);
+	const grid = new CellGrid(width, 3, useSurfaceBackground());
+	grid.put(0, 0, "reboot ─▶", "dimText");
+	const chip = ` slot ${target}, once `;
+	const after = grid.put(0, 10, chip, "contentBackground", "highlight", true);
+	if (width < FORK_WIDE) {
+		// Narrow: the two ways out hang under the chip instead of beside it.
+		const healthy = grid.put(1, 10, "├─ starts healthy ─▶", "faintText");
+		grid.put(1, healthy + 1, `${target} is kept`, "success", undefined, true);
+		const second = grid.put(2, 10, "└─ does not ──────▶", "faintText");
+		grid.put(2, second + 1, `slot ${fallback}`, "text", undefined, true);
+		return <CellRows grid={grid} />;
+	}
+	const branch = after + 1;
+	const healthy = grid.put(0, branch, "─┬─ starts healthy ─▶", "faintText");
+	grid.put(0, healthy + 1, `${target} is kept`, "success", undefined, true);
+	const second = grid.put(1, branch + 1, "└─ does not ──────▶", "faintText");
+	grid.put(1, second + 1, `back to slot ${fallback}`, "text", undefined, true);
+	return <CellRows grid={grid} />;
+}
+
+/** The line under the blocks: what boots next, and where a roll back goes. */
+function BootLine({ status }: { status: Status }): ReactNode {
+	const width = useContext(ContentWidth);
+	const grid = new CellGrid(width, 1, useSurfaceBackground());
+	const narrow = width < FORK_WIDE;
+	let at = grid.put(0, 0, "Next boot  ", "dimText");
+	at = grid.put(
+		0,
+		at,
+		status.next_boot ? `slot ${status.next_boot}` : "none",
+		"text",
+		undefined,
+		true,
+	);
+	at = grid.put(0, at, narrow ? "    Roll back to  " : "      Roll back goes to  ", "dimText");
+	grid.put(
+		0,
+		at,
+		status.rollback_slot ? `slot ${status.rollback_slot}` : "nowhere",
+		"text",
+		undefined,
+		true,
+	);
+	return <CellRows grid={grid} />;
+}
+
+function Gap(): ReactNode {
+	return <Box height={1} />;
+}
+
+function ErrorPanel({
+	tone = "danger",
 	title,
 	error,
-	detail,
-	tone = "danger",
 }: {
+	tone?: "danger" | "warning";
 	title: string;
 	error: RecabError;
-	/** A dim line under the message, e.g. the command that ran. */
-	detail?: string;
-	tone?: "danger" | "warning";
 }): ReactNode {
 	return (
 		<Callout tone={tone} title={title}>
-			<UiText>{error.message}</UiText>
-			{error.help ? <UiText bold>{error.help}</UiText> : null}
-			<UiText intent="dimText">{[detail, error.tag].filter(Boolean).join(" · ")}</UiText>
+			<Line>{error.message}</Line>
+			{error.help ? <Line bold>{error.help}</Line> : null}
+			{error.tag ? <Line intent="dimText">{error.tag}</Line> : null}
 		</Callout>
 	);
 }
 
-export function OverviewPage({
-	status,
-	plans,
-}: {
-	status: StatusRead;
-	plans: readonly ActionPlan[];
-}): ReactNode {
+export function OverviewPage({ status }: { status: StatusRead }): ReactNode {
 	if (status.kind === "reading")
 		return (
 			<Box flexDirection="column">
-				<Heading title="A/B slots" />
-				<UiText intent="dimText">Reading the slots with recab status …</UiText>
+				<Heading title="Reading the slots" subtitle="Asking recab status for the A/B state." />
 			</Box>
 		);
 	if (status.kind === "failed")
 		return (
 			<Box flexDirection="column">
-				<Heading title="A/B slots" />
-				<ErrorCallout title="recab couldn't read the A/B state" error={status.error} />
-				<UiText intent="dimText">r reads it again.</UiText>
+				<Heading
+					glyph="bang"
+					tone="error"
+					title="No slots to show"
+					subtitle="recab couldn't read the A/B state."
+				/>
+				<NoSlots error={status.error} />
 			</Box>
 		);
 	const s = status.status;
 	const head = headline(s);
 	const trial = s.last_trial;
+	const trialPending = s.trial_pending && s.next_boot;
 	return (
 		<Box flexDirection="column">
-			<Heading
-				title="A/B slots"
-				subtitle={`${s.entry_prefix} boots from one slot; an update is written to the other and tried once before it is kept.`}
-			/>
-			<Callout tone={head.tone} title={head.title}>
-				{head.lines.map((line) => (
-					<UiText key={line}>{line}</UiText>
-				))}
-			</Callout>
-			<SlotCards status={s} />
-			<Section title="Boot order">
-				<Facts rows={bootOrder(s)} />
-			</Section>
-			{trial ? (
-				<Section title="Last trial" trailing={formatTime(trial.unix_time)}>
-					<UiText bold intent={trial.committed ? "success" : "error"}>
-						{trial.committed
-							? `Slot ${trial.slot} started healthy and was kept`
-							: `Slot ${trial.slot} failed its trial and was left`}
-					</UiText>
-					<UiText intent="dimText">{trial.detail}</UiText>
-				</Section>
+			{trialPending ? (
+				<Heading
+					title={`Slot ${s.next_boot} boots next, once`}
+					subtitle="A trial: kept if it starts healthy, undone if it does not."
+				/>
+			) : head.tone === "success" ? (
+				<Heading
+					title="Two systems, one running"
+					subtitle="An update is written to the other slot and tried once before it is kept."
+				/>
+			) : (
+				<Heading title={head.title} subtitle={head.lines.join(" ")} />
+			)}
+			<StatusBlocks status={s} />
+			{trialPending ? (
+				<Fork target={s.next_boot!} fallback={s.known_good_slot ?? s.active_slot} />
+			) : (
+				<BootLine status={s} />
+			)}
+			{trial && !trialPending ? (
+				<>
+					<Gap />
+					<Line intent="dimText">
+						{`Slot ${trial.slot}'s last trial ${trial.committed ? "was kept" : "failed"} (${formatTime(trial.unix_time)}): ${trial.detail}`}
+					</Line>
+				</>
 			) : null}
-			<Section title="Changes">
-				<PlanList plans={plans} />
-			</Section>
 		</Box>
 	);
 }
 
-/** Every change with whether recab would make it now, and why not. */
-function PlanList({ plans }: { plans: readonly ActionPlan[] }): ReactNode {
-	const dim = useIntent("dimText");
+/** One block for a system recab found no slots on, and recab's own reason. */
+function NoSlots({ error }: { error: RecabError }): ReactNode {
+	const width = useContext(ContentWidth);
+	const grid = new CellGrid(width, BLOCK_ROWS + 1, useSurfaceBackground());
+	for (let row = 0; row < BLOCK_ROWS; row++) grid.fill(row, 0, width, "raisedBackground");
+	grid.fill(0, 0, width, "panelBorder");
+	grid.put(0, 2, "no slots", "text", undefined, true);
+	grid.put(2, 2, truncateLine(error.message, width - 4), "text");
+	if (error.help) grid.put(3, 2, truncateLine(error.help, width - 4), "info");
 	return (
-		<Box flexDirection="column">
-			{plans.map((plan) => (
-				<Box key={plan.id} flexDirection="column">
-					<Text>
-						<VerdictMark plan={plan} /> <Text bold>{plan.label}</Text>
-					</Text>
-					{plan.verdict.kind !== "ready" ? (
-						<Box paddingLeft={2}>
-							<Text color={dim}>{plan.verdict.reason}</Text>
-						</Box>
-					) : null}
-				</Box>
-			))}
-		</Box>
+		<>
+			<CellRows grid={grid} />
+			{error.tag ? <Line intent="dimText">{error.tag}</Line> : null}
+		</>
 	);
-}
-
-const VERDICT_MARK: Record<ActionPlan["verdict"]["kind"], { mark: string; intent: ColorIntent }> = {
-	ready: { mark: "●", intent: "success" },
-	"no-change": { mark: "○", intent: "dimText" },
-	refused: { mark: "✗", intent: "warning" },
-};
-
-export function VerdictMark({ plan }: { plan: ActionPlan | null }): ReactNode {
-	const { mark, intent } = plan
-		? VERDICT_MARK[plan.verdict.kind]
-		: { mark: "·", intent: "dimText" as const };
-	return <Text color={useIntent(intent)}>{mark}</Text>;
 }
 
 function ChangeTable({ changes }: { changes: readonly Change[] }): ReactNode {
@@ -196,239 +251,307 @@ function ChangeTable({ changes }: { changes: readonly Change[] }): ReactNode {
 	);
 }
 
-/** The question being asked, with what an answer may be. */
-function PromptBox({ prompt, slot }: { prompt: Prompt; slot: Slot | null }): ReactNode {
-	const dim = useIntent("dimText");
-	const bad = useIntent("warning");
-	if (prompt.kind === "confirm")
-		return (
-			<Callout tone="info" title={`Run ${prompt.argv.join(" ")}?`}>
-				<UiText>y runs it · n or Esc cancels</UiText>
-			</Callout>
-		);
-	const field = prompt.kind === "path" ? prompt.field : null;
-	return (
-		<Callout
-			tone={prompt.kind === "token" ? "danger" : "info"}
-			title={
-				prompt.kind === "token"
-					? `Type ${prompt.slot} to erase slot ${prompt.slot} and write it`
-					: FIELD_QUESTION[field!]
-			}
-		>
-			<Text>
-				<Text color={dim}>› </Text>
-				<Text bold>{prompt.text}</Text>
-				<Text color={dim}>_</Text>
-				{prompt.kind === "path" && prompt.error ? (
-					<Text color={bad}>{`   ${prompt.error}`}</Text>
-				) : null}
-			</Text>
-			<UiText intent="dimText">
-				{prompt.kind === "token"
-					? `Everything on slot ${slot ?? prompt.slot} is erased. Esc cancels.`
-					: "Tab completes the path · Enter accepts · Esc cancels"}
-			</UiText>
-		</Callout>
-	);
-}
+const FIELD_LABEL: Record<StageField, string> = {
+	rootfs: "System image",
+	kernel: "Kernel",
+	initrd: "Initramfs",
+};
 
-function exitText(result: CommandResult): string {
-	return result.exitCode === null ? "didn't start" : `exit ${result.exitCode}`;
+const FIELDS: readonly StageField[] = ["rootfs", "kernel", "initrd"];
+
+/** The path questions, one at a time: what is answered stays as a quiet row above. */
+function PathQuestions({ prompt }: { prompt: Extract<Prompt, { kind: "path" }> }): ReactNode {
+	const width = useContext(ContentWidth);
+	const here = FIELDS.indexOf(prompt.field);
+	return (
+		<Box flexDirection="column">
+			{FIELDS.slice(0, here).map((field) => (
+				<Field
+					key={field}
+					label={FIELD_LABEL[field]}
+					text={prompt.answers[field] || "none"}
+					width={width}
+					cursor={false}
+				/>
+			))}
+			<Gap />
+			<Line bold>{FIELD_QUESTION[prompt.field]}</Line>
+			<Field label={FIELD_LABEL[prompt.field]} text={prompt.text} width={width} />
+			<Gap />
+			{prompt.error ? (
+				<Line intent="warning">{prompt.error}</Line>
+			) : (
+				<Line intent="faintText">Tab completes the path · Enter accepts · Esc cancels</Line>
+			)}
+		</Box>
+	);
 }
 
 function seconds(ms: number): string {
 	return ms < 10_000 ? `${(ms / 1000).toFixed(1)}s` : `${Math.round(ms / 1000)}s`;
 }
 
-function changed(before: Status, after: Status): boolean {
-	return STATUS_ROWS.some(([, value]) => value(before) !== value(after));
+function elapsed(ms: number): string {
+	const total = Math.max(0, Math.round(ms / 1000));
+	return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
 
-/** A finished run: what came of it, and the slots before and after. */
-function RunResult({ run, plan }: { run: Run; plan: ActionPlan }): ReactNode {
+function exitText(result: CommandResult): string {
+	return result.exitCode === null ? "didn't start" : `exit ${result.exitCode}`;
+}
+
+/** The first sentence of a result line, and what follows it. */
+function splitSentence(text: string): [string, string] {
+	const at = text.indexOf(". ");
+	return at < 0 ? [text.replace(/\.$/, ""), ""] : [text.slice(0, at), text.slice(at + 2)];
+}
+
+/** A change that has run: what came of it and the slots as they now are. */
+function RunResult({
+	run,
+	plan,
+	status,
+}: {
+	run: Run;
+	plan: ActionPlan;
+	status: Status;
+}): ReactNode {
 	const result = run.result!;
 	const ok = result.exitCode === 0;
-	const after = run.after?.kind === "ok" ? run.after.status : null;
+	const refused = result.exitCode === 21;
+	const slots = run.after?.kind === "ok" ? run.after.status : (run.before ?? status);
 	const output = [result.stdout.trim(), ok ? result.stderr.trim() : ""].filter(Boolean).join("\n");
+	const [title, rest] = splitSentence(plan.done);
+	const lower = `${plan.title.charAt(0).toLowerCase()}${plan.title.slice(1)}`;
 	return (
 		<Box flexDirection="column">
 			{ok ? (
-				<Callout tone="success" title={plan.done}>
-					<UiText intent="dimText">{`${run.argv.join(" ")} · ${seconds(result.durationMs)}`}</UiText>
-				</Callout>
+				<Heading
+					glyph="check"
+					tone="success"
+					title={title}
+					subtitle={rest || `${run.argv.join(" ")} · ${seconds(result.durationMs)}`}
+				/>
 			) : (
-				// Exit 21 is a refusal: recab checked first and changed nothing.
-				<ErrorCallout
-					title={
-						result.exitCode === 21
-							? `recab refused: ${plan.title.charAt(0).toLowerCase()}${plan.title.slice(1)}`
-							: `${plan.title} failed (${exitText(result)})`
-					}
-					tone={result.exitCode === 21 ? "warning" : "danger"}
-					detail={run.argv.join(" ")}
+				<Heading
+					glyph="bang"
+					tone={refused ? "warning" : "error"}
+					title={refused ? `recab refused: ${lower}` : `${plan.title} failed`}
+					subtitle={`${run.argv.slice(0, 2).join(" ")} · ${exitText(result)}`}
+				/>
+			)}
+			<StatusBlocks status={slots} />
+			{ok ? null : (
+				<ErrorPanel
+					tone={refused ? "warning" : "danger"}
+					title={refused ? "recab changed nothing" : exitText(result)}
 					error={recabError(result)}
 				/>
 			)}
-			{run.before && after && !changed(run.before, after) ? (
-				<Box marginBottom={1}>
-					<UiText intent="dimText">The slots are as they were before.</UiText>
-				</Box>
-			) : run.before && after ? (
-				<Section title="Before and after">
-					<Table
-						columns={[{ title: "" }, { title: "Before" }, { title: "After" }]}
-						tones={STATUS_ROWS.map(([, value]) =>
-							value(run.before!) === value(after) ? "dimText" : "accent",
-						)}
-						rows={STATUS_ROWS.map(([label, value]) => [label, value(run.before!), value(after)])}
-					/>
-				</Section>
-			) : null}
-			{output ? (
-				<Section title="Output">
-					<UiText>{truncateLines(output, 8)}</UiText>
-				</Section>
-			) : null}
+			{output ? <Line intent="dimText">{truncateLines(output, 6)}</Line> : null}
+		</Box>
+	);
+}
+
+/** A change recab is running: that it is, and for how long. */
+function Running({
+	run,
+	plan,
+	status,
+	now,
+}: {
+	run: Run;
+	plan: ActionPlan;
+	status: Status;
+	now: number;
+}): ReactNode {
+	const writing = plan.id === "stage";
+	return (
+		<Box flexDirection="column">
+			<Heading
+				title={writing ? `Writing slot ${status.inactive_slot}` : plan.title}
+				subtitle={
+					writing ? `Slot ${status.active_slot} keeps running.` : "recab is making the change."
+				}
+			/>
+			<StatusBlocks status={status} />
+			<Facts
+				rows={[
+					["Running", run.argv.join(" ")],
+					["Elapsed", elapsed(now - run.startedAt)],
+				]}
+			/>
 		</Box>
 	);
 }
 
 export function ActionPage({
+	status,
 	plan,
 	prompt,
 	run,
 	now,
-	followUp,
 }: {
+	status: Status | null;
 	plan: ActionPlan | null;
 	prompt: Prompt | null;
 	/** This change's latest run. */
 	run: Run | null;
 	now: number;
-	/** The change that usually follows, with its key. */
-	followUp: { key: string; title: string } | null;
 }): ReactNode {
-	if (!plan)
+	if (!plan || !status)
 		return (
 			<Box flexDirection="column">
-				<Heading title="No status" />
-				<UiText intent="dimText">
-					recab status hasn't been read, so no change can be planned.
-				</UiText>
+				<Heading
+					title="No status"
+					subtitle="recab status hasn't been read, so no change can be planned."
+				/>
 			</Box>
 		);
-	const asking = prompt?.kind === "path" ? prompt : null;
-	const answers = asking?.answers ?? null;
+	const heading = <Heading title={plan.title} subtitle={plan.summary} />;
+	const fork =
+		plan.id === "try" || (plan.id === "reboot" && status.trial_pending && status.next_boot) ? (
+			<Fork
+				target={plan.id === "try" ? status.inactive_slot : status.next_boot!}
+				fallback={status.known_good_slot ?? status.active_slot}
+			/>
+		) : (
+			<ChangeTable changes={plan.changes} />
+		);
 	const argv =
 		plan.argv ??
 		(prompt?.kind === "token"
 			? prompt.argv
-			: run && !run.result
-				? run.argv
-				: ["recab", "stage", "--rootfs", "<image>", "--kernel", "<vmlinuz>", "[--initrd <img>]"]);
+			: ["recab", "stage", "--rootfs", "<image>", "--kernel", "<vmlinuz>", "[--initrd <img>]"]);
+
+	if (prompt?.kind === "path")
+		return (
+			<Box flexDirection="column">
+				{heading}
+				<PathQuestions prompt={prompt} />
+			</Box>
+		);
+	if (prompt?.kind === "token")
+		return (
+			<Box flexDirection="column">
+				<Heading
+					title={`Write over slot ${prompt.slot}?`}
+					subtitle={`Type ${prompt.slot} to erase slot ${prompt.slot} and write the new system. Everything in it is lost.`}
+				/>
+				<SlotBlocks
+					blocks={(
+						[
+							{
+								...slotBlock(status, status.active_slot),
+								role: "untouched",
+								standing: { text: "keeps running", intent: "info" as const },
+							},
+							{
+								...slotBlock(status, prompt.slot),
+								role: "erased",
+								standing: { text: "then the new system", intent: "text" },
+								tag: "formatted",
+							},
+						] satisfies SlotBlock[]
+					).sort((a, b) => a.slot.localeCompare(b.slot))}
+				/>
+				<WordSlots word={prompt.slot} typed={prompt.text.trim().toUpperCase()} />
+			</Box>
+		);
+	if (prompt?.kind === "confirm")
+		return (
+			<Box flexDirection="column">
+				{heading}
+				<Callout
+					tone="warning"
+					title={`Run ${prompt.argv.join(" ")}?`}
+					keys={[
+						["y", "run it"],
+						["n", "cancel"],
+					]}
+				/>
+				{fork}
+			</Box>
+		);
+	if (run && !run.result) return <Running run={run} plan={plan} status={status} now={now} />;
+	if (run?.result) return <RunResult run={run} plan={plan} status={status} />;
+	if (plan.verdict.kind !== "ready")
+		return (
+			<Box flexDirection="column">
+				<Heading
+					glyph="bang"
+					tone={plan.verdict.kind === "refused" ? "error" : "info"}
+					title={plan.title}
+					subtitle={
+						plan.verdict.kind === "refused" ? "recab would refuse this now." : "Nothing to change."
+					}
+				/>
+				<StatusBlocks status={status} />
+				<Line intent="info">{plan.verdict.reason}</Line>
+			</Box>
+		);
 	return (
 		<Box flexDirection="column">
-			<Heading title={plan.title} subtitle={plan.summary} />
-			{prompt ? <PromptBox prompt={prompt} slot={null} /> : null}
-			{run && !run.result ? (
-				<Callout tone="info" title={`Running ${run.argv.join(" ")} …`}>
-					<UiText intent="dimText">{`${seconds(Math.max(0, now - run.startedAt))} so far`}</UiText>
-				</Callout>
-			) : null}
-			{run?.result ? <RunResult run={run} plan={plan} /> : null}
-			{run?.result && plan.verdict.kind !== "ready" ? (
-				// Done: what comes next, not a plan that no longer applies.
-				followUp ? (
-					<UiText>
-						<Text bold>{followUp.key}</Text>
-						{` goes to ${followUp.title}.`}
-					</UiText>
-				) : null
-			) : (
-				<>
-					{plan.verdict.kind === "refused" ? (
-						<Callout tone="warning" title="recab would refuse this now">
-							<UiText>{plan.verdict.reason}</UiText>
-						</Callout>
-					) : plan.verdict.kind === "no-change" ? (
-						<Callout tone="info" title="Nothing to change">
-							<UiText>{plan.verdict.reason}</UiText>
-						</Callout>
-					) : plan.destructive && !prompt && !(run && !run.result) ? (
-						<Callout
-							tone="danger"
-							title={`This formats ${plan.changes[0]!.what.replace("Slot", "slot")}`}
-						>
-							<UiText>
-								Everything on it is erased, including the system it holds now. You type its name to
-								confirm.
-							</UiText>
-						</Callout>
-					) : null}
-					<Section title={run?.result ? "Doing it again" : "What changes"}>
-						<ChangeTable changes={plan.changes} />
-					</Section>
-					{answers ? (
-						<Section title="Answers">
-							<Facts
-								rows={(["rootfs", "kernel", "initrd"] as const).map((field) => [
-									field,
-									answers[field] ||
-										(field === asking?.field ? "(answering)" : field === "initrd" ? "" : "…"),
-								])}
-							/>
-						</Section>
-					) : null}
-					<Section title="Command">
-						<Commands lines={[argv.join(" ")]} />
-					</Section>
-					{plan.verdict.kind === "ready" && !prompt && !(run && !run.result) ? (
-						<UiText intent="dimText">Enter runs it; you confirm before anything changes.</UiText>
-					) : null}
-				</>
-			)}
+			{heading}
+			<Gap />
+			{fork}
+			<Gap />
+			<Commands lines={[argv.join(" ")]} />
 		</Box>
 	);
 }
 
-export function HistoryPage({ runs, now }: { runs: readonly Run[]; now: number }): ReactNode {
-	const latest = runs.find((run) => run.result) ?? null;
+/** Every run, newest first, down a line. */
+export function HistoryPage({ runs }: { runs: readonly Run[] }): ReactNode {
+	const width = useContext(ContentWidth);
+	const background = useSurfaceBackground();
+	const entries = runs.map((run) => {
+		const result = run.result;
+		const plan = run.before ? planAction(run.action, run.before) : null;
+		const ok = result?.exitCode === 0;
+		const title = !result
+			? `${plan?.title ?? run.argv.join(" ")}, running`
+			: ok
+				? plan
+					? splitSentence(plan.done)[0]
+					: "Done"
+				: `${plan?.title ?? run.argv.join(" ")} ${result.exitCode === 21 ? "refused" : "failed"}`;
+		const detail = !result
+			? run.argv.join(" ")
+			: ok
+				? run.argv.join(" ")
+				: recabError(result).message;
+		return {
+			when: new Date(run.startedAt).toTimeString().slice(0, 8),
+			mark: !result ? "◐" : ok ? "✓" : "✗",
+			intent: (!result ? "warning" : ok ? "success" : "error") as ColorIntent,
+			title,
+			detail,
+		};
+	});
+	const grid = new CellGrid(width, Math.max(1, entries.length * 3 - 1), background);
+	entries.forEach((entry, i) => {
+		const row = i * 3;
+		grid.put(row, 0, entry.when, "faintText");
+		grid.put(row, 10, entry.mark, entry.intent, undefined, true);
+		grid.put(row, 13, truncateLine(entry.title, width - 13), "text", undefined, true);
+		grid.put(row + 1, 13, truncateLine(entry.detail, width - 13), "dimText");
+		if (i < entries.length - 1) {
+			grid.put(row + 1, 10, "│", "contentBorder");
+			grid.put(row + 2, 10, "│", "contentBorder");
+		}
+	});
 	return (
 		<Box flexDirection="column">
 			<Heading
-				title="History"
-				subtitle="What ran in this session, newest first. recab keeps its own log in /var/lib/recab/audit.log."
+				title="This session"
+				subtitle="recab keeps its own log in /var/lib/recab/audit.log."
 			/>
 			{runs.length === 0 ? (
-				<UiText intent="dimText">Nothing has run yet.</UiText>
+				<Line intent="dimText">Nothing has run yet.</Line>
 			) : (
-				<Section title="Runs" trailing={`${runs.length}`}>
-					<Table
-						columns={[
-							{ title: "Started" },
-							{ title: "Command" },
-							{ title: "Result" },
-							{ title: "Took", align: "right", optional: true },
-						]}
-						tones={runs.map((run) =>
-							!run.result ? "warning" : run.result.exitCode === 0 ? "success" : "error",
-						)}
-						rows={runs.map((run) => [
-							new Date(run.startedAt).toTimeString().slice(0, 8),
-							run.argv.join(" "),
-							run.result ? (run.result.exitCode === 0 ? "done" : exitText(run.result)) : "running",
-							seconds((run.result?.durationMs ?? now - run.startedAt) || 0),
-						])}
-					/>
-				</Section>
+				<CellRows grid={grid} />
 			)}
-			{latest?.result && latest.result.exitCode !== 0 ? (
-				<ErrorCallout
-					title={`Last failure: ${latest.argv.join(" ")}`}
-					error={recabError(latest.result)}
-				/>
-			) : null}
 		</Box>
 	);
 }

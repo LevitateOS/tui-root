@@ -9,7 +9,7 @@ export const MAIN_KEYS = [
 		hint: "j/k",
 		label: "select",
 	},
-	{ action: "run", keys: ["enter"], label: "run the selected change" },
+	{ action: "run", keys: ["enter"], label: "run it" },
 	{ action: "try", keys: ["t"], label: "go to: try the other slot" },
 	{ action: "commit", keys: ["c"], label: "go to: commit" },
 	{ action: "rollback", keys: ["x"], label: "go to: roll back" },
@@ -17,7 +17,7 @@ export const MAIN_KEYS = [
 	{ action: "reboot", keys: ["R"], label: "go to: reboot" },
 	{ action: "overview", keys: ["o"], label: "go to: overview" },
 	{ action: "history", keys: ["H"], label: "go to: history" },
-	{ action: "refresh", keys: ["r"], label: "read the status again" },
+	{ action: "refresh", keys: ["r"], label: "read again" },
 	{ action: "quit", keys: ["q", "escape", "C-c"], hint: "q", label: "quit" },
 ] as const satisfies Keymap;
 

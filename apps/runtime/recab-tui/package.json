@@ -38,7 +38,7 @@
 					"about": "Running slot A, committed; slot B's last trial failed and B is the rollback target.",
 					"steps": [
 						{
-							"expect": "Running slot A, committed"
+							"expect": "Two systems, one running"
 						}
 					]
 				},
@@ -50,7 +50,7 @@
 					},
 					"steps": [
 						{
-							"expect": "Slot B boots once on the next reboot"
+							"expect": "Slot B boots next, once"
 						}
 					]
 				},
@@ -135,16 +135,34 @@
 							"expect": "doesn't exist"
 						},
 						{
-							"keys": "\\x1b\\r/etc/os-release\\r",
+							"keys": "\\e\\r/etc/os-release\\r",
 							"expect": "not an EROFS image"
 						},
 						{
-							"keys": "\\x1b\\rfixtures/images/filesystem.erofs\\rfixtures/images/vmlinuz\\r\\r",
+							"keys": "\\e\\rfixtures/images/filesystem.erofs\\rfixtures/images/vmlinuz\\r\\r",
 							"expect": "Type B to erase slot B"
 						},
 						{
 							"keys": "B\\r",
 							"expect": "Slot B holds the new system"
+						}
+					]
+				},
+				{
+					"name": "history",
+					"about": "Two changes ran, a trial set and then cancelled, and both are on the history line, newest first.",
+					"steps": [
+						{
+							"keys": "t\\ry",
+							"expect": "Reboot to start the trial"
+						},
+						{
+							"keys": "x\\ry",
+							"expect": "Roll back"
+						},
+						{
+							"keys": "H",
+							"expect": "This session"
 						}
 					]
 				},

@@ -174,3 +174,65 @@ export function recabError(result: CommandResult): RecabError {
 				: helpFor(result.exitCode),
 	};
 }
+
+export type SlotBlock = {
+	slot: string;
+	/** The bar's colour: the running slot, the one booting next as a trial, or neither. */
+	state: "running" | "next" | "idle";
+	/** Written at the bar's end. */
+	tag: string;
+	/** What it is to the machine. */
+	role: string;
+	/** Its standing in the boot order and its last trial. */
+	standing: SlotTag;
+	/** The partition it lives on, when recab found it. */
+	device: string | null;
+};
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** A local date as `5 Nov`. */
+export function formatDay(unixSeconds: number): string {
+	const d = new Date(unixSeconds * 1000);
+	return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+}
+
+/** One slot as the page draws it: a bar in its state, what it is, and where it stands. */
+export function slotBlock(s: Status, slot: Slot): SlotBlock {
+	const view = (s.slots ?? []).find((v) => v.slot === slot);
+	const running = s.active_slot === slot;
+	const next = !running && s.trial_pending && s.next_boot === slot;
+	const trial = s.last_trial?.slot === slot ? s.last_trial : null;
+	const parts: SlotTag[] = [];
+	if (view && !view.bootable) parts.push({ text: "cannot boot", intent: "error" });
+	if (trial)
+		parts.push(
+			trial.committed
+				? { text: "last trial kept", intent: "success" }
+				: { text: `last trial failed, ${formatDay(trial.unix_time)}`, intent: "error" },
+		);
+	if (running && !s.committed) parts.push({ text: "not committed", intent: "warning" });
+	else if (s.known_good_slot === slot) parts.push({ text: "known-good", intent: "info" });
+	else if (!trial) parts.push({ text: "not known-good", intent: "dimText" });
+	if (s.default_slot === slot && s.known_good_slot !== slot)
+		parts.push({ text: "boots by default", intent: "warning" });
+	const worst =
+		parts.find((p) => p.intent === "error") ??
+		parts.find((p) => p.intent === "warning") ??
+		parts.find((p) => p.intent === "info") ??
+		parts[0]!;
+	return {
+		slot,
+		state: running ? "running" : next ? "next" : "idle",
+		tag: running ? "running" : next ? "next boot" : "",
+		role: running
+			? "this system"
+			: next
+				? "on trial"
+				: s.rollback_slot === slot
+					? "the previous system"
+					: "not running",
+		standing: { text: parts.map((p) => p.text).join(", "), intent: worst.intent },
+		device: view?.device ?? null,
+	};
+}

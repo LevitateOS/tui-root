@@ -1,21 +1,23 @@
-import { Box, Text, useApp } from "ink";
+import { Box, useApp } from "ink";
 import { useState, type ReactNode } from "react";
 import {
 	movesBack,
 	AppShell,
-	ContentWidth,
 	fitFooter,
 	keymapStatusSegments,
 	PAGE_SCROLL_KEYS,
 	textStatusSegment,
-	textWidth,
-	truncateLine,
-	useIntentColor,
+	RailList,
 	useKeymap,
 	usePageHeight,
 	usePageScroll,
 	useShellLayout,
 	useTuiViewport,
+	type PageAction,
+	type PageNote,
+	type PathState,
+	type ProgressSegment,
+	type RailGroup,
 } from "@levitate/tui-kit";
 import {
 	ACTION_IDS,
@@ -25,10 +27,20 @@ import {
 	type ActionPlan,
 } from "../domain/actions";
 import { CONFIRM_KEYS, FOOTER_ACTIONS, MAIN_KEYS, TEXT_KEYS } from "./keymap";
-import { ActionPage, HistoryPage, OverviewPage, VerdictMark } from "./pages";
-import { useRecab } from "./use-recab";
+import { ActionPage, HistoryPage, OverviewPage } from "./pages";
+import { SLOTS, type Status } from "../generated/recab";
+import { useRecab, type Prompt, type Run } from "./use-recab";
 
 type View = "overview" | ActionId | "history";
+
+/** What the rail and the band call a change when there is no plan to name it. */
+const PLACE: Record<ActionId, string> = {
+	try: "Try the other slot",
+	commit: "Commit",
+	rollback: "Roll back",
+	stage: "Write a system",
+	reboot: "Reboot",
+};
 
 const VIEWS: readonly View[] = ["overview", ...ACTION_IDS, "history"];
 
@@ -43,7 +55,12 @@ const HOTKEY: Record<ActionId, string> = {
 export function RecabScreen(): ReactNode {
 	const { exit } = useApp();
 	const { columns } = useTuiViewport();
-	const shell = useShellLayout({ navWidth: columns < 110 ? 28 : 34 });
+	const shell = useShellLayout({
+		navWidth: columns < 110 ? 28 : 34,
+		navFlush: true,
+		steps: true,
+		action: true,
+	});
 	const recab = useRecab();
 	const [view, setView] = useState<View>("overview");
 	const [notice, setNotice] = useState<string | null>(null);
@@ -114,130 +131,142 @@ export function RecabScreen(): ReactNode {
 	const pageHeight = usePageHeight(view);
 	const scrollable = !prompt && pageHeight.height > shell.content.textRows - 2;
 	const layout = fitFooter(shell, [
+		...keymapStatusSegments(scrollable ? [...keys, ...PAGE_SCROLL_KEYS] : keys),
+		...(notice ? [textStatusSegment("notice", notice, "warning")] : []),
 		recab.running
-			? textStatusSegment("busy", `running ${recab.running.argv.join(" ")}`, "warning")
+			? textStatusSegment("busy", `running ${recab.running.argv.join(" ")}`, "warning", false, true)
 			: recab.status.kind === "reading"
-				? textStatusSegment("busy", "reading status", "accent")
+				? textStatusSegment("busy", "reading status", "dimText", false, true)
 				: textStatusSegment(
 						"busy",
-						s ? `slot ${s.active_slot}` : "no status",
-						s ? "accent" : "error",
+						s ? `running slot ${s.active_slot}` : "no slots",
+						s ? "dimText" : "error",
+						false,
+						true,
 					),
-		...keymapStatusSegments(scrollable ? [...keys, ...PAGE_SCROLL_KEYS] : keys),
-		...(notice ? [textStatusSegment("notice", notice, "warning", true)] : []),
 	]);
 	const scroll = usePageScroll(pageHeight, layout.content.textRows, prompt === null);
 
 	const runOf = (id: ActionId) => recab.runs.find((run) => run.action === id) ?? null;
+	const plan = view === "overview" || view === "history" ? null : planFor(view);
+	const run = plan ? runOf(plan.id) : null;
 	const page =
 		view === "overview" ? (
-			<OverviewPage status={recab.status} plans={plans} />
+			<OverviewPage status={recab.status} />
 		) : view === "history" ? (
-			<HistoryPage runs={recab.runs} now={recab.now} />
+			<HistoryPage runs={recab.runs} />
 		) : (
-			<ActionPage
-				plan={planFor(view)}
-				prompt={prompt}
-				run={runOf(view)}
-				now={recab.now}
-				followUp={(() => {
-					const id = planFor(view)?.followUp;
-					const plan = id ? planFor(id) : null;
-					return id && plan ? { key: HOTKEY[id], title: plan.title } : null;
-				})()}
-			/>
+			<ActionPage status={s} plan={plan} prompt={prompt} run={run} now={recab.now} />
 		);
+	const action = pageAction({ view, status: s, read: recab.status.kind, plan, prompt, run, plans });
 	const title =
 		view === "overview"
 			? "Overview"
 			: view === "history"
 				? "History"
-				: (planFor(view)?.title ?? view);
+				: view === "stage"
+					? PLACE.stage
+					: (planFor(view)?.label ?? PLACE[view]);
+	const rail = layout.nav ?? layout.content;
 	return (
-		<ContentWidth.Provider value={layout.content.textColumns}>
-			<AppShell
-				layout={layout}
-				focus="navigation"
-				navTitle="recab"
-				nav={
-					<Rail
-						view={view}
-						plans={plans}
-						runs={recab.runs.length}
-						width={(layout.nav ?? layout.content).textColumns}
-					/>
-				}
-				contentTitle={`${title}${scroll.more}`}
-				content={
-					<Box
-						ref={pageHeight.ref}
-						flexDirection="column"
-						flexShrink={0}
-						marginTop={-scroll.offset}
-					>
-						{page}
-					</Box>
-				}
-			/>
-		</ContentWidth.Provider>
+		<AppShell
+			layout={layout}
+			focus="navigation"
+			navTitle="Updates"
+			nav={
+				<RailList
+					groups={railGroups(plans, recab.runs.length)}
+					selected={view}
+					width={rail.textColumns}
+				/>
+			}
+			contentTitle={`${title}${scroll.more}`}
+			progress={slotSegments(s)}
+			action={action}
+			content={
+				<Box ref={pageHeight.ref} flexDirection="column" flexShrink={0} marginTop={-scroll.offset}>
+					{page}
+				</Box>
+			}
+		/>
 	);
 }
 
-/** The overview, every change marked with whether recab would make it now, and the
- * history. */
-function Rail({
-	view,
-	plans,
-	runs,
-	width,
-}: {
+/** The two slots as the step line: the running one on, a trial pending as next. */
+function slotSegments(s: Status | null): ProgressSegment[] {
+	return SLOTS.map((slot) => ({
+		label: `Slot ${slot}`,
+		state: !s
+			? "off"
+			: s.active_slot === slot
+				? "on"
+				: s.trial_pending && s.next_boot === slot
+					? "next"
+					: "off",
+	}));
+}
+
+const VERDICT_STATE: Record<ActionPlan["verdict"]["kind"], PathState> = {
+	ready: "ready",
+	"no-change": "waiting",
+	refused: "failed",
+};
+
+/** The overview, each change marked with whether recab would make it now and its hotkey,
+ * and the history. */
+function railGroups(plans: readonly ActionPlan[], runs: number): RailGroup[] {
+	return [
+		{ items: [{ id: "overview", label: "Overview", state: "none", hint: "o" }] },
+		{
+			title: "Changes",
+			items: ACTION_IDS.map((id) => {
+				const plan = plans.find((p) => p.id === id);
+				return {
+					id,
+					label: plan?.label ?? PLACE[id],
+					state: plan ? VERDICT_STATE[plan.verdict.kind] : "none",
+					hint: HOTKEY[id],
+				};
+			}),
+		},
+		{
+			items: [
+				{ id: "history", label: runs ? `History · ${runs}` : "History", state: "none", hint: "H" },
+			],
+		},
+	];
+}
+
+/** The page's one thing to press, or its one quiet line. */
+function pageAction(input: {
 	view: View;
+	status: Status | null;
+	read: "reading" | "ok" | "failed";
+	plan: ActionPlan | null;
+	prompt: Prompt | null;
+	run: Run | null;
 	plans: readonly ActionPlan[];
-	runs: number;
-	width: number;
-}): ReactNode {
-	const color = useIntentColor();
-	const item = (id: View, label: string, mark: ReactNode, trailing: string) => {
-		const selected = id === view;
-		const room = Math.max(1, width - 5 - textWidth(trailing) - 1);
-		const text = truncateLine(label, room);
-		return (
-			<Text key={id}>
-				<Text color={color("accent")}>{selected ? "▸ " : "  "}</Text>
-				{mark}
-				<Text bold={selected} color={color(selected ? "accent" : "navItem")}>
-					{` ${text}`}
-				</Text>
-				<Text color={color("dimText")}>
-					{" ".repeat(Math.max(1, width - 4 - textWidth(text) - textWidth(trailing)))}
-					{trailing}
-				</Text>
-			</Text>
-		);
-	};
-	return (
-		<Box flexDirection="column">
-			{item("overview", "Overview", " ", "o")}
-			<Box marginTop={1}>
-				<Text bold color={color("navHeading")}>
-					CHANGES
-				</Text>
-			</Box>
-			{ACTION_IDS.map((id) => {
-				const plan = plans.find((p) => p.id === id) ?? null;
-				return item(id, plan?.label ?? id, <VerdictMark plan={plan} />, HOTKEY[id]);
-			})}
-			<Box marginTop={1}>
-				<Text bold color={color("navHeading")}>
-					SESSION
-				</Text>
-			</Box>
-			{item("history", runs ? `History · ${runs}` : "History", " ", "H")}
-			<Box marginTop={1} flexDirection="column">
-				<Text color={color("dimText")}>● recab would do it</Text>
-				<Text color={color("dimText")}>○ nothing to change</Text>
-				<Text color={color("dimText")}>✗ recab would refuse</Text>
-			</Box>
-		</Box>
-	);
+}): PageAction | PageNote | undefined {
+	const { view, status, read, plan, prompt, run, plans } = input;
+	if (view === "history") return undefined;
+	if (view === "overview") {
+		if (read === "failed") return { note: "r reads the slots again" };
+		return status?.trial_pending && status.next_boot
+			? { label: "Reboot into the trial", key: HOTKEY.reboot }
+			: undefined;
+	}
+	if (!plan || prompt) return undefined;
+	if (run && !run.result)
+		return {
+			note: plan.id === "stage" ? "recab stage prints no progress: it is still writing" : "running",
+			intent: "warning",
+		};
+	if (run?.result) {
+		if (run.result.exitCode === 0) {
+			const next = plan.followUp ? plans.find((p) => p.id === plan.followUp) : null;
+			return next && plan.followUp ? { label: next.bar, key: HOTKEY[plan.followUp] } : undefined;
+		}
+		return plan.verdict.kind === "ready" ? { label: "Try again", key: "Enter" } : undefined;
+	}
+	return plan.verdict.kind === "ready" ? { label: plan.bar, key: "Enter" } : undefined;
 }

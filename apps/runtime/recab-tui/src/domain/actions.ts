@@ -3,7 +3,7 @@
  * whether recab would make it, refuse it, or find nothing to change, and the boot
  * selection before and after. recab still decides when it runs.
  */
-import type { Slot, Status } from "../generated/recab";
+import type { Action, ActionView, Slot, Status } from "../generated/recab";
 import { slotName } from "./recab";
 
 /** A slot in a table cell, whose row already says what it is. */
@@ -49,6 +49,8 @@ export type ActionPlan = {
 	destructive: boolean;
 	/** The command it runs, or null when it needs answers first (stage). */
 	argv: readonly string[] | null;
+	/** What the action bar says before it runs. */
+	bar: string;
 	/** What success means, for the result page. */
 	done: string;
 	/** The change that usually follows, once this one is done. */
@@ -70,8 +72,62 @@ function trial(s: Status): string {
 	return s.trial_pending ? cell(s.next_boot) : "none";
 }
 
-/** What `id` would do from `s`. */
+/** The recab action each change runs; reboot is not recab's. */
+const RECAB_ACTION: Partial<Record<ActionId, Action>> = {
+	try: "set_next",
+	commit: "commit",
+	rollback: "rollback",
+	stage: "stage",
+};
+
+/** What recab says it would make of `id`, when its status carries the verdicts. */
+function recabView(id: ActionId, s: Status): ActionView | null {
+	const action = RECAB_ACTION[id];
+	return action ? ((s.actions ?? []).find((view) => view.action === action) ?? null) : null;
+}
+
+/** The boot selection recab says a change leaves, where it names one. */
+function afterOf(view: ActionView): Record<string, string> | null {
+	const after = view.after;
+	if (!after) return null;
+	return {
+		"Next boot": after.trial_pending ? `${cell(after.next_boot)}, once` : cell(after.next_boot),
+		"Trial pending": after.trial_pending ? cell(after.next_boot) : "none",
+		Default: cell(after.default_slot),
+		"Known-good": cell(after.known_good_slot),
+		"Roll back to": cell(after.rollback_slot),
+	};
+}
+
+/**
+ * What `id` would do from `s`: recab's own verdict, reason and after-state when its
+ * status carries them, else this file's copy of its rules.
+ */
 export function planAction(id: ActionId, s: Status): ActionPlan {
+	const plan = localPlan(id, s);
+	const view = recabView(id, s);
+	if (!view) return plan;
+	const reason =
+		view.reason ?? (plan.verdict.kind === "ready" ? "recab gave no reason" : plan.verdict.reason);
+	const verdict: Verdict =
+		view.verdict === "ready"
+			? ready
+			: view.verdict === "no_change"
+				? { kind: "no-change", reason }
+				: { kind: "refused", reason };
+	const after = afterOf(view);
+	return {
+		...plan,
+		verdict,
+		changes: after
+			? plan.changes.map((change) =>
+					change.what in after ? { ...change, after: after[change.what]! } : change,
+				)
+			: plan.changes,
+	};
+}
+
+function localPlan(id: ActionId, s: Status): ActionPlan {
 	const active = s.active_slot;
 	const inactive = s.inactive_slot;
 	switch (id) {
@@ -90,7 +146,7 @@ export function planAction(id: ActionId, s: Status): ActionPlan {
 				id,
 				label: `Try slot ${inactive}`,
 				title: `Try slot ${inactive} on the next boot`,
-				summary: `Boot slot ${inactive} once on the next reboot. If it starts healthy it is kept; if not, the machine comes back to slot ${fallback}.`,
+				summary: `Boot it once and see. If the trial fails, the machine comes back to slot ${fallback}.`,
 				verdict,
 				changes: [
 					row("Next boot", nextBoot(s), `${inactive}, once`),
@@ -100,7 +156,8 @@ export function planAction(id: ActionId, s: Status): ActionPlan {
 				],
 				destructive: false,
 				argv: ["recab", "set-next", inactive],
-				done: `Slot ${inactive} boots once on the next reboot. Reboot to start the trial.`,
+				bar: `Set slot ${inactive} for the next boot`,
+				done: `Slot ${inactive} boots next, once. Reboot to start the trial.`,
 				followUp: "reboot",
 			};
 		}
@@ -133,6 +190,7 @@ export function planAction(id: ActionId, s: Status): ActionPlan {
 				],
 				destructive: false,
 				argv: ["recab", "commit"],
+				bar: `Commit slot ${active}`,
 				done: `Slot ${active} is committed: known-good and the default.`,
 				followUp: null,
 			};
@@ -167,6 +225,7 @@ export function planAction(id: ActionId, s: Status): ActionPlan {
 				],
 				destructive: false,
 				argv: ["recab", "rollback"],
+				bar: target ? `Roll back to slot ${target}` : "Roll back",
 				done: cancelling
 					? "The trial is cancelled."
 					: `Slot ${to} is the default. Reboot to start it.`,
@@ -192,9 +251,9 @@ export function planAction(id: ActionId, s: Status): ActionPlan {
 						: ready;
 			return {
 				id,
-				label: `Write system to ${inactive}`,
+				label: `Write to slot ${inactive}`,
 				title: `Write a new system to slot ${inactive}`,
-				summary: `Format slot ${inactive} and write a new system into it from an EROFS image, carrying this system's accounts, hostname, network and services over.`,
+				summary: `Erase slot ${inactive} and write a system into it. Accounts, network and services carry over.`,
 				verdict,
 				changes: [
 					row(
@@ -211,6 +270,7 @@ export function planAction(id: ActionId, s: Status): ActionPlan {
 				],
 				destructive: true,
 				argv: null,
+				bar: "Choose the system to write",
 				done: `Slot ${inactive} holds the new system. Try slot ${inactive} to boot it once.`,
 				followUp: "try",
 			};
@@ -228,6 +288,7 @@ export function planAction(id: ActionId, s: Status): ActionPlan {
 				changes: [row("Boots", active, cell(next))],
 				destructive: false,
 				argv: ["reboot"],
+				bar: s.trial_pending ? "Reboot into the trial" : "Reboot",
 				done: "The machine is rebooting.",
 				followUp: null,
 			};
