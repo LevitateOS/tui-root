@@ -13,6 +13,7 @@ export {
 	Commands,
 	ContentWidth,
 	Facts,
+	HEADING_ROWS,
 	Heading,
 	Panel,
 	ProgressBar,
@@ -21,9 +22,23 @@ export {
 	StepList,
 	Table,
 } from "./components/page/blocks";
-export { StepPath } from "./components/navigation/step-path";
-export type { PathState, PathStep } from "./components/navigation/step-path";
-export type { Column, StepStatus, Tone } from "./components/page/blocks";
+export type { Column, FactRows, KeyPairs, StepStatus, Tone } from "./components/page/blocks";
+export { Field } from "./components/page/field";
+export { BigFigure, BigNumber } from "./components/page/big-number";
+export type { BigGlyph } from "./components/page/big-number";
+export {
+	Checks,
+	DiskBar,
+	diskBarSpans,
+	FromTo,
+	RunSheet,
+	Surface,
+	WordSlots,
+} from "./components/page/pictures";
+export type { CheckColumn, DiskPart, FromToSide, RunStep } from "./components/page/pictures";
+export { RailList, StepPath } from "./components/navigation/step-path";
+export type { PathState, PathStep, RailGroup, RailItem } from "./components/navigation/step-path";
+export { CellGrid, CellRows, useSurfaceBackground } from "./primitives/display/cells";
 export { PAGE_SCROLL_KEYS, usePageHeight, usePageScroll } from "./components/page/page-scroll";
 export type { PageHeight } from "./components/page/page-scroll";
 export { keymapStatusSegments, textStatusSegment } from "./components/feedback/status-line";
@@ -40,7 +55,7 @@ export { NavList } from "./components/navigation/nav-list";
 export type { NavListMode } from "./components/navigation/nav-list";
 export { UiText } from "./primitives/display/text";
 export { AppShell, fitFooter, useShellLayout } from "./surfaces/shell";
-export type { Progress } from "./surfaces/shell";
+export type { PageAction, PageNote, Progress, ProgressSegment } from "./surfaces/shell";
 export { parseHexColor, resolveIntentColor } from "./theme/colors";
 export { brandTheme, createTheme } from "./theme/create-theme";
 export type { Brand } from "./theme/create-theme";

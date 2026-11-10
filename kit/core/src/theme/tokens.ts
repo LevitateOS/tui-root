@@ -12,6 +12,8 @@ export type ColorIntent =
 	// text
 	| "text"
 	| "dimText"
+	/** The quietest text: small titles over groups, hints at a row's end, a field's label. */
+	| "faintText"
 	| "accent"
 	| "heading"
 	| "subheading"
@@ -74,6 +76,7 @@ export type TuiTheme = {
 export const defaultThemeColors: ThemeColors = {
 	text: palette.paper,
 	dimText: palette.lichen,
+	faintText: palette.gutter,
 	accent: palette.sage,
 	heading: palette.paper,
 	subheading: palette.sage,
