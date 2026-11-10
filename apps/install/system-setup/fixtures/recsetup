@@ -36,7 +36,7 @@ if [ "$cmd" = inspect ]; then
 	[ "$RECSETUP_FIXTURE" = no-system ] &&
 		fail E029 29 "'$root': no etc/os-release or usr/lib/os-release" "extract a system built by the current builder (its /etc/os-release carries the REC_* fields), and point --root at its top directory"
 	zones=
-	for zone in Africa/Cairo America/New_York America/Sao_Paulo Asia/Kolkata Asia/Tokyo Australia/Sydney Europe/Amsterdam Europe/Berlin Europe/Brussels Europe/London Europe/Paris UTC; do
+	for zone in Africa/Cairo America/New_York America/Sao_Paulo Asia/Kolkata Asia/Tokyo Australia/Sydney Europe/Amsterdam Europe/Athens Europe/Berlin Europe/Brussels Europe/Dublin Europe/Helsinki Europe/Lisbon Europe/London Europe/Madrid Europe/Oslo Europe/Paris Europe/Prague Europe/Rome Europe/Stockholm Europe/Vienna Europe/Warsaw Europe/Zurich UTC; do
 		zones="$zones${zones:+,}{\"name\":\"$zone\",\"region\":\"${zone%%/*}\"}"
 	done
 	zones=$(printf '%s' "$zones" | sed 's/"region":"UTC"/"region":""/')

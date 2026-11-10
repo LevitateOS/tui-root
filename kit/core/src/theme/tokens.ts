@@ -20,6 +20,8 @@ export type ColorIntent =
 	| "warning"
 	| "error"
 	| "success"
+	/** A second accent: the letters a search matched, a pin on a map. */
+	| "highlight"
 	// links
 	| "link"
 	| "linkActive"
@@ -30,6 +32,10 @@ export type ColorIntent =
 	| "navBackground"
 	| "contentBackground"
 	| "footerBackground"
+	/** The header band's colour at its start; it fades into the nav background. */
+	| "band"
+	/** A row or field lifted off its pane: the step you are at, a search field. */
+	| "raisedBackground"
 	// navigation lists
 	| "navHeading"
 	| "navItem"
@@ -58,36 +64,41 @@ export type ThemeChrome = {
 };
 
 export type TuiTheme = {
+	/** Whose app this is, named at the start of the header band; empty names nobody. */
+	brand: string;
 	colors: ThemeColors;
 	layout: ThemeLayout;
 	chrome: ThemeChrome;
 };
 
 export const defaultThemeColors: ThemeColors = {
-	text: palette.gray200,
-	dimText: palette.slate400,
-	accent: palette.sky300,
-	heading: palette.slate200,
-	subheading: palette.sky300,
-	code: palette.yellow,
-	info: palette.blue300,
-	warning: palette.yellow,
-	error: palette.red400,
-	success: palette.green300,
-	link: palette.sky300,
-	linkActive: palette.slate900,
-	linkActiveBackground: palette.slate300,
-	navBorder: palette.white,
-	contentBorder: palette.slate500,
-	navBackground: palette.blue900,
-	contentBackground: palette.zinc900,
-	footerBackground: palette.slate900,
-	navHeading: palette.blue100,
-	navItem: palette.blue200,
-	selection: palette.slate900,
-	selectionBackground: palette.slate300,
-	panelBorder: palette.slate500,
-	panelBackground: palette.zinc800,
+	text: palette.paper,
+	dimText: palette.lichen,
+	accent: palette.sage,
+	heading: palette.paper,
+	subheading: palette.sage,
+	code: palette.sand,
+	info: palette.moss,
+	warning: palette.sand,
+	error: palette.salmon,
+	success: palette.leaf,
+	highlight: palette.sand,
+	link: palette.sage,
+	linkActive: palette.night,
+	linkActiveBackground: palette.sage,
+	navBorder: palette.rule,
+	contentBorder: palette.hairline,
+	navBackground: palette.ink,
+	contentBackground: palette.night,
+	footerBackground: palette.ink,
+	band: palette.pine,
+	raisedBackground: palette.raised,
+	navHeading: palette.lichen,
+	navItem: palette.moss,
+	selection: palette.night,
+	selectionBackground: palette.sage,
+	panelBorder: palette.rule,
+	panelBackground: palette.ink,
 };
 
 export const defaultThemeLayout: ThemeLayout = {
@@ -103,6 +114,7 @@ export const defaultThemeChrome: ThemeChrome = {
 };
 
 export const defaultTuiTheme: TuiTheme = {
+	brand: "",
 	colors: defaultThemeColors,
 	layout: defaultThemeLayout,
 	chrome: defaultThemeChrome,

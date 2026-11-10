@@ -8,7 +8,6 @@ import {
 	ContentWidth,
 	Facts,
 	Heading,
-	inkBorderStyle,
 	resolveIntentColor,
 	Section,
 	Table,
@@ -19,6 +18,7 @@ import {
 	useTuiTheme,
 	type ColorIntent,
 	type CommandResult,
+	Panel,
 } from "@levitate/tui-kit";
 import { SLOTS, type Slot, type Status } from "../generated/recab";
 import { STATUS_ROWS, type ActionPlan, type Change } from "../domain/actions";
@@ -42,7 +42,6 @@ function useIntent(intent: ColorIntent): string | undefined {
 function SlotCards({ status }: { status: Status }): ReactNode {
 	const width = useContext(ContentWidth);
 	const color = useIntentColor();
-	const theme = useTuiTheme();
 	const side = width >= 44;
 	const cards = SLOTS.map((slot) => ({ slot, tags: slotTags(status, slot) }));
 	const lines = Math.max(...cards.map((card) => card.tags.length));
@@ -52,13 +51,10 @@ function SlotCards({ status }: { status: Status }): ReactNode {
 				const running = slot === status.active_slot;
 				const edge = color(running ? "accent" : "panelBorder");
 				return (
-					<Box
+					<Panel
 						key={slot}
-						flexDirection="column"
 						width={side ? Math.floor((width - 1) / 2) : width}
-						borderStyle={inkBorderStyle(theme.chrome.borderGlyphSet)}
-						borderColor={edge}
-						paddingX={1}
+						edge={running ? "accent" : "panelBorder"}
 					>
 						<Text bold color={edge}>
 							{running ? "● " : "○ "}Slot {slot}
@@ -71,7 +67,7 @@ function SlotCards({ status }: { status: Status }): ReactNode {
 						{Array.from({ length: lines - tags.length }, (_, i) => (
 							<Text key={`pad${i}`}> </Text>
 						))}
-					</Box>
+					</Panel>
 				);
 			})}
 		</Box>

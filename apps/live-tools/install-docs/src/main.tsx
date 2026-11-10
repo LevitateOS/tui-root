@@ -25,7 +25,7 @@ runApp({
 		{ title: "Keys (page list focused)", keymap: NAV_KEYS },
 		{ title: "Keys (content focused)", keymap: CONTENT_KEYS },
 	],
-	theme: createInstallDocsTheme(),
+	theme: (args) => createInstallDocsTheme(DISTROS.find((d) => d.osName === args["os-name"])),
 	run: (args) => {
 		const distro = DISTROS.find((d) => d.osName === args["os-name"]);
 		if (!distro) throw new UsageError("--os-name names the distro whose docs to show");

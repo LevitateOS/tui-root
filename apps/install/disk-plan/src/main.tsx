@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import manifest from "../package.json";
-import { runApp } from "@levitate/tui-kit";
+import { brandOf, distroOfOsRelease } from "@levitate/docs-content/brand";
+import { brandTheme, readOsRelease, runApp } from "@levitate/tui-kit";
 import { THEN_FLAG, type Then } from "@levitate/install-state";
 import { DEFAULT_INSTALL_MODE, INSTALL_MODES, type InstallMode } from "./generated/recpart";
 import { DiskPlanScreen } from "./presentation/disk-plan-screen";
@@ -19,6 +20,8 @@ import {
 runApp({
 	name: "disk-plan",
 	summary: manifest.description,
+	// The running system is the distro: its colours.
+	theme: brandTheme(brandOf(distroOfOsRelease(readOsRelease()))),
 	flags: [
 		{ name: "disk", value: "DEVICE", help: "target disk (default: choose from recpart's list)" },
 		{

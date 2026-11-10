@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
 import manifest from "../package.json";
+import { brandOf } from "@levitate/docs-content/brand";
 import { DISTROS } from "@levitate/docs-content/distros";
-import { runApp, UsageError, type Args } from "@levitate/tui-kit";
+import { brandTheme, runApp, UsageError, type Args } from "@levitate/tui-kit";
 import { DEFAULT_STATE_PATH, STATE_PATH_ENV } from "@levitate/install-state";
 import { runAction, type Live } from "./app/handoff";
 import type { Action } from "./domain/steps";
@@ -22,6 +23,8 @@ function liveFrom(args: Args): Live {
 runApp({
 	name: "install-hub",
 	summary: manifest.description,
+	// The distro being installed: its colours.
+	theme: (args) => brandTheme(brandOf(DISTROS.find((d) => d.osName === args["os-name"]))),
 	flags: [
 		{
 			name: "os-name",

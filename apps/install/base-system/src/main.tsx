@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import manifest from "../package.json";
-import { runApp } from "@levitate/tui-kit";
+import { brandOf, distroOfOsRelease } from "@levitate/docs-content/brand";
+import { brandTheme, readOsRelease, runApp } from "@levitate/tui-kit";
 import { THEN_FLAG, type Then } from "@levitate/install-state";
 import { findTarget } from "./app/runner";
 import { CONFIRM_KEYS, MAIN_KEYS } from "./presentation/keymap";
@@ -9,6 +10,8 @@ import { BaseScreen } from "./presentation/base-screen";
 runApp({
 	name: "base-system",
 	summary: manifest.description,
+	// The running system is the distro: its colours.
+	theme: brandTheme(brandOf(distroOfOsRelease(readOsRelease()))),
 	flags: [
 		{
 			name: "target",

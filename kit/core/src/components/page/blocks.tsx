@@ -4,14 +4,14 @@
  * tables and command blocks for data. Pages draw to `ContentWidth`, which the app provides
  * from its content pane.
  */
-import { Box, Text } from "ink";
+import { Box, Text, type BoxProps } from "ink";
 import { createContext, useContext, type ReactNode } from "react";
 import { useIntentColor, useTuiColors, useTuiTheme } from "../../app/app-provider";
-import { inkBorderStyle } from "../../chrome/glyphs";
 import { UiText } from "../../primitives/display/text";
 import { resolveIntentColor } from "../../theme/colors";
 import type { ColorIntent } from "../../theme/tokens";
 import { textWidth, truncateLine } from "../../utils/strings";
+import { BIG_NUMBER_ROWS, BigNumber } from "./big-number";
 
 /** The content pane's text width; pages draw rules, bars and tables to it. */
 export const ContentWidth = createContext(80);
@@ -20,15 +20,63 @@ function useIntent(intent: ColorIntent): string | undefined {
 	return useIntentColor()(intent);
 }
 
-/** The page's title, and one line on what this step is for. */
-export function Heading({ title, subtitle }: { title: string; subtitle?: ReactNode }): ReactNode {
-	return (
-		<Box flexDirection="column" marginBottom={1}>
+/** The page's title, and one line on what this step is for. With `step`, the step's
+ * number stands large beside them. */
+export function Heading({
+	title,
+	subtitle,
+	step,
+}: {
+	title: string;
+	subtitle?: ReactNode;
+	step?: number;
+}): ReactNode {
+	const words = (
+		<Box flexDirection="column">
 			<UiText bold intent="heading">
 				{title}
 			</UiText>
 			{subtitle ? <UiText intent="dimText">{subtitle}</UiText> : null}
 		</Box>
+	);
+	if (step === undefined) return <Box marginBottom={1}>{words}</Box>;
+	return (
+		<Box marginBottom={1} minHeight={BIG_NUMBER_ROWS}>
+			<BigNumber value={step} />
+			<Box marginLeft={3}>{words}</Box>
+		</Box>
+	);
+}
+
+/** What is being typed to search, on a raised row with a cursor; `trailing` (a count)
+ * sits at its end. */
+export function SearchField({
+	label,
+	text,
+	trailing,
+	width,
+}: {
+	label: string;
+	text: string;
+	trailing?: string;
+	width: number;
+}): ReactNode {
+	const color = useIntentColor();
+	const used = 1 + textWidth(label) + 2 + textWidth(text) + 1;
+	const end = trailing && used + textWidth(trailing) + 2 <= width ? trailing : "";
+	return (
+		<Text backgroundColor={color("raisedBackground")}>
+			<Text color={color("navHeading")}>{` ${label}  `}</Text>
+			<Text bold color={color("text")}>
+				{text}
+			</Text>
+			<Text backgroundColor={color("accent")}> </Text>
+			<Text color={color("navHeading")}>
+				{" ".repeat(Math.max(0, width - used - textWidth(end) - (end ? 1 : 0)))}
+				{end}
+				{end ? " " : ""}
+			</Text>
+		</Text>
 	);
 }
 
@@ -68,7 +116,56 @@ const TONE: Record<Tone, { intent: ColorIntent; mark: string }> = {
 	info: { intent: "info", mark: "i" },
 };
 
-/** An outcome or a warning that must not be missed: a box in the tone's colour. */
+/** A panel's left edge: a solid cell, so the edge leaves no cell of its own unpainted. */
+const EDGE = {
+	topLeft: "",
+	top: "",
+	topRight: "",
+	right: "",
+	bottomRight: "",
+	bottom: "",
+	bottomLeft: "",
+	left: "█",
+};
+
+/**
+ * A block set apart as a surface: its own background and, with `edge`, a solid bar of
+ * that colour down its left side. Unlike a box drawn with an Ink border (whose cells
+ * keep the terminal's background), every cell is painted.
+ */
+export function Panel({
+	edge,
+	background = "raisedBackground",
+	children,
+	...box
+}: {
+	edge?: ColorIntent;
+	background?: ColorIntent;
+	children?: ReactNode;
+} & Pick<BoxProps, "width" | "flexGrow" | "marginBottom">): ReactNode {
+	const color = useIntentColor();
+	return (
+		<Box
+			flexDirection="column"
+			paddingX={1}
+			backgroundColor={color(background)}
+			{...(edge
+				? {
+						borderStyle: EDGE,
+						borderTop: false,
+						borderRight: false,
+						borderBottom: false,
+						borderColor: color(edge),
+					}
+				: {})}
+			{...box}
+		>
+			{children}
+		</Box>
+	);
+}
+
+/** An outcome or a warning that must not be missed: a panel edged in the tone's colour. */
 export function Callout({
 	tone,
 	title,
@@ -78,22 +175,15 @@ export function Callout({
 	title: string;
 	children?: ReactNode;
 }): ReactNode {
-	const theme = useTuiTheme();
 	const { intent, mark } = TONE[tone];
 	const color = useIntent(intent);
 	return (
-		<Box
-			flexDirection="column"
-			borderStyle={inkBorderStyle(theme.chrome.borderGlyphSet)}
-			borderColor={color}
-			paddingX={1}
-			marginBottom={1}
-		>
+		<Panel edge={intent} marginBottom={1}>
 			<Text bold color={color}>
 				{mark} {title}
 			</Text>
 			{children}
-		</Box>
+		</Panel>
 	);
 }
 
@@ -101,10 +191,11 @@ export function Callout({
 export function Facts({ rows }: { rows: ReadonlyArray<[string, ReactNode]> }): ReactNode {
 	const labelWidth = Math.max(0, ...rows.map(([label]) => textWidth(label)));
 	const dim = useIntent("dimText");
+	const text = useIntent("text");
 	return (
 		<Box flexDirection="column">
 			{rows.map(([label, value], index) => (
-				<Text key={`${index}-${label}`}>
+				<Text key={`${index}-${label}`} color={text}>
 					<Text color={dim}>{label.padEnd(labelWidth)}</Text>
 					{"  "}
 					{value}
@@ -170,13 +261,13 @@ export function Table({
 			</Text>
 			{rows.map((row, r) => {
 				const isSelected = r === selected;
-				const tone = isSelected ? "accent" : (tones?.[r] ?? null);
+				const tone = isSelected ? "accent" : (tones?.[r] ?? "text");
 				return (
 					<Text
 						key={r}
 						bold={isSelected}
 						inverse={isSelected}
-						color={tone ? resolveIntentColor(theme, tone, colors) : undefined}
+						color={resolveIntentColor(theme, tone, colors)}
 					>
 						{marker ? (isSelected ? "▸ " : "  ") : ""}
 						{line(row)}
@@ -189,16 +280,10 @@ export function Table({
 
 /** Commands to type, one per line behind a prompt. */
 export function Commands({ lines }: { lines: readonly string[] }): ReactNode {
-	const theme = useTuiTheme();
 	const prompt = useIntent("accent");
 	const code = useIntent("code");
 	return (
-		<Box
-			flexDirection="column"
-			borderStyle={inkBorderStyle(theme.chrome.borderGlyphSet)}
-			borderColor={useIntent("panelBorder")}
-			paddingX={1}
-		>
+		<Panel background="panelBackground">
 			{lines.map((line) => (
 				<Text key={line}>
 					<Text color={prompt} bold>
@@ -207,7 +292,7 @@ export function Commands({ lines }: { lines: readonly string[] }): ReactNode {
 					<Text color={code}>{line}</Text>
 				</Text>
 			))}
-		</Box>
+		</Panel>
 	);
 }
 

@@ -20,9 +20,18 @@ on its standard input: never into a command line, a file or the install state.
   `cargo xtask gen` writes them.
 - `src/app/runner.ts`: the command lines, reading the documents, the target from
   `--target` or the disk step, and recording the setup step.
+- `src/domain/zones.ts`: a zone's clock now, the letters a search matched, and the world
+  map; `src/app/zones.ts` reads where each zone is from the tz database's own tables
+  (the target's, else the live system's).
+- `src/domain/land.ts`: where there is land, a bitmap written by `scripts/land-mask.ts`
+  from Natural Earth's 1:110m land polygons (public domain).
 - `src/presentation/use-setup.ts`: the question being asked and the runs;
-  `pages.tsx`: one component per kind of page; `setup-screen.tsx`: keys, the step rail
+  `pages.tsx`: one component per kind of page; `setup-screen.tsx`: keys, the step path
   and the frame.
+
+The time zone list shows each zone's local time, and beside it a card with the selected
+zone on a dotted map. The map needs braille characters, which a terminal emulator has
+and the bare Linux console's font may not.
 
 recsetup owns every rule: a typed hostname or user name is checked by planning it, and
 the app shows recsetup's message and fix. This app owns the order of the questions and

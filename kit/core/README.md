@@ -17,10 +17,10 @@ too (`navItem`, `heading`, `panelBorder`); an app's own colours sit in its theme
 - `runtime/`: key input: keymaps, `useKeymap`, the keyboard provider.
 - `hooks/`: focus between panes, list/grid navigation, scroll state, async tasks.
 - `primitives/`: text and rich text.
-- `components/`: navigation lists and grids, status line, key/value table.
+- `components/`: navigation lists and grids, the step path, status line, the page blocks (headings with a large step number, search field, tables).
 - `surfaces/`: `useShellLayout` and `AppShell`, the two-pane frame every app uses.
 - `chrome/`: the one box-drawing glyph table (and the same glyphs as an Ink `borderStyle`).
-- `theme/`: colour intents, palette, colour runtime, `createTheme`.
+- `theme/`: colour intents, palette, colour runtime, `createTheme` and `brandTheme`.
 - `utils/`: string width, rich-text runs and wrapping, number clamping, error messages.
 
 ## The frame
@@ -30,8 +30,19 @@ too (`navItem`, `heading`, `panelBorder`); an app's own colours sit in its theme
 side by side, or, below `minColumns`, one full-width pane (the focused one). Each
 pane's `textColumns`/`textRows` is what its body may draw into, so apps size their
 content from it instead of repeating the geometry. `AppShell` draws exactly that
-layout. A titled pane is a top border, a title row and a divider (text rows from
-the glyph table) above an Ink box whose borders use the same glyphs. Text is
+layout, under a header and over the footer:
+
+- **The header** is a band on the brand's colour, fading into the surface: whose app it
+  is (`theme.brand`), then the app's name and where in it you are. Under it is one
+  segment a step when the app passes its `progress`, else a rule.
+- **A pane** is a surface, not a box: its background, a blank row above and below the
+  body, padding beside it. Every cell carries the pane's background, so a screenshot
+  shows no terminal colour.
+- **The footer** shows each key as a keycap; a segment marked `end` sits at the end of
+  its line.
+
+A brand (`brandTheme`) is a name and three colours on top of the default theme: the
+accent, a second accent and the band. The default colours are the website's. Text is
 measured in terminal cells with `string-width`, as Ink does.
 
 ## Quick Start

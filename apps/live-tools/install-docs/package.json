@@ -59,11 +59,11 @@
 					"steps": [
 						{
 							"keys": "l",
-							"expect": "││ Step-by-step guide to installing"
+							"expect": "Step-by-step guide to installing"
 						},
 						{
 							"keys": "h",
-							"expect": "││ Get the LevitateOS live ISO"
+							"expect": "Get the LevitateOS live ISO"
 						}
 					]
 				},
@@ -77,7 +77,7 @@
 					"steps": [
 						{
 							"keys": "l",
-							"expect": "││ Step-by-step guide to installing AcornOS"
+							"expect": "Step-by-step guide to installing AcornOS"
 						}
 					]
 				},

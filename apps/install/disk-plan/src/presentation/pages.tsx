@@ -7,7 +7,6 @@ import {
 	Facts,
 	formatBytes,
 	Heading,
-	inkBorderStyle,
 	Section,
 	SelectableGrid,
 	shortDevice,
@@ -16,8 +15,8 @@ import {
 	truncateLines,
 	UiText,
 	useIntentColor,
-	useTuiTheme,
 	type StepStatus,
+	Panel,
 } from "@levitate/tui-kit";
 import {
 	CONFIRM_TOKEN,
@@ -213,7 +212,6 @@ export function TargetDisk({
 	listing: { kind: "running" } | { kind: "error"; message: string } | { kind: "done" };
 }): ReactNode {
 	const color = useIntentColor();
-	const theme = useTuiTheme();
 	return (
 		<Page
 			title="Choose a disk"
@@ -237,13 +235,7 @@ export function TargetDisk({
 				columns={columns}
 				width={width}
 				renderItem={(choice, { selected: isSelected }) => (
-					<Box
-						width="100%"
-						flexDirection="column"
-						paddingX={1}
-						borderStyle={inkBorderStyle(theme.chrome.borderGlyphSet)}
-						borderColor={color(isSelected ? "accent" : "panelBorder")}
-					>
+					<Panel width="100%" edge={isSelected ? "accent" : "panelBorder"}>
 						<Text>
 							<Text bold color={color(isSelected ? "accent" : "text")}>
 								{isSelected ? "▸ " : "  "}
@@ -258,7 +250,7 @@ export function TargetDisk({
 						) : (
 							<DiskFacts disk={choice.disk} />
 						)}
-					</Box>
+					</Panel>
 				)}
 			/>
 		</Page>
@@ -305,16 +297,8 @@ function ChoiceCard({
 	children: ReactNode;
 }): ReactNode {
 	const color = useIntentColor();
-	const theme = useTuiTheme();
 	return (
-		<Box
-			width="100%"
-			flexGrow={1}
-			flexDirection="column"
-			paddingX={1}
-			borderStyle={inkBorderStyle(theme.chrome.borderGlyphSet)}
-			borderColor={color(selected ? "accent" : "panelBorder")}
-		>
+		<Panel width="100%" flexGrow={1} edge={selected ? "accent" : "panelBorder"}>
 			<Text>
 				<Text bold color={color(selected ? "accent" : "text")}>
 					{selected ? "● " : "○ "}
@@ -323,7 +307,7 @@ function ChoiceCard({
 				{tag ? <Text color={color("dimText")}> {tag}</Text> : null}
 			</Text>
 			{children}
-		</Box>
+		</Panel>
 	);
 }
 

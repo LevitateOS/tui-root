@@ -7,9 +7,11 @@ import type { ColorIntent } from "../../theme/tokens";
 export type StatusSegment = {
 	id: string;
 	atoms: ReadonlyArray<RichTextRun>;
+	/** Pushed to the end of its line when there is room. */
+	end?: boolean;
 };
 
-const SEPARATOR = " | ";
+const SEPARATOR = "   ";
 
 /**
  * The segments as lines at most `width` cells wide: segments joined by a separator, a new
@@ -28,8 +30,9 @@ export function statusLines(
 		if (atoms.length === 0) continue;
 		const size = textWidth(runsText(atoms));
 		if (line.length > 0 && used + SEPARATOR.length + size <= safe) {
-			line.push({ text: SEPARATOR, intent: "dimText" }, ...atoms);
-			used += SEPARATOR.length + size;
+			const gap = segment.end ? safe - used - size : SEPARATOR.length;
+			line.push({ text: " ".repeat(gap), intent: "dimText" }, ...atoms);
+			used += gap + size;
 			continue;
 		}
 		if (line.length > 0) lines.push(line);
@@ -51,7 +54,7 @@ export function hotkeyStatusSegment(
 	id: string,
 	key: string,
 	label: string,
-	keyIntent: ColorIntent = "accent",
+	keyIntent: ColorIntent = "text",
 	labelIntent: ColorIntent = "dimText",
 ): StatusSegment {
 	const normalizedKey = key.trim();
@@ -60,9 +63,11 @@ export function hotkeyStatusSegment(
 	return {
 		id,
 		atoms: [
+			// A keycap: the key on a raised cell with a space either side.
 			{
-				text: normalizedKey.length > 0 ? normalizedKey : "?",
+				text: ` ${normalizedKey.length > 0 ? normalizedKey : "?"} `,
 				intent: keyIntent,
+				backgroundIntent: "panelBorder",
 				bold: true,
 			},
 			{
@@ -78,9 +83,11 @@ export function textStatusSegment(
 	text: string,
 	intent: ColorIntent = "dimText",
 	bold = false,
+	end = false,
 ): StatusSegment {
 	return {
 		id,
+		end,
 		atoms: [
 			{
 				text,

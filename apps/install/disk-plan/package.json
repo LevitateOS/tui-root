@@ -40,23 +40,23 @@
 					"steps": [
 						{
 							"keys": "",
-							"expect": "│Overview"
+							"expect": "   Overview"
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 1 of 9 · Disk"
+							"expect": "   Step 1 of 9 · Disk"
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 2 of 9 · System"
+							"expect": "   Step 2 of 9 · System"
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 3 of 9 · Disk use"
+							"expect": "   Step 3 of 9 · Disk use"
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 4 of 9 · Plan"
+							"expect": "   Step 4 of 9 · Plan"
 						},
 						{
 							"keys": "",
@@ -64,7 +64,7 @@
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 5 of 9 · Commands"
+							"expect": "   Step 5 of 9 · Commands"
 						},
 						{
 							"keys": "",
@@ -76,7 +76,7 @@
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 7 of 9 · Confirm"
+							"expect": "   Step 7 of 9 · Confirm"
 						},
 						{
 							"keys": "q",
@@ -96,15 +96,15 @@
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 9 of 9 · Done"
+							"expect": "   Step 9 of 9 · Done"
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 9 of 9 · Done"
+							"expect": "   Step 9 of 9 · Done"
 						},
 						{
 							"keys": "",
-							"expect": "recstrap /mnt"
+							"expect": "$ base-system"
 						},
 						{
 							"keys": "",
@@ -124,23 +124,23 @@
 					"steps": [
 						{
 							"keys": "",
-							"expect": "│Overview"
+							"expect": "   Overview"
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 1 of 9 · Disk"
+							"expect": "   Step 1 of 9 · Disk"
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 2 of 9 · System"
+							"expect": "   Step 2 of 9 · System"
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 3 of 9 · Disk use"
+							"expect": "   Step 3 of 9 · Disk use"
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 4 of 9 · Plan"
+							"expect": "   Step 4 of 9 · Plan"
 						},
 						{
 							"keys": "",
@@ -148,7 +148,7 @@
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 5 of 9 · Commands"
+							"expect": "   Step 5 of 9 · Commands"
 						},
 						{
 							"keys": "",
@@ -160,7 +160,7 @@
 						},
 						{
 							"keys": "j",
-							"expect": "│Step 7 of 9 · Confirm"
+							"expect": "   Step 7 of 9 · Confirm"
 						},
 						{
 							"keys": "q",
@@ -180,7 +180,7 @@
 						},
 						{
 							"keys": "j",
-							"expect": "│Failure"
+							"expect": "   Failure"
 						},
 						{
 							"keys": "",
@@ -188,7 +188,7 @@
 						},
 						{
 							"keys": "k",
-							"expect": "│Step 8 of 9 · Apply"
+							"expect": "   Step 8 of 9 · Apply"
 						}
 					]
 				},
@@ -201,7 +201,7 @@
 					"steps": [
 						{
 							"keys": "jjjjjjj",
-							"expect": "│Step 7 of 9 · Confirm"
+							"expect": "   Step 7 of 9 · Confirm"
 						},
 						{
 							"keys": "DESTROY\\r",
@@ -213,11 +213,11 @@
 						},
 						{
 							"keys": "R",
-							"expect": "│Step 1 of 9 · Disk"
+							"expect": "   Step 1 of 9 · Disk"
 						},
 						{
 							"keys": "jjjjjj",
-							"expect": "│Step 7 of 9 · Confirm"
+							"expect": "   Step 7 of 9 · Confirm"
 						},
 						{
 							"keys": "",
@@ -321,7 +321,7 @@
 					"steps": [
 						{
 							"keys": "jjj\\r\\x1b[B\\r",
-							"expect": "│Step 4 of 10 · Partitions"
+							"expect": "   Step 4 of 10 · Partitions"
 						},
 						{
 							"keys": "m",

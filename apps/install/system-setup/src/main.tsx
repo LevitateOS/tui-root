@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import manifest from "../package.json";
-import { runApp } from "@levitate/tui-kit";
+import { brandOf, distroOfOsRelease } from "@levitate/docs-content/brand";
+import { brandTheme, readOsRelease, runApp } from "@levitate/tui-kit";
 import { THEN_FLAG, type Then } from "@levitate/install-state";
 import { findTarget } from "./app/runner";
 import { CONFIRM_KEYS, MAIN_KEYS, PICK_KEYS, TEXT_KEYS } from "./presentation/keymap";
@@ -9,6 +10,8 @@ import { SetupScreen } from "./presentation/setup-screen";
 runApp({
 	name: "system-setup",
 	summary: manifest.description,
+	// The live system is the distro being installed: its colours.
+	theme: brandTheme(brandOf(distroOfOsRelease(readOsRelease()))),
 	flags: [
 		{
 			name: "target",

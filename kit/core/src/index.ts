@@ -14,11 +14,15 @@ export {
 	ContentWidth,
 	Facts,
 	Heading,
+	Panel,
 	ProgressBar,
+	SearchField,
 	Section,
 	StepList,
 	Table,
 } from "./components/page/blocks";
+export { StepPath } from "./components/navigation/step-path";
+export type { PathState, PathStep } from "./components/navigation/step-path";
 export type { Column, StepStatus, Tone } from "./components/page/blocks";
 export { PAGE_SCROLL_KEYS, usePageHeight, usePageScroll } from "./components/page/page-scroll";
 export type { PageHeight } from "./components/page/page-scroll";
@@ -36,8 +40,11 @@ export { NavList } from "./components/navigation/nav-list";
 export type { NavListMode } from "./components/navigation/nav-list";
 export { UiText } from "./primitives/display/text";
 export { AppShell, fitFooter, useShellLayout } from "./surfaces/shell";
+export type { Progress } from "./surfaces/shell";
 export { parseHexColor, resolveIntentColor } from "./theme/colors";
-export { createTheme } from "./theme/create-theme";
+export { brandTheme, createTheme } from "./theme/create-theme";
+export type { Brand } from "./theme/create-theme";
+export { readOsRelease } from "./app/os-release";
 export type { ColorIntent, ThemeColor, TuiTheme } from "./theme/tokens";
 export { errorMessage, textWidth, truncateLine } from "./utils/strings";
 export { formatBytes, formatCount, shortDevice } from "./utils/format";

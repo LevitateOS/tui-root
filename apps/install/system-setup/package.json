@@ -43,15 +43,16 @@
 						"/mnt"
 					],
 					"env": {
-						"INSTALL_STATE": "/tmp/install-system-setup-story/state.json"
+						"INSTALL_STATE": "/tmp/install-system-setup-story/state.json",
+						"OS_RELEASE": "fixtures/os-release-levitate"
 					},
 					"steps": [
 						{
-							"expect": "LevitateOS"
+							"expect": "members of wheel"
 						},
 						{
 							"keys": "\\r",
-							"expect": "Type to narrow the list"
+							"expect": "Search"
 						},
 						{
 							"keys": "de",
@@ -59,7 +60,7 @@
 						},
 						{
 							"keys": "\\r",
-							"expect": "12 of 12"
+							"expect": "24 of 24"
 						},
 						{
 							"keys": "ams",
@@ -135,15 +136,15 @@
 					},
 					"steps": [
 						{
-							"expect": "LevitateOS"
+							"expect": "members of wheel"
 						},
 						{
 							"keys": "\\r",
-							"expect": "Type to narrow the list"
+							"expect": "Search"
 						},
 						{
 							"keys": "\\r",
-							"expect": "12 of 12"
+							"expect": "24 of 24"
 						},
 						{
 							"keys": "\\r",
@@ -175,15 +176,15 @@
 					},
 					"steps": [
 						{
-							"expect": "LevitateOS"
+							"expect": "members of wheel"
 						},
 						{
 							"keys": "\\r",
-							"expect": "Type to narrow the list"
+							"expect": "Search"
 						},
 						{
 							"keys": "\\r",
-							"expect": "12 of 12"
+							"expect": "24 of 24"
 						},
 						{
 							"keys": "\\r",
@@ -219,15 +220,15 @@
 					},
 					"steps": [
 						{
-							"expect": "LevitateOS"
+							"expect": "members of wheel"
 						},
 						{
 							"keys": "\\r",
-							"expect": "Type to narrow the list"
+							"expect": "Search"
 						},
 						{
 							"keys": "\\r",
-							"expect": "12 of 12"
+							"expect": "24 of 24"
 						},
 						{
 							"keys": "\\r",
@@ -268,11 +269,11 @@
 					},
 					"steps": [
 						{
-							"expect": "LevitateOS"
+							"expect": "members of wheel"
 						},
 						{
 							"keys": "\\r",
-							"expect": "Type to narrow the list"
+							"expect": "Search"
 						},
 						{
 							"keys": "de",
@@ -280,7 +281,7 @@
 						},
 						{
 							"keys": "\\r",
-							"expect": "12 of 12"
+							"expect": "24 of 24"
 						},
 						{
 							"keys": "ams",
@@ -345,15 +346,15 @@
 					},
 					"steps": [
 						{
-							"expect": "LevitateOS"
+							"expect": "members of wheel"
 						},
 						{
 							"keys": "\\r",
-							"expect": "Type to narrow the list"
+							"expect": "Search"
 						},
 						{
 							"keys": "\\r",
-							"expect": "12 of 12"
+							"expect": "24 of 24"
 						},
 						{
 							"keys": "\\e",
@@ -395,6 +396,27 @@
 					"steps": [
 						{
 							"expect": "No system to configure yet"
+						}
+					]
+				},
+				{
+					"name": "acorn",
+					"about": "On AcornOS (the live system's os-release says so) the band names it and the colours are its own.",
+					"args": [
+						"--target",
+						"/mnt"
+					],
+					"env": {
+						"INSTALL_STATE": "/tmp/install-system-setup-story/state.json",
+						"OS_RELEASE": "fixtures/os-release-acorn"
+					},
+					"steps": [
+						{
+							"expect": "◆ AcornOS"
+						},
+						{
+							"keys": "",
+							"expect": "members of wheel"
 						}
 					]
 				}

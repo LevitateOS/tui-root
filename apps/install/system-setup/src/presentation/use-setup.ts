@@ -1,5 +1,5 @@
 /** The screen's state: the system, the answers, the question being asked, and the runs. */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { distroByOsId } from "@levitate/docs-content/distros";
 import { runCommand } from "@levitate/tui-kit";
 import {
@@ -16,6 +16,7 @@ import {
 	toPlan,
 	type Request,
 } from "../app/runner";
+import { readZonePlaces } from "../app/zones";
 import type { TargetInfo } from "../domain/recsetup";
 import {
 	allAnswered,
@@ -115,6 +116,9 @@ export function useSetup(target: Target | null) {
 	useEffect(() => void inspect(), []);
 
 	const system = session.inspect.kind === "ok" ? session.inspect.value : null;
+	// Where each zone is, for the map beside the time zone list.
+	const root = system?.target.root;
+	const places = useMemo(() => (root ? readZonePlaces(root) : new Map()), [root]);
 
 	/** Asks `field`'s question, starting from its answer in `from` when it has one. */
 	const open = (field: FieldId, from: Session = session) => {
@@ -335,6 +339,7 @@ export function useSetup(target: Target | null) {
 	return {
 		session,
 		system,
+		places,
 		prompt,
 		page,
 		running,

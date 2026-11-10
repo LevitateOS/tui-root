@@ -45,3 +45,16 @@ export function resolveIntentColor(
 ): string | undefined {
 	return resolveColor(theme.colors[intent], runtime);
 }
+
+/** The colour `share` of the way from `from` to `to` (0 is `from`, 1 is `to`). */
+export function mixColors(from: string, to: string, share: number): string {
+	const part = (hex: string, i: number) => Number.parseInt(hex.slice(1 + 2 * i, 3 + 2 * i), 16);
+	const t = Math.min(1, Math.max(0, share));
+	return `#${[0, 1, 2]
+		.map((i) =>
+			Math.round(part(from, i) + (part(to, i) - part(from, i)) * t)
+				.toString(16)
+				.padStart(2, "0"),
+		)
+		.join("")}`;
+}

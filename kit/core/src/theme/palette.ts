@@ -1,23 +1,27 @@
-/** The kit's colours, referenced by name from the default theme. */
+/**
+ * The kit's colours, referenced by name from the default theme. They are the website's
+ * (docs/website: the Field Notes code and dark-surface tokens), so a screenshot of an
+ * app sits on a page as part of it.
+ */
 export const palette = {
-	white: "#ffffff",
-	gray200: "#e5e7eb",
-	gray500: "#737373",
-	slate200: "#e2e8f0",
-	slate300: "#cbd5e1",
-	slate400: "#94a3b8",
-	slate500: "#64748b",
-	slate800: "#1e293b",
-	slate900: "#0f172a",
-	zinc950: "#09090b",
-	zinc900: "#18181b",
-	zinc800: "#27272a",
-	blue100: "#dbeafe",
-	blue200: "#bfdbfe",
-	blue300: "#93c5fd",
-	blue900: "#1e3a8a",
-	sky300: "#7dd3fc",
-	yellow: "#facc15",
-	red400: "#f87171",
-	green300: "#86efac",
+	/** Text on the dark surfaces. */
+	paper: "#f2eee4",
+	/** Secondary text. */
+	moss: "#bac5b7",
+	lichen: "#9aa89d",
+	gutter: "#6e7f73",
+	/** Rules and frames, quiet to quieter. */
+	rule: "#3a4b40",
+	hairline: "#2a3b31",
+	/** Surfaces, raised to base. */
+	raised: "#1d2d24",
+	ink: "#14221a",
+	night: "#0d1711",
+	/** LevitateOS's accent, and AcornOS's. */
+	sage: "#c7d9ba",
+	sand: "#e4cba6",
+	/** The website's pine, LevitateOS's band. */
+	pine: "#214438",
+	leaf: "#a9cf9a",
+	salmon: "#f0a497",
 } as const satisfies Record<string, `#${string}`>;

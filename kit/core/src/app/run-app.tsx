@@ -30,7 +30,8 @@ export type AppSpec = {
 	notes?: readonly string[];
 	/** Key sections for --help, in order. */
 	keys?: readonly { title: string; keymap: Keymap }[];
-	theme?: TuiTheme;
+	/** The app's theme, or how to make it from the parsed flags (a distro they name). */
+	theme?: TuiTheme | ((args: Args) => TuiTheme);
 	/**
 	 * Builds the screen from the parsed flags, or returns undefined after printing
 	 * something itself (a non-interactive flag). Throw `UsageError` for bad input.
@@ -141,7 +142,7 @@ export function runApp(spec: AppSpec, argv: readonly string[] = process.argv.sli
 	let exitScreen: (() => void) | undefined;
 	const app = {
 		name: spec.name,
-		theme: spec.theme ?? defaultTuiTheme,
+		theme: (typeof spec.theme === "function" ? spec.theme(args) : spec.theme) ?? defaultTuiTheme,
 		colors: detectColorRuntime(process.env),
 		handOff: (value: unknown) => {
 			handedOff = value;
