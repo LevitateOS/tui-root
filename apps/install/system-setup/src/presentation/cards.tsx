@@ -76,7 +76,13 @@ export function answerText(
 		case "root":
 			return answers.rootPassword === null ? (long ? "none (root can't log in)" : "none") : "set";
 		case "user":
-			return answers.user === null ? "none" : `${answers.user}, an administrator`;
+			if (answers.user === null) return "none";
+			// The short form fits the review's card: who, and that the desktop opens by itself.
+			if (answers.autologin)
+				return long
+					? `${answers.user}, an administrator, logged in by itself`
+					: `${answers.user}, logs in by itself`;
+			return `${answers.user}, an administrator`;
 		default:
 			return answers[field] ?? "left as the system has it";
 	}

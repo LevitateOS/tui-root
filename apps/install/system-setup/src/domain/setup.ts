@@ -59,6 +59,8 @@ export type Answers = {
 	/** Null: no user is created. */
 	user: string | null;
 	userPassword: string | null;
+	/** On a desktop system: the user is logged in at every boot without asking. */
+	autologin: boolean;
 };
 
 export const NO_ANSWERS: Answers = {
@@ -69,6 +71,7 @@ export const NO_ANSWERS: Answers = {
 	rootPassword: null,
 	user: null,
 	userPassword: null,
+	autologin: false,
 };
 
 export type Session = {

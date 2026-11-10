@@ -118,7 +118,7 @@ export function SetupScreen({
 				? prompt.field === "keymap"
 					? KEYBOARD_KEYS
 					: PICK_KEYS
-				: prompt.kind === "apply"
+				: prompt.kind === "apply" || prompt.kind === "autologin"
 					? CONFIRM_KEYS
 					: TEXT_KEYS;
 	const scrollable = !prompt && pageHeight.height > shell.content.textRows;
@@ -202,6 +202,11 @@ export function SetupScreen({
 		CONFIRM_KEYS,
 		{ yes: () => void setup.confirmApply(), no: setup.cancel },
 		{ active: prompt?.kind === "apply" },
+	);
+	useKeymap(
+		CONFIRM_KEYS,
+		{ yes: () => setup.answerAutologin(true), no: () => setup.answerAutologin(false) },
+		{ active: prompt?.kind === "autologin" },
 	);
 
 	const content =

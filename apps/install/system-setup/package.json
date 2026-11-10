@@ -511,6 +511,67 @@
 							"expect": "Start with the keyboard"
 						}
 					]
+				},
+				{
+					"name": "a desktop user who logs in by itself",
+					"about": "On the desktop system, after the user's password: whether the user is logged in at every boot without asking (no is the default); a yes shows on the user's answer and as recsetup's autologin step.",
+					"args": [
+						"--target",
+						"/mnt"
+					],
+					"env": {
+						"INSTALL_STATE": "/tmp/install-system-setup-story/state.json",
+						"RECSETUP_FLAVOUR": "desktop"
+					},
+					"steps": [
+						{
+							"expect": "Start with the keyboard"
+						},
+						{
+							"keys": "\r",
+							"expect": "Search"
+						},
+						{
+							"keys": "\r",
+							"expect": "24 of 24"
+						},
+						{
+							"keys": "\r",
+							"expect": "en_US.UTF-8"
+						},
+						{
+							"keys": "\r",
+							"expect": "levitateos login:"
+						},
+						{
+							"keys": "\r",
+							"expect": "A password for root?"
+						},
+						{
+							"keys": "\r",
+							"expect": "Who uses this machine?"
+						},
+						{
+							"keys": "ann\r",
+							"expect": "A password for ann?"
+						},
+						{
+							"keys": "pw\r",
+							"expect": "••"
+						},
+						{
+							"keys": "pw\r",
+							"expect": "Log ann in by itself?"
+						},
+						{
+							"keys": "y",
+							"expect": "ann, logs in by itself"
+						},
+						{
+							"keys": " ",
+							"expect": "autologin ann plasma"
+						}
+					]
 				}
 			]
 		}

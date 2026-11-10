@@ -21,6 +21,8 @@ export type Request = Partial<
 	Pick<Answers, "keymap" | "timezone" | "locale" | "hostname" | "user">
 > & {
 	rootPassword?: boolean;
+	/** The user the desktop logs in by itself; null or absent: the login screen asks. */
+	autologin?: string | null;
 };
 
 export function requestOf(answers: Answers): Request {
@@ -31,6 +33,7 @@ export function requestOf(answers: Answers): Request {
 		hostname: answers.hostname,
 		user: answers.user,
 		rootPassword: answers.rootPassword !== null,
+		autologin: answers.autologin ? answers.user : null,
 	};
 }
 
@@ -42,6 +45,7 @@ function requestArgs(request: Request): string[] {
 		...(request.hostname ? ["--hostname", request.hostname] : []),
 		...(request.rootPassword ? ["--root-password"] : []),
 		...(request.user ? ["--user", request.user] : []),
+		...(request.autologin ? ["--autologin", request.autologin] : []),
 	];
 }
 

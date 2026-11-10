@@ -67,6 +67,9 @@ export type Prompt =
 			text: string;
 			error: string | null;
 	  }
+	/** On a desktop system, after the user's password: whether the user is logged in at
+	 * every boot without asking. */
+	| { kind: "autologin"; name: string; password: string }
 	/** A yes before the plan's commands run. */
 	| { kind: "apply" };
 
@@ -245,7 +248,7 @@ export function useSetup(target: Target | null) {
 
 	const type = (text: string) =>
 		setPrompt((p) => {
-			if (!p || p.kind === "apply") return p;
+			if (!p || p.kind === "apply" || p.kind === "autologin") return p;
 			if (p.kind === "pick") {
 				if (p.trying !== null) return { ...p, trying: p.trying + text };
 				return { ...p, filter: p.filter + text, index: 0 };
@@ -256,7 +259,7 @@ export function useSetup(target: Target | null) {
 
 	const erase = () =>
 		setPrompt((p) => {
-			if (!p || p.kind === "apply") return p;
+			if (!p || p.kind === "apply" || p.kind === "autologin") return p;
 			if (p.kind === "pick") {
 				if (p.trying !== null) return { ...p, trying: p.trying.slice(0, -1) };
 				return { ...p, filter: p.filter.slice(0, -1), index: 0 };
@@ -297,7 +300,7 @@ export function useSetup(target: Target | null) {
 	};
 
 	const accept = () => {
-		if (!prompt || !system || prompt.kind === "apply") return;
+		if (!prompt || !system || prompt.kind === "apply" || prompt.kind === "autologin") return;
 		if (prompt.kind === "pick") {
 			const chosen = matching(options(prompt.field, system.choices), prompt.filter)[prompt.index];
 			if (chosen === undefined) return;
@@ -320,7 +323,7 @@ export function useSetup(target: Target | null) {
 				);
 			}
 			// No name: no user.
-			if (!text) return settle("user", { user: null, userPassword: null });
+			if (!text) return settle("user", { user: null, userPassword: null, autologin: false });
 			return void check({ user: text }, "user", text, lead, () =>
 				setPrompt({
 					kind: "password",
@@ -348,7 +351,15 @@ export function useSetup(target: Target | null) {
 				error: "The two don't match. Type it again.",
 			});
 		if (prompt.who === "root") return settle("root", { rootPassword: prompt.first });
-		settle("user", { user: prompt.name, userPassword: prompt.first });
+		if (system.target.flavour === "desktop")
+			return setPrompt({ kind: "autologin", name: prompt.name, password: prompt.first });
+		settle("user", { user: prompt.name, userPassword: prompt.first, autologin: false });
+	};
+
+	/** The answer to the autologin question: off unless the user says yes. */
+	const answerAutologin = (yes: boolean) => {
+		if (prompt?.kind !== "autologin") return;
+		settle("user", { user: prompt.name, userPassword: prompt.password, autologin: yes });
 	};
 
 	const fetchPlan = () =>
@@ -434,6 +445,7 @@ export function useSetup(target: Target | null) {
 		erase,
 		move,
 		accept,
+		answerAutologin,
 		cancel: () => setPrompt(null),
 		tryIt,
 		jump,

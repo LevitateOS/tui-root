@@ -535,18 +535,26 @@ export function FieldPage({
 		prompt !== null &&
 		((prompt.kind === "pick" && prompt.field === field) ||
 			(prompt.kind === "text" && prompt.field === field) ||
-			(prompt.kind === "password" && prompt.who === field));
+			(prompt.kind === "password" && prompt.who === field) ||
+			(prompt.kind === "autologin" && field === "user"));
 	const password = asking && prompt.kind === "password" ? prompt : null;
-	const title = password && password.who === "user" ? `A password for ${password.name}?` : null;
+	const autologin = asking && prompt.kind === "autologin" ? prompt : null;
+	const title = autologin
+		? `Log ${autologin.name} in by itself?`
+		: password && password.who === "user"
+			? `A password for ${password.name}?`
+			: null;
 	const about = QUESTION[field].about(system?.admin.tool ?? "the admin tool");
 	const heading = (
 		<Heading
 			step={FIELDS.indexOf(field) + 1}
 			title={title ?? QUESTION[field].title}
 			subtitle={
-				password && password.who === "user"
-					? `What ${password.name} logs in with, and ${system?.admin.tool ?? "the admin tool"} asks for.`
-					: about
+				autologin
+					? "At every start the desktop opens without the login screen."
+					: password && password.who === "user"
+						? `What ${password.name} logs in with, and ${system?.admin.tool ?? "the admin tool"} asks for.`
+						: about
 			}
 		/>
 	);
@@ -655,6 +663,38 @@ export function FieldPage({
 						/>
 					)
 				}
+			/>
+		);
+	} else if (prompt.kind === "autologin") {
+		body = (
+			<Columns
+				height={height}
+				stack
+				left={(width) => (
+					<>
+						{wrapWords(
+							`With yes, ${prompt.name}'s desktop opens at every start without asking for the password: anyone at the machine gets it. The password still unlocks the screen and ${system.admin.tool}.`,
+							width,
+						).map((line, i) => (
+							<UiText key={i}>{line}</UiText>
+						))}
+						<Box marginTop={1}>
+							<UiText intent="faintText">
+								y: log in by itself · n: ask at the login screen (the default)
+							</UiText>
+						</Box>
+					</>
+				)}
+				card={(width, cardHeight) => (
+					<UserCard
+						width={width}
+						height={cardHeight}
+						name={prompt.name}
+						tool={system.admin.tool}
+						group={system.admin.group}
+						shell={system.default_shell}
+					/>
+				)}
 			/>
 		);
 	} else if (prompt.kind === "password") {

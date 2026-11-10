@@ -27,6 +27,8 @@ export type TargetInfo = {
 	has_zoneinfo: boolean;
 	/** The shell of new users: root's login shell in the target. */
 	default_shell: string;
+	/** The base system, or the desktop system (whose user can log in by itself). */
+	flavour: "base" | "desktop";
 };
 
 /** What the target offers to choose from. */
