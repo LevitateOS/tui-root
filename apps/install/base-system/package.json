@@ -56,7 +56,7 @@
 						},
 						{
 							"keys": "\\r",
-							"expect": "Enter starts the copy"
+							"expect": "Start the copy"
 						},
 						{
 							"keys": "\\r",
@@ -64,11 +64,11 @@
 						},
 						{
 							"keys": "\\r",
-							"expect": "Entries"
+							"expect": "UUID=5f1d2c3a-root"
 						},
 						{
 							"keys": "\\r",
-							"expect": "Base system installed"
+							"expect": "The system is on the disk"
 						}
 					]
 				},
@@ -106,7 +106,7 @@
 						},
 						{
 							"keys": "\\r",
-							"expect": "Enter starts the copy"
+							"expect": "Start the copy"
 						},
 						{
 							"keys": "\\r",
@@ -132,7 +132,7 @@
 						},
 						{
 							"keys": "",
-							"expect": "What to do"
+							"expect": "mount an empty filesystem"
 						}
 					]
 				},
@@ -154,7 +154,7 @@
 						},
 						{
 							"keys": "\\r",
-							"expect": "Enter starts the copy"
+							"expect": "Start the copy"
 						},
 						{
 							"keys": "\\r",
@@ -184,7 +184,7 @@
 						},
 						{
 							"keys": "\\r",
-							"expect": "Enter starts the copy"
+							"expect": "Start the copy"
 						},
 						{
 							"keys": "\\r",
@@ -192,7 +192,7 @@
 						},
 						{
 							"keys": "\\r",
-							"expect": "replaced"
+							"expect": "UUID=0b9c6f4e-old"
 						},
 						{
 							"keys": "\\r",
@@ -200,7 +200,7 @@
 						},
 						{
 							"keys": "y",
-							"expect": "Base system installed"
+							"expect": "The system is on the disk"
 						}
 					]
 				},
@@ -222,7 +222,7 @@
 						},
 						{
 							"keys": "\\r",
-							"expect": "Enter starts the copy"
+							"expect": "Start the copy"
 						},
 						{
 							"keys": "\\r",

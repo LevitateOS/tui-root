@@ -2,10 +2,10 @@ import type { Keymap } from "@levitate/tui-kit";
 
 /** Keys while nothing is being asked. */
 export const MAIN_KEYS = [
-	{ action: "move", keys: ["up", "k", "down", "j"], hint: "j/k", label: "page" },
-	{ action: "go", keys: ["enter"], label: "do this step, or go on" },
-	{ action: "again", keys: ["r"], label: "check again / read the mounts again" },
-	{ action: "quit", keys: ["q", "escape", "C-c"], hint: "q", label: "back to the install steps" },
+	{ action: "move", keys: ["up", "k", "down", "j"], hint: "j/k", label: "step" },
+	{ action: "go", keys: ["enter"], label: "go on" },
+	{ action: "again", keys: ["r"], label: "check again" },
+	{ action: "quit", keys: ["q", "escape", "C-c"], hint: "q", label: "back" },
 ] as const satisfies Keymap;
 
 /** Keys while the fstab write waits for a yes to replace lines already there. */

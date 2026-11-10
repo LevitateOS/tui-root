@@ -1,4 +1,4 @@
-import { Box, Text, useApp } from "ink";
+import { Box, useApp } from "ink";
 import { useEffect, useState, type ReactNode } from "react";
 import {
 	AppShell,
@@ -6,17 +6,17 @@ import {
 	fitFooter,
 	keymapStatusSegments,
 	PAGE_SCROLL_KEYS,
+	StepPath,
 	textStatusSegment,
-	textWidth,
-	truncateLine,
-	useIntentColor,
 	useKeymap,
 	usePageHeight,
 	usePageScroll,
 	useShellLayout,
 	useTuiViewport,
-	type ColorIntent,
+	type PathStep,
+	type Progress,
 } from "@levitate/tui-kit";
+import { formatCount } from "@levitate/tui-kit";
 import {
 	currentPage,
 	PAGE_IDS,
@@ -25,12 +25,11 @@ import {
 	pageState,
 	waitsFor,
 	type PageId,
-	type PageState,
 	type Session,
 	type Target,
 } from "../domain/base";
 import { CONFIRM_KEYS, MAIN_KEYS } from "./keymap";
-import { CheckPage, CopyPage, DonePage, FstabPage, OverviewPage } from "./pages";
+import { CheckPage, CopyPage, DonePage, FstabPage, OverviewPage, pageAction } from "./pages";
 import { useBase } from "./use-base";
 import type { Then } from "@levitate/install-state";
 
@@ -45,7 +44,12 @@ export function BaseScreen({
 }): ReactNode {
 	const { exit } = useApp();
 	const { columns } = useTuiViewport();
-	const shell = useShellLayout({ navWidth: columns < 110 ? 26 : 32 });
+	const shell = useShellLayout({
+		navWidth: columns < 110 ? 26 : 32,
+		navFlush: true,
+		steps: true,
+		action: true,
+	});
 	const base = useBase(target);
 	const { session, prompt } = base;
 	const [page, setPage] = useState<PageId>("overview");
@@ -121,11 +125,18 @@ export function BaseScreen({
 	const pageHeight = usePageHeight(page);
 	const scrollable = !prompt && pageHeight.height > shell.content.textRows - 2;
 	const layout = fitFooter(shell, [
-		base.running
-			? textStatusSegment("busy", runningLabel(session), "warning")
-			: textStatusSegment("busy", target ? target.path : "no target", target ? "accent" : "error"),
 		...keymapStatusSegments(scrollable ? [...keys, ...PAGE_SCROLL_KEYS] : keys),
-		...(notice ? [textStatusSegment("notice", notice, "warning", true)] : []),
+		...(notice ? [textStatusSegment("notice", notice, "warning")] : []),
+		// What is running, else the target, at the line's end.
+		base.running
+			? textStatusSegment("busy", runningLabel(session), "warning", false, true)
+			: textStatusSegment(
+					"busy",
+					target ? target.path : "no target",
+					target ? "navHeading" : "error",
+					false,
+					true,
+				),
 	]);
 	const scroll = usePageScroll(pageHeight, layout.content.textRows, prompt === null);
 
@@ -139,7 +150,7 @@ export function BaseScreen({
 		) : page === "fstab" ? (
 			<FstabPage session={session} prompt={prompt} />
 		) : (
-			<DonePage session={session} then={then} />
+			<DonePage session={session} />
 		);
 	return (
 		<ContentWidth.Provider value={layout.content.textColumns}>
@@ -148,9 +159,16 @@ export function BaseScreen({
 				focus="navigation"
 				navTitle="Base system"
 				nav={
-					<Rail session={session} page={page} width={(layout.nav ?? layout.content).textColumns} />
+					<StepPath
+						steps={pathSteps(session)}
+						selected={page}
+						width={(layout.nav ?? layout.content).textColumns}
+						rows={(layout.nav ?? layout.content).textRows}
+					/>
 				}
-				contentTitle={`${PAGES[page].title}${scroll.more}`}
+				contentTitle={`${place(page)}${scroll.more}`}
+				progress={progress(session, page)}
+				action={pageAction(session, page, prompt, then)}
 				content={
 					<Box
 						ref={pageHeight.ref}
@@ -173,72 +191,38 @@ function runningLabel(session: Session): string {
 	return "reading the mounts";
 }
 
-const MARK: Record<PageState, { mark: string; intent: ColorIntent }> = {
-	done: { mark: "✓", intent: "success" },
-	running: { mark: "◐", intent: "warning" },
-	failed: { mark: "✗", intent: "error" },
-	ready: { mark: "●", intent: "accent" },
-	waiting: { mark: "○", intent: "dimText" },
-};
-
-/** The rail's name for a page: the steps numbered in order. */
-function railLabel(id: PageId): string {
+/** Where the page is, after the app's name in the band. */
+function place(id: PageId): string {
 	const step = (STEP_PAGES as readonly PageId[]).indexOf(id);
-	return step < 0 ? PAGES[id].short : `${step + 1} ${PAGES[id].short}`;
+	return step < 0 ? PAGES[id].title : `step ${step + 1} of ${STEP_PAGES.length}`;
 }
 
-/** The legend under the rail, two marks a line, from the marks themselves. */
-const LEGEND = Object.entries(MARK)
-	.map(([state, { mark }]) => `${mark} ${state}`)
-	.reduce<string[]>((lines, entry, i) => {
-		if (i % 2 === 0) lines.push(entry);
-		else lines[lines.length - 1] += ` ${entry}`;
-		return lines;
-	}, []);
-
-/** The steps in order, each with how far it has got. */
-function Rail({
-	session,
-	page,
-	width,
-}: {
-	session: Session;
-	page: PageId;
-	width: number;
-}): ReactNode {
-	const color = useIntentColor();
-	const item = (id: PageId) => {
-		const selected = id === page;
-		const { mark, intent } = MARK[pageState(session, id)];
-		const text = truncateLine(railLabel(id), Math.max(1, width - 5));
-		return (
-			<Text key={id}>
-				<Text color={color("accent")}>{selected ? "▸ " : "  "}</Text>
-				<Text color={color(intent)}>{mark}</Text>
-				<Text bold={selected} color={color(selected ? "accent" : "navItem")}>
-					{` ${text}`}
-				</Text>
-				<Text>{" ".repeat(Math.max(0, width - 4 - textWidth(text)))}</Text>
-			</Text>
-		);
+/** The line under the band: a segment a step, filled as far as they are done in order. */
+function progress(session: Session, page: PageId): Progress {
+	const firstOpen = STEP_PAGES.findIndex((id) => pageState(session, id) !== "done");
+	const current = (STEP_PAGES as readonly PageId[]).indexOf(page);
+	return {
+		total: STEP_PAGES.length,
+		done: firstOpen < 0 ? STEP_PAGES.length : firstOpen,
+		current: current < 0 ? undefined : current,
 	};
-	return (
-		<Box flexDirection="column">
-			{item("overview")}
-			<Box marginTop={1}>
-				<Text bold color={color("navHeading")}>
-					STEPS
-				</Text>
-			</Box>
-			{STEP_PAGES.map(item)}
-			<Box marginTop={1}>{item("done")}</Box>
-			<Box marginTop={1} flexDirection="column">
-				{LEGEND.map((line) => (
-					<Text key={line} color={color("dimText")}>
-						{line}
-					</Text>
-				))}
-			</Box>
-		</Box>
-	);
+}
+
+/** What a finished step left, short enough for the end of its row on the path. */
+function pathValue(session: Session, id: PageId): string {
+	const { check, copy, write } = session;
+	if (id === "check" && check.kind === "ok") return `${check.value.checks} passed`;
+	if (id === "copy" && copy.kind === "ok") return `${formatCount(copy.done.entries)} files`;
+	if (id === "fstab" && write.kind === "ok") return `${write.value.entries.length} entries`;
+	return "";
+}
+
+/** Every page as a step on the path, with how far it has got and what it left. */
+function pathSteps(session: Session): PathStep[] {
+	return PAGE_IDS.map((id) => ({
+		id,
+		label: PAGES[id].short,
+		state: pageState(session, id),
+		value: pathValue(session, id),
+	}));
 }

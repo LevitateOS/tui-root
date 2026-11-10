@@ -18,6 +18,22 @@ state file. `install-hub` starts it once the disk step is done; both distros' li
 - `src/generated/recstrap.ts`: written by `cargo xtask gen` from recstrap's Rust types
   (`tools/recstrap/src/output.rs`).
 
+## Pages
+
+Each page is laid out after the mock-ups in `docs/tui-design` (the "base-system" set):
+the rail is the kit's `StepPath`, the step line shows the three steps, and the page's one
+action is the bar at the foot (`pageAction` in `pages.tsx`).
+
+- Overview: `FromTo` (the live image onto the target) and the disk step's mount table.
+- Check: a gauge of the image's size against the target's free space and the count of
+  checks that passed (recstrap reports a count, not names). A refusal is plain text under
+  a warning heading: recstrap's message in the error colour, its remediation under it.
+- Copy: `BigFigure` for the percentage beside four facts, then the bar.
+- fstab: the file as a diff built from recfstab's result (entries coming in, conflicting
+  lines going out, other lines staying); the replace question is a `Callout` with its two
+  keys over the lines it is about.
+- Done: three figures (files, written, taken) and where the step was recorded.
+
 recstrap and recfstab own the checks, the copy and the fstab; this app owns the flow and
 shows every command it ran.
 

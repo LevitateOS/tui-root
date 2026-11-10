@@ -1,32 +1,37 @@
 /** The pages: where the system goes, the check, the copy with its progress, the fstab to
  * review and write, and what was recorded. */
 import { Box } from "ink";
-import type { ReactNode } from "react";
+import { useContext, type ReactNode } from "react";
 import {
-	keyFor,
+	BigFigure,
 	Callout,
+	CellGrid,
+	CellRows,
 	Commands,
+	ContentWidth,
 	Facts,
+	FromTo,
 	Heading,
 	ProgressBar,
 	Section,
-	StepList,
 	Table,
-	truncateLines,
+	truncateLine,
 	UiText,
-	type ColorIntent,
-	type StepStatus,
+	useSurfaceBackground,
 	formatBytes,
 	formatCount,
+	type ColorIntent,
+	type PageAction,
+	type PageNote,
 } from "@levitate/tui-kit";
-import { statePath, type Then } from "@levitate/install-state";
-import { guideSteps, guideTitle, STEP_INFO } from "@levitate/docs-content/install";
+import { type Then } from "@levitate/install-state";
+import { guideSteps } from "@levitate/docs-content/install";
 import type { FstabResult } from "../generated/recstrap";
 import {
 	conflicts,
 	copyFraction,
+	currentPage,
 	formatDuration,
-	pageState,
 	remaining,
 	waitsFor,
 	type Failure,
@@ -34,10 +39,58 @@ import {
 	type Session,
 } from "../domain/base";
 import type { Prompt } from "./use-base";
-import { MAIN_KEYS } from "./keymap";
 
-function Hint({ children }: { children: ReactNode }): ReactNode {
-	return <UiText intent="dimText">{children}</UiText>;
+/** The one thing to press on a page, or the quiet line in its place. */
+export function pageAction(
+	session: Session,
+	page: PageId,
+	prompt: Prompt | null,
+	then: Then,
+): PageAction | PageNote | undefined {
+	const { target, check, copy, fstab, write, saved } = session;
+	const press = (label: string): PageAction => ({ label, key: "Enter" });
+	const waiting = waitsFor(session, page);
+	if (page === "overview") {
+		if (!target)
+			return { note: "finish the disk step first, or start with --target", intent: "warning" };
+		const next = currentPage(session);
+		return press(
+			next === "check"
+				? "Check the target"
+				: next === "copy"
+					? "Copy the system"
+					: next === "fstab"
+						? "Write the fstab"
+						: "Done",
+		);
+	}
+	if (waiting) return { note: `waits for ${waiting}` };
+	if (page === "check") {
+		if (check.kind === "ok") return press("Copy the system");
+		if (check.kind === "failed") return { note: "r checks again once it is fixed" };
+		return { note: "checking the target…", intent: "warning" };
+	}
+	if (page === "copy") {
+		if (copy.kind === "idle") return press("Start the copy");
+		if (copy.kind === "running")
+			return { note: "it cannot be stopped half-way", intent: "warning" };
+		if (copy.kind === "ok") return press("Write the fstab");
+		return press("Check the target again");
+	}
+	if (page === "fstab") {
+		if (prompt) return undefined;
+		if (write.kind === "ok") return press("Go on");
+		if (write.kind === "running") return { note: "writing the fstab…", intent: "warning" };
+		if (fstab.kind === "running") return { note: "reading the mounts…", intent: "warning" };
+		if (fstab.kind === "failed") return { note: "r reads the mounts again" };
+		return press("Write the fstab");
+	}
+	if (saved?.kind === "ok" && write.kind === "ok") {
+		return then === "hub"
+			? press("Configure the system")
+			: { note: "next: configure the system, with the install guide" };
+	}
+	return { note: "waits for the fstab to be written" };
 }
 
 function Waiting({ session, page }: { session: Session; page: PageId }): ReactNode {
@@ -48,37 +101,47 @@ function Waiting({ session, page }: { session: Session; page: PageId }): ReactNo
 	);
 }
 
-/** A run that failed: recstrap's or recfstab's message and fix, and the command. */
+/** What ran and how it ended, as a short section under a failure. */
+function WhatRan({ failure }: { failure: Failure }): ReactNode {
+	return (
+		<Section title="What ran" trailing={`exit ${failure.exitCode ?? "?"}`}>
+			<Commands lines={[failure.argv.join(" ")]} />
+		</Section>
+	);
+}
+
+/** A run that failed, as plain text: recstrap's or recfstab's message in the error colour
+ * and what to do about it under it. */
+function FailureText({ failure }: { failure: Failure }): ReactNode {
+	const { error } = failure;
+	return (
+		<Box flexDirection="column">
+			<UiText intent="error">
+				{error ? `${error.message} (${error.code})` : failure.output || "no output"}
+			</UiText>
+			{error?.remediation ? <UiText intent="info">{error.remediation}</UiText> : null}
+			<Box marginTop={1} flexDirection="column">
+				<WhatRan failure={failure} />
+			</Box>
+		</Box>
+	);
+}
+
+/** A run that failed, as a verdict panel. */
 function FailureCallout({ title, failure }: { title: string; failure: Failure }): ReactNode {
 	const { error } = failure;
 	return (
 		<Box flexDirection="column">
 			<Callout tone="danger" title={title}>
-				{error ? (
-					<UiText>
-						{error.message} ({error.code})
-					</UiText>
-				) : (
-					<UiText>{truncateLines(failure.output || "no output", 8)}</UiText>
-				)}
-				{error?.remediation ? (
-					<UiText intent="warning">What to do: {error.remediation}</UiText>
-				) : null}
+				<UiText>
+					{error ? `${error.message} (${error.code})` : failure.output || "no output"}
+				</UiText>
+				{error?.remediation ? <UiText intent="warning">{error.remediation}</UiText> : null}
 			</Callout>
-			<Section title="What ran" trailing={`exit ${failure.exitCode ?? "?"}`}>
-				<Commands lines={[failure.argv.join(" ")]} />
-			</Section>
+			<WhatRan failure={failure} />
 		</Box>
 	);
 }
-
-const STEP_OF: Record<string, StepStatus> = {
-	done: "ok",
-	running: "running",
-	failed: "failed",
-	ready: "planned",
-	waiting: "planned",
-};
 
 export function OverviewPage({
 	session,
@@ -87,12 +150,14 @@ export function OverviewPage({
 	session: Session;
 	stateError: string | null;
 }): ReactNode {
-	const { target } = session;
+	const { target, check } = session;
+	const checked = check.kind === "ok" ? check.value : null;
+	const disk = target?.disk;
 	return (
 		<Box flexDirection="column">
 			<Heading
 				title="Copy the system onto the disk"
-				subtitle={`Install ${guideSteps("installation-base")}: check the target, copy the system to it, and write its fstab.`}
+				subtitle={`Install ${guideSteps("installation-base")}: check the target, copy the system to it, write down its mounts.`}
 			/>
 			{stateError ? (
 				<Callout tone="warning" title="The install state file can't be read">
@@ -107,122 +172,142 @@ export function OverviewPage({
 					</UiText>
 				</Callout>
 			) : (
-				<Section title="Target">
-					<Facts
-						rows={[
-							["Mounted at", target.path],
-							[
-								"Disk",
-								target.disk
-									? `${target.disk.disk}, ${target.disk.mode === "ab" ? "A/B" : "mutable"} layout`
-									: "mounted by hand (the install state has no disk step for it)",
+				<Box flexDirection="column">
+					<FromTo
+						from={{
+							title: "The live image",
+							lines: checked
+								? [checked.rootfs, `${formatBytes(checked.rootfs_bytes)}, compressed`]
+								: ["found when the target is checked"],
+						}}
+						to={{
+							title: target.path,
+							lines: [
+								disk
+									? `${disk.disk}, ${disk.mode === "ab" ? "A/B" : "mutable"} layout`
+									: "mounted by hand",
+								...(checked ? [`${formatBytes(checked.free_bytes)} free`] : []),
 							],
-						]}
+						}}
 					/>
-					{target.disk && target.disk.mounts.length > 0 ? (
-						<Box marginTop={1}>
-							<Table
-								columns={[{ title: "Mount point" }, { title: "Device" }]}
-								rows={target.disk.mounts.map((mount) => [mount.path, mount.device])}
-							/>
-						</Box>
+					{disk && disk.mounts.length > 0 ? (
+						<Table
+							columns={[{ title: "Mount point" }, { title: "Device" }]}
+							rows={disk.mounts.map((mount) => [mount.path, mount.device])}
+						/>
 					) : null}
-				</Section>
+				</Box>
 			)}
-			<Section title="What happens">
-				<StepList
-					steps={[
-						{
-							phase: "",
-							command: `Check that ${target?.path ?? "the target"} is empty and mounted, with room for the system`,
-							status: STEP_OF[pageState(session, "check")]!,
-						},
-						{
-							phase: "",
-							command: "Copy the system image onto it (recstrap)",
-							status: STEP_OF[pageState(session, "copy")]!,
-						},
-						{
-							phase: "",
-							command: "Describe its mounts in its /etc/fstab (recfstab)",
-							status: STEP_OF[pageState(session, "fstab")]!,
-						},
-					]}
-				/>
-			</Section>
-			{target ? <Hint>{keyFor(MAIN_KEYS, "go")} goes to the step the install is at.</Hint> : null}
 		</Box>
 	);
 }
 
+/** How much of the target's free space the image takes: the taken part in the accent,
+ * a line of words under it. */
+function Gauge({ used, total, text }: { used: number; total: number; text: string }): ReactNode {
+	const width = useContext(ContentWidth);
+	const grid = new CellGrid(width, 3, useSurfaceBackground());
+	const taken = total > 0 ? Math.min(width, Math.max(1, Math.round((width * used) / total))) : 0;
+	grid.fill(0, 0, taken, "accent");
+	grid.fill(0, taken, width - taken, "panelBorder");
+	grid.put(1, 0, truncateLine(text, width), "dimText");
+	return <CellRows grid={grid} />;
+}
+
 export function CheckPage({ session }: { session: Session }): ReactNode {
 	const { check, target } = session;
+	if (check.kind === "failed") {
+		return (
+			<Box flexDirection="column">
+				<Heading
+					glyph="bang"
+					tone="error"
+					title="The target cannot take it"
+					subtitle="Nothing was copied."
+				/>
+				<FailureText failure={check.failure} />
+			</Box>
+		);
+	}
+	const heading = (
+		<Heading
+			step={1}
+			title="Can the target take it?"
+			subtitle="recstrap checks before a single file is copied: the target, the system image and this system."
+		/>
+	);
+	if (!target) {
+		return (
+			<Box flexDirection="column">
+				{heading}
+				<Waiting session={session} page="check" />
+			</Box>
+		);
+	}
+	if (check.kind !== "ok") {
+		return (
+			<Box flexDirection="column">
+				{heading}
+				<UiText intent="warning">Checking {target.path}…</UiText>
+			</Box>
+		);
+	}
+	const { value } = check;
 	return (
 		<Box flexDirection="column">
-			<Heading
-				title="Check the target"
-				subtitle="recstrap checks before it copies anything: the target must be an empty, mounted filesystem with room for the system, and the system image must be there."
+			{heading}
+			<Gauge
+				used={value.rootfs_bytes}
+				total={value.free_bytes}
+				text={`The image is ${formatBytes(value.rootfs_bytes)}, compressed; ${formatBytes(value.free_bytes)} are free on the target.`}
 			/>
-			{!target ? (
-				<Waiting session={session} page="check" />
-			) : check.kind === "running" || check.kind === "idle" ? (
-				<UiText intent="warning">Checking {target.path}…</UiText>
-			) : check.kind === "failed" ? (
-				<Box flexDirection="column">
-					<FailureCallout title={`${target.path} can't take the system`} failure={check.failure} />
-					<Hint>r checks again once it's fixed.</Hint>
-				</Box>
-			) : (
-				<Box flexDirection="column">
-					<Callout tone="success" title="Ready to copy">
-						<Facts
-							rows={[
-								["Target", check.value.target],
-								["System image", check.value.rootfs],
-								["Image size", formatBytes(check.value.rootfs_bytes)],
-								["Free space", formatBytes(check.value.free_bytes)],
-								["Checks", `${check.value.checks} passed`],
-							]}
-						/>
-					</Callout>
-					<Hint>{keyFor(MAIN_KEYS, "go")} goes on to the copy.</Hint>
-				</Box>
-			)}
+			<Box>
+				<UiText intent="success" bold>
+					✓{" "}
+				</UiText>
+				<UiText>{value.checks} checks passed. Ready to copy.</UiText>
+			</Box>
+			<Box marginTop={1}>
+				<Facts
+					rows={[
+						["Target", value.target],
+						["System image", value.rootfs],
+					]}
+				/>
+			</Box>
 		</Box>
 	);
 }
 
 export function CopyPage({ session, now }: { session: Session; now: number }): ReactNode {
 	const { copy, check, target } = session;
-	const heading = (
-		<Heading
-			title="Copy the system"
-			subtitle={`recstrap copies the system image to ${target?.path ?? "the target"}, keeping ownership, permissions, capabilities and extended attributes.`}
-		/>
-	);
+	const into = target?.path ?? "the target";
 	if (copy.kind === "idle") {
 		return (
 			<Box flexDirection="column">
-				{heading}
+				<Heading
+					step={2}
+					title="Copy the system"
+					subtitle={`recstrap copies the system image to ${into}, keeping ownership, permissions, capabilities and extended attributes.`}
+				/>
 				{waitsFor(session, "copy") ? (
 					<Waiting session={session} page="copy" />
 				) : (
 					<Box flexDirection="column">
 						{check.kind === "ok" ? (
-							<Section title="Copy">
-								<Facts
-									rows={[
-										["From", check.value.rootfs],
-										["To", check.value.target],
-										["Image size", `${formatBytes(check.value.rootfs_bytes)} (compressed)`],
-									]}
-								/>
-							</Section>
+							<Facts
+								rows={[
+									["From", check.value.rootfs],
+									["To", check.value.target],
+									["Image size", `${formatBytes(check.value.rootfs_bytes)} (compressed)`],
+								]}
+							/>
 						) : null}
-						<Hint>
-							{keyFor(MAIN_KEYS, "go")} starts the copy. It takes a few minutes, and the screen
-							stays here until it finishes.
-						</Hint>
+						<Box marginTop={1}>
+							<UiText intent="dimText">
+								It takes a few minutes, and the screen stays here until it finishes.
+							</UiText>
+						</Box>
 					</Box>
 				)}
 			</Box>
@@ -234,133 +319,152 @@ export function CopyPage({ session, now }: { session: Session; now: number }): R
 		const left = remaining(copy, now);
 		return (
 			<Box flexDirection="column">
-				{heading}
-				<Section title="Progress">
-					<ProgressBar fraction={fraction} />
-					<Box marginTop={1}>
-						<Facts
-							rows={[
-								[
-									"Files",
-									total
-										? `${formatCount(copy.entries)} of ${formatCount(total.total_entries)}`
-										: "counting…",
-								],
-								[
-									"Written",
-									total
-										? `${formatBytes(copy.bytes)} of about ${formatBytes(total.total_bytes)}`
-										: formatBytes(copy.bytes),
-								],
-								["Elapsed", formatDuration(now - copy.startedAt)],
-								["Left", left === null ? "working it out" : `about ${formatDuration(left)}`],
-							]}
-						/>
+				<Heading step={2} title="Copying the system" subtitle="It cannot be stopped half-way." />
+				<Box>
+					<Box width={26} flexShrink={0} flexDirection="column" marginTop={1}>
+						{fraction === null ? null : <BigFigure text={`${Math.floor(fraction * 100)}%`} />}
 					</Box>
-				</Section>
-				<UiText intent="warning">
-					{!copy.start
-						? "Mounting the system image and counting its files…"
-						: copy.verifying
-							? "Checking the copied system…"
-							: "Copying…"}
-				</UiText>
+					<Facts
+						rows={[
+							[
+								"Files",
+								total
+									? `${formatCount(copy.entries)} of ${formatCount(total.total_entries)}`
+									: "counting…",
+							],
+							[
+								"Written",
+								total
+									? `${formatBytes(copy.bytes)} of about ${formatBytes(total.total_bytes)}`
+									: formatBytes(copy.bytes),
+							],
+							["Elapsed", formatDuration(now - copy.startedAt)],
+							["Left", left === null ? "working it out" : `about ${formatDuration(left)}`],
+						]}
+					/>
+				</Box>
+				<Box marginTop={1}>
+					<ProgressBar fraction={fraction} />
+				</Box>
+				<Box marginTop={1}>
+					<UiText intent="dimText">
+						{!copy.start
+							? "Mounting the system image and counting its files…"
+							: copy.verifying
+								? "Checking the copied system…"
+								: "Copying…"}
+					</UiText>
+				</Box>
 			</Box>
 		);
 	}
 	if (copy.kind === "ok") {
 		return (
 			<Box flexDirection="column">
-				{heading}
-				<Callout tone="success" title="System copied">
-					<Facts
-						rows={[
-							["Files", formatCount(copy.done.entries)],
-							["Written", formatBytes(copy.done.bytes)],
-							["Took", formatDuration(copy.done.duration_ms)],
-						]}
-					/>
-				</Callout>
-				<Hint>{keyFor(MAIN_KEYS, "go")} goes on to the fstab.</Hint>
+				<Heading
+					glyph="check"
+					tone="success"
+					title="System copied"
+					subtitle={`recstrap put the system image on ${into}.`}
+				/>
+				<Facts
+					rows={[
+						["Files", formatCount(copy.done.entries)],
+						["Written", formatBytes(copy.done.bytes)],
+						["Took", formatDuration(copy.done.duration_ms)],
+					]}
+				/>
+				<Box marginTop={1}>
+					<ProgressBar fraction={1} />
+				</Box>
 			</Box>
 		);
 	}
 	return (
 		<Box flexDirection="column">
-			{heading}
-			<Section title="Progress">
-				<ProgressBar fraction={fraction} tone="danger" />
-				{total ? (
-					<UiText intent="dimText">
-						Stopped after {formatCount(copy.entries)} of {formatCount(total.total_entries)} files.
-					</UiText>
-				) : null}
-			</Section>
-			<FailureCallout title="The copy stopped" failure={copy.failure} />
-			<Callout tone="warning" title="The target holds part of a system now">
-				<UiText>
-					recstrap won't copy onto it again until it's empty. Run disk-plan again to format it (or
-					empty it by hand), then press {keyFor(MAIN_KEYS, "go")} here to check it again.
-				</UiText>
-			</Callout>
+			<Heading
+				glyph="bang"
+				tone="error"
+				title="The copy stopped"
+				subtitle={
+					total
+						? `Stopped after ${formatCount(copy.entries)} of ${formatCount(total.total_entries)} files.`
+						: "It stopped before the files were counted."
+				}
+			/>
+			<ProgressBar fraction={fraction} tone="danger" />
+			<Box marginY={1} flexDirection="column">
+				<FailureText failure={copy.failure} />
+			</Box>
+			<UiText intent="warning">
+				The target holds part of a system now: recstrap won't copy onto it again until it's empty.
+				Run disk-plan again to format it (or empty it by hand), then press Enter here to check it
+				again.
+			</UiText>
 		</Box>
 	);
 }
 
-function mountLabel(file: string, fstype: string): string {
-	return fstype === "swap" ? "swap" : file;
+type DiffKind = " " | "-" | "+";
+type DiffLine = { kind: DiffKind; number: number; fields: string[] };
+
+/** An entry's fields as recfstab wrote them, from its fstab line. */
+function entryFields(entry: FstabResult["entries"][number]): string[] {
+	const line = entry.text.split("\n").find((text) => text.trim() !== "" && !text.startsWith("#"));
+	return line
+		? line.trim().split(/\s+/)
+		: [entry.spec, entry.file, entry.fstype, entry.options, String(entry.pass)];
 }
 
-const PASS: Record<number, string> = { 0: "no", 1: "first", 2: "after /" };
-
-function Entries({ fstab }: { fstab: FstabResult }): ReactNode {
-	return (
-		<Section title="Entries" trailing={`${fstab.entries.length}`}>
-			<Table
-				columns={[
-					{ title: "Mount point" },
-					{ title: "Device" },
-					{ title: "Type" },
-					{ title: "Boot check" },
-					{ title: "Options", optional: true },
-				]}
-				rows={fstab.entries.map((entry) => [
-					mountLabel(entry.file, entry.fstype),
-					entry.spec,
-					entry.fstype,
-					PASS[entry.pass] ?? String(entry.pass),
-					entry.options,
-				])}
-			/>
-		</Section>
-	);
+/** The fstab as it will be written: its lines that stay, the conflicting lines going out
+ * and the entries coming in (each beside the line it replaces, the rest after the last). */
+export function fstabDiff(fstab: FstabResult): DiffLine[] {
+	const lines: DiffLine[] = [];
+	const used = new Set<number>();
+	for (const line of [...fstab.existing].sort((a, b) => a.line - b.line)) {
+		const fields = [line.spec, line.file, line.fstype];
+		if (!line.conflicts) {
+			lines.push({ kind: " ", number: line.line, fields });
+			continue;
+		}
+		lines.push({ kind: "-", number: line.line, fields });
+		const at = fstab.entries.findIndex((entry, i) => !used.has(i) && entry.file === line.file);
+		if (at >= 0) {
+			used.add(at);
+			lines.push({ kind: "+", number: line.line, fields: entryFields(fstab.entries[at]!) });
+		}
+	}
+	let number = Math.max(0, ...fstab.existing.map((line) => line.line));
+	fstab.entries.forEach((entry, i) => {
+		if (!used.has(i)) lines.push({ kind: "+", number: ++number, fields: entryFields(entry) });
+	});
+	return lines;
 }
 
-function Existing({ fstab }: { fstab: FstabResult }): ReactNode {
-	if (fstab.existing.length === 0) return null;
-	return (
-		<Section title={`Already in ${fstab.fstab_path}`} trailing={`${fstab.existing.length}`}>
-			<Table
-				columns={[
-					{ title: "Line", align: "right" },
-					{ title: "Mount point" },
-					{ title: "Device" },
-					{ title: "Type" },
-					{ title: "" },
-				]}
-				rows={fstab.existing.map((line) => [
-					String(line.line),
-					mountLabel(line.file, line.fstype),
-					line.spec,
-					line.fstype,
-					line.conflicts ? "replaced" : "kept",
-				])}
-				tones={fstab.existing.map((line): ColorIntent | null =>
-					line.conflicts ? "warning" : null,
-				)}
-			/>
-		</Section>
+const DIFF_TONE: Record<DiffKind, ColorIntent> = { " ": "info", "-": "error", "+": "success" };
+
+/** A file as it will be written: its path on a raised row, then line numbers, a mark and
+ * the line; lines going out in the error colour, lines coming in in success. */
+function FileDiff({ title, lines }: { title: string; lines: readonly DiffLine[] }): ReactNode {
+	const width = useContext(ContentWidth);
+	const grid = new CellGrid(width, lines.length + 1, useSurfaceBackground());
+	grid.fill(0, 0, width, "raisedBackground");
+	grid.put(0, 2, truncateLine(title, width - 4), "info", "raisedBackground", true);
+	const widths = [0, 1, 2].map((i) =>
+		Math.max(0, ...lines.map((line) => line.fields[i]?.length ?? 0)),
 	);
+	lines.forEach(({ kind, number, fields }, i) => {
+		const row = i + 1;
+		const tone = DIFF_TONE[kind];
+		const text = fields
+			.map((field, column) => (column < 3 ? field.padEnd(widths[column]!) : field))
+			.join("  ");
+		grid.fill(row, 0, width, "panelBackground");
+		grid.put(row, 1, String(number).padStart(2), "faintText", "panelBackground");
+		grid.put(row, 5, kind, tone, "panelBackground", true);
+		grid.put(row, 7, truncateLine(text, Math.max(1, width - 9)), tone, "panelBackground");
+	});
+	return <CellRows grid={grid} />;
 }
 
 export function FstabPage({
@@ -371,10 +475,10 @@ export function FstabPage({
 	prompt: Prompt | null;
 }): ReactNode {
 	const { fstab, write, target } = session;
-	const path = target ? `${target.path}/etc/fstab` : "/etc/fstab";
 	const heading = (
 		<Heading
-			title="Write the fstab"
+			step={3}
+			title="Write down the mounts"
 			subtitle={`recfstab describes what is mounted under ${target?.path ?? "the target"}, so the installed system mounts the same filesystems when it boots.`}
 		/>
 	);
@@ -397,11 +501,11 @@ export function FstabPage({
 			<Box flexDirection="column">
 				{heading}
 				<FailureCallout title="recfstab couldn't describe the mounts" failure={fstab.failure} />
-				<Hint>{keyFor(MAIN_KEYS, "again")} reads the mounts again.</Hint>
 			</Box>
 		);
 	const value = fstab.value;
 	const replaced = conflicts(value);
+	const diff = fstabDiff(value);
 	return (
 		<Box flexDirection="column">
 			{heading}
@@ -420,11 +524,12 @@ export function FstabPage({
 				<Callout
 					tone="warning"
 					title={`Replace line${prompt.lines.length > 1 ? "s" : ""} ${prompt.lines.join(", ")} of ${value.fstab_path}?`}
+					keys={[
+						["y", "replace them"],
+						["n", "keep the file"],
+					]}
 				>
-					<UiText>
-						They describe mount points the new entries describe too, most likely from an earlier
-						run. y replaces them; n keeps the file as it is.
-					</UiText>
+					<UiText>They describe mount points the new entries describe too.</UiText>
 				</Callout>
 			) : null}
 			{value.warnings.map((warning) => (
@@ -432,23 +537,18 @@ export function FstabPage({
 					<UiText>{warning}</UiText>
 				</Callout>
 			))}
-			<Entries fstab={value} />
-			<Existing fstab={value} />
-			{write.kind === "running" ? (
-				<UiText intent="warning">Writing {value.fstab_path}…</UiText>
-			) : write.kind === "ok" || prompt ? null : (
-				<Hint>
-					{keyFor(MAIN_KEYS, "go")} writes these entries to {value.fstab_path || path}
-					{replaced.length > 0 ? `, replacing ${replaced.length} lines` : ""}.{" "}
-					{keyFor(MAIN_KEYS, "again")} reads the mounts again.
-				</Hint>
-			)}
+			<FileDiff
+				title={value.fstab_path}
+				lines={prompt ? diff.filter((line) => line.kind !== " ") : diff}
+			/>
 		</Box>
 	);
 }
 
-export function DonePage({ session, then }: { session: Session; then: Then }): ReactNode {
-	const { saved, copy, write, target } = session;
+export function DonePage({ session }: { session: Session }): ReactNode {
+	const { saved, copy, write } = session;
+	const width = useContext(ContentWidth);
+	const background = useSurfaceBackground();
 	if (!saved || write.kind !== "ok") {
 		return (
 			<Box flexDirection="column">
@@ -457,19 +557,29 @@ export function DonePage({ session, then }: { session: Session; then: Then }): R
 			</Box>
 		);
 	}
+	const column = Math.floor(width / 3);
+	const figures: [string, string][] =
+		copy.kind === "ok"
+			? [
+					[formatCount(copy.done.entries), "files"],
+					[formatBytes(copy.done.bytes), "written"],
+					[formatDuration(copy.done.duration_ms), "taken"],
+				]
+			: [];
+	const grid = new CellGrid(width, 2, background);
+	figures.forEach(([figure, label], i) => {
+		grid.put(0, i * column, figure, "text", undefined, true);
+		grid.put(1, i * column, label, "dimText");
+	});
 	return (
 		<Box flexDirection="column">
-			<Heading title="Done" subtitle="The base system is on the disk." />
-			{saved.kind === "ok" ? (
-				<Callout tone="success" title="Base system installed">
-					<UiText>
-						Next: {STEP_INFO.setup.title.toLowerCase()}. {STEP_INFO.setup.about}{" "}
-						{then === "hub"
-							? `${keyFor(MAIN_KEYS, "go")} or ${keyFor(MAIN_KEYS, "quit")} goes back to the install steps.`
-							: `The install guide has it (${guideTitle("installation-config")}).`}
-					</UiText>
-				</Callout>
-			) : (
+			<Heading
+				glyph="check"
+				tone="success"
+				title="The system is on the disk"
+				subtitle="Copied, and it knows its mounts."
+			/>
+			{saved.kind === "ok" ? null : (
 				<Callout tone="warning" title="The step isn't recorded">
 					<UiText>
 						The system is copied and its fstab written, but {saved.path} couldn't be updated:{" "}
@@ -477,16 +587,10 @@ export function DonePage({ session, then }: { session: Session; then: Then }): R
 					</UiText>
 				</Callout>
 			)}
-			<Section title="What was done">
-				<Facts
-					rows={[
-						["Target", target?.path ?? ""],
-						["Files copied", copy.kind === "ok" ? formatCount(copy.done.entries) : "—"],
-						["fstab", `${write.value.fstab_path} (${write.value.entries.length} entries)`],
-						["Recorded in", saved.kind === "ok" ? saved.path : statePath()],
-					]}
-				/>
-			</Section>
+			<CellRows grid={grid} />
+			<Box marginTop={1}>
+				<UiText intent="dimText">{saved.kind === "ok" ? `Recorded in ${saved.path}.` : ""}</UiText>
+			</Box>
 		</Box>
 	);
 }
