@@ -1,58 +1,68 @@
-/** The pages: the system being configured, one page a question, the plan to review and
- * apply, and what was recorded. */
+/** The pages: the system as a card, one page a question (a list or a field at the left,
+ * a card at the right), the plan to review and apply, and what was recorded. */
 import { Box, Text } from "ink";
 import { useContext, type ReactNode } from "react";
 import {
-	keyFor,
 	Callout,
 	Commands,
 	ContentWidth,
-	Facts,
+	Field,
 	Heading,
+	keyFor,
 	SearchField,
 	Section,
-	StepList,
 	textWidth,
 	truncateLine,
 	truncateLines,
 	UiText,
 	useIntentColor,
-	type StepStatus,
+	type PathState,
 } from "@levitate/tui-kit";
-import { statePath, type Then } from "@levitate/install-state";
-import { guideSteps, guideTitle, STEP_INFO } from "@levitate/docs-content/install";
 import type { StepRecord, TargetInfo } from "../domain/recsetup";
+import { keyRows } from "../domain/keyboard";
+import { localeFormats } from "../domain/locale";
 import {
 	canLogIn,
 	FIELDS,
 	listWindow,
 	matching,
 	options,
-	pageState,
-	PAGES,
 	sectionName,
 	waitsFor,
-	type Answers,
 	type Failure,
 	type FieldId,
 	type PageId,
-	type PickField,
 	type Session,
 } from "../domain/setup";
+import { matchRange, zoneClock, type ZonePlaces } from "../domain/zones";
+import type { KeymapFamilies } from "../app/keymaps";
 import {
-	matchRange,
-	worldMap,
-	zoneClock,
-	zoneParts,
-	type ZoneClock,
-	type ZonePlaces,
-} from "../domain/zones";
+	answerText,
+	CommandSheet,
+	EmptyCard,
+	HostnameCard,
+	KeyboardCard,
+	LocaleCard,
+	MachineCard,
+	MarkedField,
+	PasswordCard,
+	StrengthLine,
+	UserCard,
+	wrapWords,
+	ZoneCard,
+	type SheetStep,
+} from "./cards";
 import type { Prompt } from "./use-setup";
-import { CONFIRM_KEYS, MAIN_KEYS, PICK_KEYS, TEXT_KEYS } from "./keymap";
+import { CONFIRM_KEYS } from "./keymap";
 
-function Hint({ children }: { children: ReactNode }): ReactNode {
-	return <UiText intent="dimText">{children}</UiText>;
-}
+/** The most rows a question's two columns take: the list and its card. */
+export const COLUMN_ROWS = 14;
+/** The left column's width: the list, or the field being typed into. */
+const LEFT_WIDTH = 34;
+const GAP = 2;
+/** The least a card needs beside the left column, and the most it spreads to. */
+const CARD_MIN = 26;
+const CARD_MAX = 56;
 
 function Waiting({ session, page }: { session: Session; page: PageId }): ReactNode {
 	return (
@@ -86,55 +96,29 @@ function FailureCallout({ title, failure }: { title: string; failure: Failure })
 	);
 }
 
-const STEP_OF: Record<string, StepStatus> = {
-	done: "ok",
-	running: "running",
-	failed: "failed",
-	ready: "planned",
-	waiting: "planned",
-};
+const COUNT_WORDS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
 
-/** An answer as the pages show it; passwords only as set or not. */
-function shown(field: FieldId, answers: Answers, answered: boolean): string {
-	if (!answered) return "not answered yet";
-	switch (field) {
-		case "root":
-			return answers.rootPassword === null ? "none (root can't log in)" : "set";
-		case "user":
-			return answers.user === null ? "none" : `${answers.user}, an administrator`;
-		default:
-			return answers[field] ?? "left as the system has it";
-	}
+/** A small count in words, a larger one in digits. */
+function countWord(count: number): string {
+	return COUNT_WORDS[count] ?? String(count);
 }
 
-/** What each question sets, in a line. */
-function about(field: FieldId, system: TargetInfo | null): string {
-	const tool = system?.admin.tool ?? "the admin tool";
-	switch (field) {
-		case "keymap":
-			return "Loaded on this console at once, so your passwords come out the same after the reboot.";
-		case "timezone":
-			return "The clock of the new system.";
-		case "locale":
-			return "The system's language and formats.";
-		case "hostname":
-			return "Its name on the prompt and on the network.";
-		case "root":
-			return `Leave it empty and root gets none: only your own user administers the system, with ${tool}.`;
-		case "user":
-			return `Your own account, an administrator (${tool}). Leave the name empty to create none.`;
-	}
+/** The name of the system as the machine card's corner shows it. */
+function systemName(session: Session): string | null {
+	return session.inspect.kind === "ok" ? session.inspect.value.target.os_name : null;
 }
 
-/** Each question as the page asks it; the pane's title already names the step. */
-const QUESTION: Record<FieldId, string> = {
-	keymap: "Which keyboard do you type on?",
-	timezone: "Where is this machine?",
-	locale: "Which language?",
-	hostname: "What is this machine called?",
-	root: "A password for root?",
-	user: "Who uses this machine?",
-};
+function MachineOf({ session, numbered }: { session: Session; numbered?: boolean }): ReactNode {
+	return (
+		<MachineCard
+			width={useContext(ContentWidth)}
+			answers={session.answers}
+			answered={session.answered}
+			system={systemName(session)}
+			numbered={numbered}
+		/>
+	);
+}
 
 export function OverviewPage({
 	session,
@@ -147,8 +131,8 @@ export function OverviewPage({
 	return (
 		<Box flexDirection="column">
 			<Heading
-				title="Configure the new system"
-				subtitle={`Install ${guideSteps("installation-config")}: ${STEP_INFO.setup.about} Nothing changes until you have reviewed the commands.`}
+				title="Make this machine yours"
+				subtitle="Six questions. Nothing changes until you have seen the commands."
 			/>
 			{stateError ? (
 				<Callout tone="warning" title="The install state file can't be read">
@@ -163,78 +147,16 @@ export function OverviewPage({
 					</UiText>
 				</Callout>
 			) : inspect.kind === "failed" ? (
-				<Box flexDirection="column">
-					<FailureCallout title={`${target.path} can't be configured`} failure={inspect.failure} />
-					<Hint>{keyFor(MAIN_KEYS, "go")} reads it again once that is fixed.</Hint>
-				</Box>
-			) : inspect.kind !== "ok" ? (
-				<UiText intent="warning">Reading the system at {target.path}…</UiText>
-			) : (
-				<Section title="System">
-					<Facts
-						rows={[
-							["System", inspect.value.target.os_name],
-							["Mounted at", inspect.value.target.root],
-							[
-								"Administrators",
-								`members of ${inspect.value.target.admin.group}, with ${inspect.value.target.admin.tool}`,
-							],
-						]}
-					/>
-				</Section>
+				<FailureCallout title={`${target.path} can't be configured`} failure={inspect.failure} />
+			) : inspect.kind !== "ok" ? null : (
+				<MachineOf session={session} />
 			)}
-			<Section title="What you choose">
-				<StepList
-					steps={[
-						...FIELDS.map((field) => ({
-							phase: "",
-							command: `${PAGES[field].title}: ${shown(field, session.answers, session.answered[field])}`,
-							status: STEP_OF[pageState(session, field)]!,
-						})),
-						{
-							phase: "",
-							command: "Review the commands, then apply them (recsetup)",
-							status: STEP_OF[pageState(session, "review")]!,
-						},
-					]}
-				/>
-			</Section>
-			{inspect.kind === "ok" ? (
-				<Hint>{keyFor(MAIN_KEYS, "go")} goes to the question the step is at.</Hint>
-			) : null}
 		</Box>
 	);
 }
 
-/** What is being typed, with a cursor; a password shows as dots. */
-function Entry({
-	label,
-	text,
-	secret,
-}: {
-	label: string;
-	text: string;
-	secret?: boolean;
-}): ReactNode {
-	const color = useIntentColor();
-	return (
-		<Text>
-			<Text color={color("dimText")}>{label} </Text>
-			<Text bold color={color("text")}>
-				{secret ? "•".repeat([...text].length) : text}
-			</Text>
-			<Text backgroundColor={color("accent")}> </Text>
-		</Text>
-	);
-}
-
-/** A list's widest, so a short list does not stretch across a wide pane. */
-const LIST_WIDTH = 40;
-/** The least a zone card needs beside the list. */
-const CARD_MIN_WIDTH = 26;
-const CARD_GAP = 2;
-
-/** One row: the name with what the search matched picked out, and for a zone its clock. */
+/** One row of a list: the name with what the search matched picked out, and for a zone
+ * its clock. */
 function PickRow({
 	name,
 	filter,
@@ -246,10 +168,10 @@ function PickRow({
 	filter: string;
 	selected: boolean;
 	width: number;
-	clock: ZoneClock | null;
+	clock: string | null;
 }): ReactNode {
 	const color = useIntentColor();
-	const detail = clock ? `${clock.time}  ${clock.offset} ` : "";
+	const detail = clock ? `${clock} ` : "";
 	const room = Math.max(1, width - 1 - textWidth(detail) - 1);
 	// A zone's underscores are spaces (New_York); a locale's are part of its name.
 	const label = truncateLine(clock ? name.replace(/_/g, " ") : name, room);
@@ -270,10 +192,10 @@ function PickRow({
 				{pad}
 				{clock ? (
 					<Text bold {...bar}>
-						{clock.time}
+						{clock}
 					</Text>
 				) : null}
-				{clock ? `  ${clock.offset} ` : ""}
+				{clock ? " " : ""}
 			</Text>
 		);
 	}
@@ -283,7 +205,7 @@ function PickRow({
 		(x, y) => x - y,
 	);
 	return (
-		<Text>
+		<Text color={color("text")}>
 			{" "}
 			{cuts.slice(0, -1).map((from, i) => {
 				const matched = match !== null && from >= match.start && from < match.end;
@@ -298,218 +220,334 @@ function PickRow({
 				);
 			})}
 			{pad}
-			{clock ? <Text color={color("info")}>{clock.time}</Text> : null}
-			{clock ? <Text color={color("navHeading")}>{`  ${clock.offset} `}</Text> : null}
+			{clock ? <Text color={color("info")}>{clock}</Text> : null}
+			{clock ? <Text color={color("text")}> </Text> : null}
 		</Text>
 	);
 }
 
-/** The selected zone: its name, where it is on the map with the zones the search found,
- * and its clock. */
-function ZoneCard({
-	zone,
-	found,
-	places,
-	now,
-	width,
-	mapRows,
+/**
+ * A question's two columns: what is asked at the left, a card at the right. With too
+ * little width for both the card goes under the left column (`stack`) or is left out.
+ */
+function Columns({
+	left,
+	card,
+	height,
+	stack,
 }: {
-	zone: string;
-	found: readonly string[];
-	places: ZonePlaces;
-	now: Date;
-	width: number;
-	mapRows: number;
+	left: (width: number) => ReactNode;
+	card: (width: number, height: number) => ReactNode;
+	height: number;
+	stack: boolean;
 }): ReactNode {
-	const color = useIntentColor();
-	const inner = Math.max(1, width - 4);
-	const place = places.get(zone) ?? null;
-	const clock = zoneClock(zone, now);
-	const { region, city } = zoneParts(zone);
-	const tag = clock?.abbreviation ? ` ${clock.abbreviation} ` : "";
-	const title = truncateLine(city, Math.max(1, inner - textWidth(tag) - 1));
-	const where = [place?.country, region.replace(/\/$/, "").replace(/_/g, " ")].filter(Boolean);
-	const map = worldMap(
-		inner,
-		mapRows,
-		place,
-		found.flatMap((name) => places.get(name) ?? []),
-	);
-	// Land stands clear of the card; the zones a search found and the pin stand clear of it.
-	const KIND = { sea: "navBorder", land: "dimText", lit: "accent", pin: "highlight" } as const;
-	const fact = (label: string, value: string, bold = false) => (
-		<Text>
-			<Text color={color("dimText")}>{label}</Text>
-			{" ".repeat(Math.max(1, inner - textWidth(label) - textWidth(value)))}
-			<Text bold={bold} color={color("text")}>
-				{value}
-			</Text>
-		</Text>
-	);
-	return (
-		<Box
-			flexDirection="column"
-			width={width}
-			flexShrink={0}
-			paddingX={2}
-			paddingY={1}
-			backgroundColor={color("panelBackground")}
-		>
-			<Text>
-				<Text bold color={color("text")}>
-					{title}
-				</Text>
-				{" ".repeat(Math.max(1, inner - textWidth(title) - textWidth(tag)))}
-				<Text bold color={color("selection")} backgroundColor={color("accent")}>
-					{tag}
-				</Text>
-			</Text>
-			<Text color={color("dimText")}>{truncateLine(where.join(", ") || " ", inner)}</Text>
-			<Box flexDirection="column" marginY={1}>
-				{map.map((line, row) => (
-					<Text key={row}>
-						{line.map((cell, column) => (
-							<Text
-								key={column}
-								bold={cell.kind === "pin" || cell.kind === "lit"}
-								color={color(KIND[cell.kind])}
-							>
-								{cell.text}
-							</Text>
-						))}
-					</Text>
-				))}
+	const width = useContext(ContentWidth);
+	const leftWidth = Math.min(LEFT_WIDTH, width);
+	const room = width - leftWidth - GAP;
+	if (room >= CARD_MIN) {
+		return (
+			<Box>
+				<Box flexDirection="column" width={leftWidth} flexShrink={0}>
+					{left(leftWidth)}
+				</Box>
+				<Box marginLeft={GAP} flexShrink={0}>
+					{card(Math.min(room, CARD_MAX), height)}
+				</Box>
 			</Box>
-			{clock ? fact("Local time", clock.time, true) : null}
-			{clock ? fact("From UTC", clock.offset) : null}
+		);
+	}
+	if (!stack) return <Box flexDirection="column">{left(width)}</Box>;
+	return (
+		<Box flexDirection="column">
+			{left(leftWidth)}
+			<Box marginTop={1}>{card(width, Math.max(9, height - 3))}</Box>
 		</Box>
 	);
 }
 
-const SEARCH_LABEL: Record<PickField, string> = {
-	keymap: "Search",
-	timezone: "Search",
-	locale: "Search",
-};
+/** What to say about the live console's layout, for the line under a field. */
+function consoleNote(session: Session): { text: string; intent: "info" | "warning" } | null {
+	const live = session.liveKeymap;
+	if (live.kind === "ok") return { text: `This console now types ${live.value}.`, intent: "info" };
+	if (live.kind === "failed")
+		return {
+			text: "This console keeps its own layout. The new system gets the one you chose.",
+			intent: "warning",
+		};
+	return null;
+}
 
-function PickList({
+function PickPage({
 	prompt,
-	all,
-	rows,
+	session,
+	height,
 	places,
+	families,
 }: {
 	prompt: Extract<Prompt, { kind: "pick" }>;
-	all: readonly string[];
-	rows: number;
+	session: Session;
+	height: number;
 	places: ZonePlaces;
+	families: KeymapFamilies;
 }): ReactNode {
-	const width = useContext(ContentWidth);
+	const choices = session.inspect.kind === "ok" ? session.inspect.value.choices : null;
+	const all = choices ? options(prompt.field, choices) : [];
 	const list = matching(all, prompt.filter);
+	const rows = Math.max(1, height - 2);
 	const { start, end } = listWindow(list.length, prompt.index, rows);
 	const zones = prompt.field === "timezone";
 	const now = new Date();
-	// Beside the zones, a card for the selected one when the pane has the room.
-	const card = zones && width >= LIST_WIDTH + CARD_GAP + CARD_MIN_WIDTH && list.length > 0;
-	const listWidth = card || width > LIST_WIDTH ? Math.min(LIST_WIDTH, width) : width;
-	const cardWidth = Math.min(40, width - listWidth - CARD_GAP);
-	const selected = list[prompt.index];
-	const below = list.length - end;
-	return (
-		<Box>
-			<Box flexDirection="column" width={listWidth} flexShrink={0}>
-				<SearchField
-					label={SEARCH_LABEL[prompt.field]}
-					text={prompt.filter}
-					trailing={`${list.length} of ${all.length}`}
-					width={listWidth}
-				/>
-				<Box flexDirection="column" marginTop={1}>
-					{list.length === 0 ? (
-						<UiText intent="warning">
-							Nothing matches. {keyFor(PICK_KEYS, "erase")} erases what you typed.
-						</UiText>
-					) : (
-						list
-							.slice(start, end)
-							.map((name, i) => (
-								<PickRow
-									key={name}
-									name={name}
-									filter={prompt.filter}
-									selected={start + i === prompt.index}
-									width={listWidth}
-									clock={zones ? zoneClock(name, now) : null}
-								/>
-							))
-					)}
-					{start > 0 || below > 0 ? (
-						<UiText intent="navHeading">
-							{" "}
-							{[start > 0 ? `${start} above` : null, below > 0 ? `${below} more below` : null]
-								.filter(Boolean)
-								.join(", ")}
-						</UiText>
-					) : null}
-				</Box>
+	const selected = list[prompt.index] ?? null;
+	const listColumn = (width: number) => (
+		<>
+			<SearchField
+				label="Search"
+				text={prompt.filter}
+				trailing={`${list.length} of ${all.length}`}
+				width={width}
+			/>
+			<Box flexDirection="column" marginTop={1}>
+				{list.length === 0 ? (
+					<UiText intent="warning"> Nothing matches.</UiText>
+				) : (
+					list
+						.slice(start, end)
+						.map((name, i) => (
+							<PickRow
+								key={name}
+								name={name}
+								filter={prompt.filter}
+								selected={start + i === prompt.index}
+								width={width}
+								clock={zones ? (zoneClock(name, now)?.time ?? null) : null}
+							/>
+						))
+				)}
 			</Box>
-			{card && selected ? (
-				<Box marginLeft={CARD_GAP}>
-					<ZoneCard
-						zone={selected}
-						found={prompt.filter.trim() ? list : []}
-						places={places}
-						now={now}
-						width={cardWidth}
-						mapRows={Math.max(4, Math.min(10, rows - 5))}
-					/>
-				</Box>
-			) : null}
-		</Box>
+		</>
+	);
+	const card = (width: number, cardHeight: number) => {
+		if (selected === null) return <EmptyCard width={width} height={cardHeight} />;
+		if (prompt.field === "keymap") {
+			const family = families(selected);
+			return (
+				<KeyboardCard
+					width={width}
+					height={cardHeight}
+					name={selected}
+					family={family}
+					rows={keyRows(family)}
+					trying={prompt.trying}
+				/>
+			);
+		}
+		if (zones)
+			return (
+				<ZoneCard
+					width={width}
+					height={cardHeight}
+					zone={selected}
+					found={prompt.filter.trim() ? list.flatMap((name) => places.get(name) ?? []) : []}
+					places={places}
+					now={now}
+				/>
+			);
+		return <LocaleOf name={selected} session={session} width={width} height={cardHeight} />;
+	};
+	return <Columns left={listColumn} card={card} height={height} stack={false} />;
+}
+
+function LocaleOf({
+	name,
+	session,
+	width,
+	height,
+}: {
+	name: string;
+	session: Session;
+	width: number;
+	height: number;
+}): ReactNode {
+	const formats = localeFormats(name, new Date(), session.answers.timezone);
+	return formats ? (
+		<LocaleCard width={width} height={height} formats={formats} />
+	) : (
+		<EmptyCard width={width} height={height} />
 	);
 }
 
-/** The live console's keymap, once the keyboard is chosen. */
-function LiveKeymap({ session }: { session: Session }): ReactNode {
-	const live = session.liveKeymap;
-	if (live.kind === "ok")
-		return (
-			<Callout tone="success" title={`This console now types ${live.value}`}>
-				<UiText>What you type from here on, the passwords too, uses this layout.</UiText>
-			</Callout>
-		);
-	if (live.kind === "failed")
-		return (
-			<Callout tone="warning" title="This console keeps its own layout">
-				<UiText>
-					The new system gets the layout you chose, but it could not be loaded here (
-					{live.failure.argv.join(" ")}: exit {live.failure.exitCode ?? "?"}). On a serial line or
-					over SSH the layout is your terminal's. Type the passwords with care: they are set as this
-					console sends them.
+/** The label each question's field wears. */
+const FIELD_LABEL: Record<FieldId, string> = {
+	keymap: "Keyboard",
+	timezone: "Time zone",
+	locale: "Language",
+	hostname: "Hostname",
+	root: "Password",
+	user: "User name",
+};
+
+/** Each question as the page asks it; the pane's title already names the step. */
+const QUESTION: Record<FieldId, { title: string; about: (tool: string) => string }> = {
+	keymap: {
+		title: "Which keyboard do you type on?",
+		about: () => "Tab tries it on this console before you choose.",
+	},
+	timezone: { title: "Where is this machine?", about: () => "The clock of the new system." },
+	locale: {
+		title: "Which language?",
+		about: () => "The system's language and how it writes dates and numbers.",
+	},
+	hostname: {
+		title: "What is this machine called?",
+		about: () => "Its name on the prompt and on the network.",
+	},
+	root: { title: "A password for root?", about: () => "The system's own administrator account." },
+	user: {
+		title: "Who uses this machine?",
+		about: () => "Your own account. Leave the name empty to create none.",
+	},
+};
+
+/** The card of a question that is not being asked: its answer, as it would look. */
+function AnswerCard({
+	field,
+	session,
+	system,
+	families,
+	places,
+	width,
+	height,
+}: {
+	field: FieldId;
+	session: Session;
+	system: TargetInfo;
+	families: KeymapFamilies;
+	places: ZonePlaces;
+	width: number;
+	height: number;
+}): ReactNode {
+	const { answers, answered } = session;
+	switch (field) {
+		case "keymap": {
+			if (!answered.keymap || !answers.keymap) return <EmptyCard width={width} height={height} />;
+			const family = families(answers.keymap);
+			return (
+				<KeyboardCard
+					width={width}
+					height={height}
+					name={answers.keymap}
+					family={family}
+					rows={keyRows(family)}
+					trying={null}
+				/>
+			);
+		}
+		case "timezone":
+			if (!answered.timezone || !answers.timezone)
+				return <EmptyCard width={width} height={height} />;
+			return (
+				<ZoneCard
+					width={width}
+					height={height}
+					zone={answers.timezone}
+					found={[]}
+					places={places}
+					now={new Date()}
+				/>
+			);
+		case "locale":
+			if (!answered.locale || !answers.locale) return <EmptyCard width={width} height={height} />;
+			return <LocaleOf name={answers.locale} session={session} width={width} height={height} />;
+		case "hostname":
+			return (
+				<HostnameCard
+					width={width}
+					height={height}
+					host={answers.hostname ?? ""}
+					user={answers.user}
+					refused={false}
+				/>
+			);
+		case "root":
+			return (
+				<PasswordCard
+					width={width}
+					height={height}
+					who="root"
+					name="root"
+					tool={system.admin.tool}
+				/>
+			);
+		case "user":
+			return (
+				<UserCard
+					width={width}
+					height={height}
+					name={answers.user ?? ""}
+					tool={system.admin.tool}
+					group={system.admin.group}
+					shell={system.default_shell}
+				/>
+			);
+	}
+}
+
+/** The reason a name was refused, under its field, and what to do about it. */
+function Refusal({
+	error,
+	width,
+}: {
+	error: { message: string; fix: string | null };
+	width: number;
+}): ReactNode {
+	const lines = [
+		...wrapWords(error.message, width),
+		...(error.fix ? wrapWords(`What to do: ${error.fix}`, width) : []),
+	];
+	return (
+		<Box flexDirection="column" marginTop={1}>
+			{lines.map((line, i) => (
+				<UiText key={i} intent="error">
+					{line}
 				</UiText>
-			</Callout>
-		);
-	return null;
+			))}
+		</Box>
+	);
 }
 
 export function FieldPage({
 	field,
 	session,
 	prompt,
-	listRows,
+	height,
 	places,
+	families,
 }: {
 	field: FieldId;
 	session: Session;
 	prompt: Prompt | null;
-	listRows: number;
+	height: number;
 	places: ZonePlaces;
+	families: KeymapFamilies;
 }): ReactNode {
-	const system = session.inspect.kind === "ok" ? session.inspect.value : null;
+	const system = session.inspect.kind === "ok" ? session.inspect.value.target : null;
+	const asking =
+		prompt !== null &&
+		((prompt.kind === "pick" && prompt.field === field) ||
+			(prompt.kind === "text" && prompt.field === field) ||
+			(prompt.kind === "password" && prompt.who === field));
+	const password = asking && prompt.kind === "password" ? prompt : null;
+	const title = password && password.who === "user" ? `A password for ${password.name}?` : null;
+	const about = QUESTION[field].about(system?.admin.tool ?? "the admin tool");
 	const heading = (
 		<Heading
 			step={FIELDS.indexOf(field) + 1}
-			title={QUESTION[field]}
-			subtitle={about(field, system?.target ?? null)}
+			title={title ?? QUESTION[field].title}
+			subtitle={
+				password && password.who === "user"
+					? `What ${password.name} logs in with, and ${system?.admin.tool ?? "the admin tool"} asks for.`
+					: about
+			}
 		/>
 	);
 	if (!system) {
@@ -521,140 +559,290 @@ export function FieldPage({
 		);
 	}
 	const answered = session.answered[field];
-	const asking =
-		prompt !== null &&
-		((prompt.kind === "pick" && prompt.field === field) ||
-			(prompt.kind === "text" && prompt.field === field) ||
-			(prompt.kind === "password" && prompt.who === field));
+	let body: ReactNode;
+	if (!asking) {
+		body = (
+			<Columns
+				height={height}
+				stack
+				left={(width) => {
+					const note = field === "keymap" ? consoleNote(session) : null;
+					return (
+						<>
+							<Field
+								label={FIELD_LABEL[field]}
+								text={
+									answered ? answerText(field, session.answers, true, true) : "not answered yet"
+								}
+								width={width}
+								cursor={false}
+							/>
+							{note ? (
+								<Box marginTop={1} flexDirection="column">
+									{wrapWords(note.text, width).map((line, i) => (
+										<UiText key={i} intent={note.intent}>
+											{line}
+										</UiText>
+									))}
+								</Box>
+							) : null}
+						</>
+					);
+				}}
+				card={(width, cardHeight) => (
+					<AnswerCard
+						field={field}
+						session={session}
+						system={system}
+						families={families}
+						places={places}
+						width={width}
+						height={cardHeight}
+					/>
+				)}
+			/>
+		);
+	} else if (prompt.kind === "pick") {
+		body = (
+			<PickPage
+				prompt={prompt}
+				session={session}
+				height={height}
+				places={places}
+				families={families}
+			/>
+		);
+	} else if (prompt.kind === "text") {
+		const typed = prompt.text.trim();
+		const hostname = prompt.field === "hostname";
+		body = (
+			<Columns
+				height={height}
+				stack
+				left={(width) => (
+					<>
+						<MarkedField
+							label={hostname ? "Hostname" : "User name"}
+							text={prompt.text}
+							width={width}
+							at={prompt.error?.at ?? null}
+						/>
+						{prompt.checking ? (
+							<Box marginTop={1}>
+								<UiText intent="warning">Asking recsetup…</UiText>
+							</Box>
+						) : null}
+						{prompt.error ? <Refusal error={prompt.error} width={width} /> : null}
+					</>
+				)}
+				card={(width, cardHeight) =>
+					hostname ? (
+						<HostnameCard
+							width={width}
+							height={cardHeight}
+							host={typed}
+							user={session.answers.user}
+							refused={prompt.error !== null}
+						/>
+					) : (
+						<UserCard
+							width={width}
+							height={cardHeight}
+							name={typed}
+							tool={system.admin.tool}
+							group={system.admin.group}
+							shell={system.default_shell}
+						/>
+					)
+				}
+			/>
+		);
+	} else if (prompt.kind === "password") {
+		const first = prompt.first === null;
+		const live = session.liveKeymap;
+		body = (
+			<Columns
+				height={height}
+				stack
+				left={(width) => (
+					<>
+						<Field
+							label="Password "
+							text={first ? prompt.text : (prompt.first ?? "")}
+							width={width}
+							secret
+							cursor={first}
+						/>
+						<StrengthLine
+							length={[...(first ? prompt.text : (prompt.first ?? ""))].length}
+							width={width}
+						/>
+						<Box marginTop={1} flexDirection="column">
+							<Field
+								label="Once more"
+								text={first ? "" : prompt.text}
+								width={width}
+								secret
+								cursor={!first}
+							/>
+						</Box>
+						<Box marginTop={1} flexDirection="column">
+							{prompt.error
+								? wrapWords(prompt.error, width).map((line, i) => (
+										<UiText key={i} intent="error">
+											{line}
+										</UiText>
+									))
+								: null}
+							{live.kind !== "idle" ? (
+								<UiText intent="faintText">
+									{live.kind === "ok"
+										? `Typed on the ${live.value} keyboard.`
+										: "Typed on this console's own layout."}
+								</UiText>
+							) : null}
+						</Box>
+					</>
+				)}
+				card={(width, cardHeight) => (
+					<PasswordCard
+						width={width}
+						height={cardHeight}
+						who={prompt.who}
+						name={prompt.name}
+						tool={system.admin.tool}
+					/>
+				)}
+			/>
+		);
+	}
 	return (
 		<Box flexDirection="column">
 			{heading}
-			{field === "timezone" && !system.target.has_zoneinfo ? (
+			{field === "timezone" && !system.has_zoneinfo ? (
 				<Callout tone="warning" title="Only UTC">
 					<UiText>The system has no time zone database, so UTC is the one zone it knows.</UiText>
 				</Callout>
 			) : null}
-			{!asking ? (
-				<Box flexDirection="column">
-					<Section title="Answer">
-						<Facts rows={[[PAGES[field].title, shown(field, session.answers, answered)]]} />
-					</Section>
-					{field === "keymap" ? <LiveKeymap session={session} /> : null}
-					<Hint>
-						{keyFor(MAIN_KEYS, "go")} {answered ? "changes it" : "answers it"}.
-					</Hint>
-				</Box>
-			) : prompt.kind === "pick" ? (
-				<PickList
-					prompt={prompt}
-					all={options(prompt.field, system.choices)}
-					rows={listRows}
-					places={places}
-				/>
-			) : prompt.kind === "text" ? (
-				<Section title={prompt.field === "hostname" ? "Name the machine" : "Name the user"}>
-					<Entry
-						label={prompt.field === "hostname" ? "Hostname:" : "User name:"}
-						text={prompt.text}
-					/>
-					{prompt.checking ? <UiText intent="warning">Asking recsetup…</UiText> : null}
-					{prompt.error ? (
-						<Box flexDirection="column" marginTop={1}>
-							<UiText intent="error">{prompt.error.message}</UiText>
-							{prompt.error.fix ? (
-								<UiText intent="warning">What to do: {prompt.error.fix}</UiText>
-							) : null}
-						</Box>
-					) : null}
-					<Box marginTop={1}>
-						<Hint>
-							{keyFor(TEXT_KEYS, "accept")} accepts
-							{prompt.field === "user" ? "; an empty name creates no user" : ""}.{" "}
-							{keyFor(TEXT_KEYS, "cancel")} leaves it as it was.
-						</Hint>
-					</Box>
-				</Section>
-			) : prompt.kind === "password" ? (
-				<Section title={`Password of ${prompt.name}`}>
-					<Entry
-						label={prompt.first === null ? "Password:" : "Once more:"}
-						text={prompt.text}
-						secret
-					/>
-					{prompt.error ? (
-						<Box marginTop={1}>
-							<UiText intent="error">{prompt.error}</UiText>
-						</Box>
-					) : null}
-					<Box marginTop={1}>
-						<Hint>
-							It shows as dots and is typed twice. {keyFor(TEXT_KEYS, "accept")} accepts
-							{prompt.who === "root" && prompt.first === null
-								? "; empty gives root no password"
-								: ""}
-							. {keyFor(TEXT_KEYS, "cancel")} leaves it as it was.
-						</Hint>
-					</Box>
-				</Section>
-			) : null}
+			{body}
 		</Box>
 	);
 }
 
-const RECORD_STATUS: Record<StepRecord["status"], StepStatus> = {
-	planned: "planned",
-	done: "ok",
+const RECORD_STATE: Record<StepRecord["status"], PathState> = {
+	planned: "waiting",
+	done: "done",
 	failed: "failed",
-	not_run: "planned",
+	not_run: "waiting",
 };
+
+/** The plan's commands as a sheet, every one with the state given for its step. */
+function PlanSheet({
+	steps,
+	state,
+	compact = false,
+}: {
+	steps: readonly { section: string; command: string }[];
+	state: (index: number) => PathState;
+	compact?: boolean;
+}): ReactNode {
+	const sheet: SheetStep[] = steps.map((step, i) => ({
+		phase: sectionName(step.section),
+		command: step.command,
+		state: state(i),
+	}));
+	return <CommandSheet steps={sheet} width={useContext(ContentWidth)} compact={compact} />;
+}
+
+export type ReviewView = "answers" | "commands";
 
 export function ReviewPage({
 	session,
 	prompt,
+	view,
 }: {
 	session: Session;
 	prompt: Prompt | null;
+	view: ReviewView;
 }): ReactNode {
 	const { answers, plan, apply, target } = session;
-	const heading = (
-		<Heading
-			title="Review and apply"
-			subtitle={`recsetup works the commands out from the system itself and runs them in order, stopping at the first that fails.${apply.kind === "idle" ? " Nothing has changed yet." : ""}`}
-		/>
+	const width = useContext(ContentWidth);
+	const heading = (subtitle: string) => (
+		<Heading step={FIELDS.length + 1} title="Is this right?" subtitle={subtitle} />
 	);
 	const waiting = waitsFor(session, "review");
 	if (waiting) {
 		return (
 			<Box flexDirection="column">
-				{heading}
+				{heading("Nothing has changed yet.")}
 				<Waiting session={session} page="review" />
 			</Box>
 		);
 	}
-	const records =
-		apply.kind === "ok" ? apply.value.steps : apply.kind === "failed" ? apply.result?.steps : null;
-	const failed = records?.find((record) => record.status === "failed") ?? null;
+	if (apply.kind === "failed") {
+		const records = apply.result?.steps ?? null;
+		const failedAt = records?.findIndex((record) => record.status === "failed") ?? -1;
+		const failed = failedAt >= 0 ? records![failedAt]! : null;
+		if (!records || !failed) {
+			return (
+				<Box flexDirection="column">
+					<Heading glyph="bang" tone="error" title="The configuration stopped" />
+					<FailureCallout title="recsetup could not finish" failure={apply.failure} />
+				</Box>
+			);
+		}
+		const text = failed.stderr?.trim() || apply.failure.error?.message || "";
+		const fix = apply.failure.error?.remediation;
+		return (
+			<Box flexDirection="column">
+				<Heading
+					glyph="bang"
+					tone="error"
+					title="The configuration stopped"
+					subtitle={`At command ${failedAt + 1} of ${records.length}.`}
+				/>
+				<PlanSheet steps={records} state={(i) => RECORD_STATE[records[i]!.status]} compact />
+				<Box flexDirection="column" marginTop={1}>
+					{text ? <UiText intent="error">{truncateLines(text, 4)}</UiText> : null}
+					{fix ? (
+						<UiText intent="warning">{wrapWords(`What to do: ${fix}`, width).join("\n")}</UiText>
+					) : null}
+					{failedAt > 0 ? (
+						<UiText intent="info">The {countWord(failedAt)} commands before it are done.</UiText>
+					) : null}
+				</Box>
+			</Box>
+		);
+	}
+	const planned = plan.kind === "ok" ? plan.value : null;
+	const insideTarget = planned?.steps.every((step) => step.command.startsWith("recchroot "));
+	const subtitle =
+		view === "commands" && planned
+			? `Nothing has changed yet. ${planned.steps.length} commands${insideTarget ? ", each inside the new system" : ""}.`
+			: apply.kind === "ok"
+				? "Every command ran."
+				: apply.kind === "running"
+					? `Applying to ${target?.path}.`
+					: "Nothing has changed yet.";
+	const asking = prompt?.kind === "apply";
 	return (
 		<Box flexDirection="column">
-			{heading}
-			{prompt?.kind === "apply" && plan.kind === "ok" ? (
+			{heading(subtitle)}
+			{asking ? (
 				<Callout
 					tone="warning"
-					title={`Apply these ${plan.value.steps.length} steps to ${target?.path}?`}
-				>
-					<UiText>
-						{keyFor(CONFIRM_KEYS, "yes")} runs them; {keyFor(CONFIRM_KEYS, "no")} goes back.
-					</UiText>
-				</Callout>
-			) : null}
-			<Section title="Your answers">
-				<Facts
-					rows={FIELDS.map((field): [string, ReactNode] => [
-						PAGES[field].title,
-						shown(field, answers, true),
-					])}
+					title={`Apply these ${countWord(FIELDS.length)} answers to ${target?.path}?`}
+					keys={[
+						[keyFor(CONFIRM_KEYS, "yes"), "apply"],
+						["n", "not yet"],
+					]}
 				/>
-			</Section>
+			) : null}
+			{planned?.warnings.map((warning) => (
+				<Callout key={warning} tone="warning" title="Check this first">
+					<UiText>{warning}</UiText>
+				</Callout>
+			))}
 			{!canLogIn(answers) ? (
 				<Callout tone="danger" title="Nobody could log in">
 					<UiText>
@@ -663,75 +851,26 @@ export function ReviewPage({
 					</UiText>
 				</Callout>
 			) : null}
-			{apply.kind === "ok" ? (
-				<Callout tone="success" title="Configured">
-					<UiText>Every step ran. {keyFor(MAIN_KEYS, "go")} goes on.</UiText>
-				</Callout>
-			) : apply.kind === "failed" ? (
-				<Box flexDirection="column">
-					<FailureCallout title="The configuration stopped" failure={apply.failure} />
-					{failed?.stderr?.trim() ? (
-						<Section title={`What "${failed.description}" printed`}>
-							<UiText>{truncateLines(failed.stderr.trim(), 6)}</UiText>
-						</Section>
-					) : null}
-				</Box>
-			) : null}
-			{apply.kind === "running" ? (
-				<UiText intent="warning">Applying the configuration to {target?.path}…</UiText>
-			) : null}
-			{records ? (
-				<Section title="Steps" trailing={`${records.length}`}>
-					<StepList
-						steps={records.map((record) => ({
-							phase: sectionName(record.section),
-							command: record.description,
-							status: RECORD_STATUS[record.status],
-						}))}
+			{plan.kind === "failed" ? (
+				<FailureCallout title="recsetup refuses these answers" failure={plan.failure} />
+			) : view === "commands" || apply.kind === "running" ? (
+				planned ? (
+					<PlanSheet
+						steps={planned.steps}
+						state={() => (apply.kind === "running" ? "running" : "waiting")}
 					/>
-				</Section>
-			) : plan.kind === "failed" ? (
-				<Box flexDirection="column">
-					<FailureCallout title="recsetup refuses these answers" failure={plan.failure} />
-					<Hint>Change the answer it names, then come back here.</Hint>
-				</Box>
-			) : plan.kind !== "ok" ? (
-				<UiText intent="warning">Working out the commands…</UiText>
+				) : (
+					<UiText intent="warning">Working out the commands…</UiText>
+				)
 			) : (
-				<Box flexDirection="column">
-					{plan.value.warnings.map((warning) => (
-						<Callout key={warning} tone="warning" title="Check this first">
-							<UiText>{warning}</UiText>
-						</Callout>
-					))}
-					<Section title="What will run" trailing={`${plan.value.steps.length} steps`}>
-						<StepList
-							steps={plan.value.steps.map((step) => ({
-								phase: sectionName(step.section),
-								command: step.description,
-								status: apply.kind === "running" ? "running" : "planned",
-							}))}
-						/>
-					</Section>
-					<Section title="The commands">
-						<Commands lines={plan.value.steps.map((step) => step.command)} />
-					</Section>
-				</Box>
+				<MachineOf session={session} numbered={!asking} />
 			)}
-			{apply.kind === "failed" ? (
-				<Hint>
-					Fix what it says (a shell is one key away in the install steps), then{" "}
-					{keyFor(MAIN_KEYS, "go")} applies again.
-				</Hint>
-			) : apply.kind === "idle" && plan.kind === "ok" && canLogIn(answers) ? (
-				<Hint>{keyFor(MAIN_KEYS, "go")} applies them; you confirm first.</Hint>
-			) : null}
 		</Box>
 	);
 }
 
-export function DonePage({ session, then }: { session: Session; then: Then }): ReactNode {
-	const { saved, apply, answers, target } = session;
+export function DonePage({ session }: { session: Session }): ReactNode {
+	const { saved, apply } = session;
 	if (!saved || apply.kind !== "ok") {
 		return (
 			<Box flexDirection="column">
@@ -742,37 +881,21 @@ export function DonePage({ session, then }: { session: Session; then: Then }): R
 	}
 	return (
 		<Box flexDirection="column">
-			<Heading title="Done" subtitle="The new system is configured." />
-			{saved.kind === "ok" ? (
-				<Callout tone="success" title="System configured">
-					<UiText>
-						Next: {STEP_INFO.boot.title.toLowerCase()}. {STEP_INFO.boot.about}{" "}
-						{then === "hub"
-							? `${keyFor(MAIN_KEYS, "go")} or ${keyFor(MAIN_KEYS, "quit")} goes back to the install steps.`
-							: `The install guide has it (${guideTitle("installation-boot")}).`}
-					</UiText>
-				</Callout>
-			) : (
+			<Heading
+				glyph="check"
+				tone="success"
+				title="This machine is yours"
+				subtitle="It knows its keyboard, clock, language and name, and who may log in."
+			/>
+			{saved.kind === "failed" ? (
 				<Callout tone="warning" title="The step isn't recorded">
 					<UiText>
 						The system is configured, but {saved.path} couldn't be updated: {saved.message}. The
 						install steps won't know this step is done.
 					</UiText>
 				</Callout>
-			)}
-			<Section title="What was set">
-				<Facts
-					rows={[
-						["System", target?.path ?? ""],
-						...FIELDS.map((field): [string, ReactNode] => [
-							PAGES[field].title,
-							shown(field, answers, true),
-						]),
-						["Steps run", `${apply.value.steps.length}`],
-						["Recorded in", saved.kind === "ok" ? saved.path : statePath()],
-					]}
-				/>
-			</Section>
+			) : null}
+			<MachineOf session={session} />
 		</Box>
 	);
 }

@@ -215,7 +215,19 @@ export function listWindow(
 	return { start, end: Math.min(count, start + size) };
 }
 
-/** The plan's section names, as the review page titles them. */
+/** The plan's section names as the commands' pages title them. */
+const SECTION_TITLES: Record<string, string> = {
+	timezone: "Time zone",
+	locale: "Language",
+	keymap: "Keyboard",
+	hostname: "Hostname",
+	users: "User",
+	passwords: "Passwords",
+};
+
 export function sectionName(section: string): string {
-	return section.replace(/_/g, " ");
+	const title = SECTION_TITLES[section];
+	if (title) return title;
+	const plain = section.replace(/_/g, " ");
+	return plain.charAt(0).toUpperCase() + plain.slice(1);
 }

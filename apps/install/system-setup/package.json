@@ -37,7 +37,7 @@
 			"stories": [
 				{
 					"name": "answer everything and apply",
-					"about": "The whole step on a target mounted by hand: each question in order (the lists narrowed by typing), the passwords typed twice, recsetup's commands reviewed, applied after a yes, and the step saved to the install state file.",
+					"about": "The whole step on a target mounted by hand: each question in order (the lists narrowed by typing), the passwords typed twice, the review turned over to recsetup's commands and back, applied after a yes, and the step saved to the install state file.",
 					"args": [
 						"--target",
 						"/mnt"
@@ -48,10 +48,10 @@
 					},
 					"steps": [
 						{
-							"expect": "members of wheel"
+							"expect": "Start with the keyboard"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "Search"
 						},
 						{
@@ -59,7 +59,7 @@
 							"expect": "de-latin1"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "24 of 24"
 						},
 						{
@@ -67,44 +67,52 @@
 							"expect": "Europe/Amsterdam"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "en_US.UTF-8"
 						},
 						{
-							"keys": "\\r",
-							"expect": "Hostname:"
+							"keys": "\r",
+							"expect": "levitateos login:"
 						},
 						{
-							"keys": "\\r",
-							"expect": "Password of root"
+							"keys": "\r",
+							"expect": "A password for root?"
 						},
 						{
-							"keys": "secret\\r",
-							"expect": "Once more:"
+							"keys": "secret\r",
+							"expect": "••••••"
 						},
 						{
-							"keys": "secret\\r",
-							"expect": "User name:"
+							"keys": "secret\r",
+							"expect": "Who uses this machine?"
 						},
 						{
-							"keys": "ann\\r",
-							"expect": "Password of ann"
+							"keys": "ann\r",
+							"expect": "A password for ann?"
 						},
 						{
-							"keys": "pw\\r",
-							"expect": "Once more:"
+							"keys": "pw\r",
+							"expect": "••"
 						},
 						{
-							"keys": "pw\\r",
-							"expect": "What will run"
+							"keys": "pw\r",
+							"expect": "Apply to /mnt"
 						},
 						{
-							"keys": "\\r",
-							"expect": "Apply these 6 steps to /mnt?"
+							"keys": " ",
+							"expect": "each inside the new system"
+						},
+						{
+							"keys": " ",
+							"expect": "1  Keyboard"
+						},
+						{
+							"keys": "\r",
+							"expect": "Apply these six answers to /mnt?"
 						},
 						{
 							"keys": "y",
-							"expect": "System configured"
+							"expect": "This machine is yours"
 						}
 					]
 				},
@@ -116,7 +124,7 @@
 					},
 					"steps": [
 						{
-							"expect": "members of wheel, with sudo"
+							"expect": "Start with the keyboard"
 						},
 						{
 							"keys": "",
@@ -126,7 +134,7 @@
 				},
 				{
 					"name": "a hostname recsetup refuses",
-					"about": "A name with an underscore: recsetup's own message and fix show under the entry, and the question stays open.",
+					"about": "A name with an underscore: the character is marked in the field, recsetup's own message and fix show under it, and the question stays open.",
 					"args": [
 						"--target",
 						"/mnt"
@@ -136,31 +144,75 @@
 					},
 					"steps": [
 						{
-							"expect": "members of wheel"
+							"expect": "Start with the keyboard"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "Search"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "24 of 24"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "en_US.UTF-8"
 						},
 						{
-							"keys": "\\r",
-							"expect": "Hostname:"
+							"keys": "\r",
+							"expect": "levitateos login:"
 						},
 						{
-							"keys": "_pc\\r",
-							"expect": "is not a valid hostname"
+							"keys": "_pc\r",
+							"expect": "is not a valid"
 						},
 						{
 							"keys": "",
-							"expect": "What to do: use letters, digits and hyphens"
+							"expect": "What to do: use letters"
+						}
+					]
+				},
+				{
+					"name": "a user name recsetup refuses",
+					"about": "A user name with a capital: recsetup refuses it, and the capital is the character marked in the field.",
+					"args": [
+						"--target",
+						"/mnt"
+					],
+					"env": {
+						"INSTALL_STATE": "/tmp/install-system-setup-story/state.json"
+					},
+					"steps": [
+						{
+							"expect": "Start with the keyboard"
+						},
+						{
+							"keys": "\r",
+							"expect": "Search"
+						},
+						{
+							"keys": "\r",
+							"expect": "24 of 24"
+						},
+						{
+							"keys": "\r",
+							"expect": "en_US.UTF-8"
+						},
+						{
+							"keys": "\r",
+							"expect": "levitateos login:"
+						},
+						{
+							"keys": "\r",
+							"expect": "A password for root?"
+						},
+						{
+							"keys": "\r",
+							"expect": "Who uses this machine?"
+						},
+						{
+							"keys": "Ann\r",
+							"expect": "is not a valid user"
 						}
 					]
 				},
@@ -176,34 +228,34 @@
 					},
 					"steps": [
 						{
-							"expect": "members of wheel"
+							"expect": "Start with the keyboard"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "Search"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "24 of 24"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "en_US.UTF-8"
 						},
 						{
-							"keys": "\\r",
-							"expect": "Hostname:"
+							"keys": "\r",
+							"expect": "levitateos login:"
 						},
 						{
-							"keys": "\\r",
-							"expect": "Password of root"
+							"keys": "\r",
+							"expect": "A password for root?"
 						},
 						{
-							"keys": "one\\r",
-							"expect": "Once more:"
+							"keys": "one\r",
+							"expect": "•••"
 						},
 						{
-							"keys": "two\\r",
+							"keys": "two\r",
 							"expect": "The two don't match"
 						}
 					]
@@ -220,38 +272,38 @@
 					},
 					"steps": [
 						{
-							"expect": "members of wheel"
+							"expect": "Start with the keyboard"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "Search"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "24 of 24"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "en_US.UTF-8"
 						},
 						{
-							"keys": "\\r",
-							"expect": "Hostname:"
+							"keys": "\r",
+							"expect": "levitateos login:"
 						},
 						{
-							"keys": "\\r",
-							"expect": "Password of root"
+							"keys": "\r",
+							"expect": "A password for root?"
 						},
 						{
-							"keys": "\\r",
-							"expect": "User name:"
+							"keys": "\r",
+							"expect": "Who uses this machine?"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "Nobody could log in"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "nobody could log in: set a root password"
 						}
 					]
@@ -269,10 +321,10 @@
 					},
 					"steps": [
 						{
-							"expect": "members of wheel"
+							"expect": "Start with the keyboard"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "Search"
 						},
 						{
@@ -280,7 +332,7 @@
 							"expect": "de-latin1"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "24 of 24"
 						},
 						{
@@ -288,40 +340,40 @@
 							"expect": "Europe/Amsterdam"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "en_US.UTF-8"
 						},
 						{
-							"keys": "\\r",
-							"expect": "Hostname:"
+							"keys": "\r",
+							"expect": "levitateos login:"
 						},
 						{
-							"keys": "\\r",
-							"expect": "Password of root"
+							"keys": "\r",
+							"expect": "A password for root?"
 						},
 						{
-							"keys": "secret\\r",
-							"expect": "Once more:"
+							"keys": "secret\r",
+							"expect": "••••••"
 						},
 						{
-							"keys": "secret\\r",
-							"expect": "User name:"
+							"keys": "secret\r",
+							"expect": "Who uses this machine?"
 						},
 						{
-							"keys": "ann\\r",
-							"expect": "Password of ann"
+							"keys": "ann\r",
+							"expect": "A password for ann?"
 						},
 						{
-							"keys": "pw\\r",
-							"expect": "Once more:"
+							"keys": "pw\r",
+							"expect": "••"
 						},
 						{
-							"keys": "pw\\r",
-							"expect": "What will run"
+							"keys": "pw\r",
+							"expect": "Apply to /mnt"
 						},
 						{
-							"keys": "\\r",
-							"expect": "Apply these 6 steps to /mnt?"
+							"keys": "\r",
+							"expect": "Apply these six answers to /mnt?"
 						},
 						{
 							"keys": "y",
@@ -346,23 +398,63 @@
 					},
 					"steps": [
 						{
-							"expect": "members of wheel"
+							"expect": "Start with the keyboard"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "Search"
 						},
 						{
-							"keys": "\\r",
+							"keys": "\r",
 							"expect": "24 of 24"
 						},
 						{
-							"keys": "\\e",
+							"keys": "\u001b",
 							"expect": "not answered yet"
 						},
 						{
 							"keys": "k",
 							"expect": "This console keeps its own layout"
+						}
+					]
+				},
+				{
+					"name": "try the layout",
+					"about": "The keyboard list on a target whose keymaps lie under their families: the selected layout's family and its keys, Tab to the line to try it on, typing there and not into the search, and Tab back. A new search picks a layout of another family.",
+					"args": [
+						"--target",
+						"fixtures/target"
+					],
+					"env": {
+						"INSTALL_STATE": "/tmp/install-system-setup-story/state.json"
+					},
+					"steps": [
+						{
+							"expect": "Start with the keyboard"
+						},
+						{
+							"keys": "\r",
+							"expect": "Search"
+						},
+						{
+							"keys": "de",
+							"expect": "QWERTZ"
+						},
+						{
+							"keys": "\t",
+							"expect": "try it"
+						},
+						{
+							"keys": "zy",
+							"expect": "zy"
+						},
+						{
+							"keys": "\t",
+							"expect": "de-latin1"
+						},
+						{
+							"keys": "fr",
+							"expect": "AZERTY"
 						}
 					]
 				},
@@ -416,7 +508,7 @@
 						},
 						{
 							"keys": "",
-							"expect": "members of wheel"
+							"expect": "Start with the keyboard"
 						}
 					]
 				}

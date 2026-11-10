@@ -16,11 +16,13 @@ import {
 	toPlan,
 	type Request,
 } from "../app/runner";
+import { readKeymapFamilies } from "../app/keymaps";
 import { readZonePlaces } from "../app/zones";
 import type { TargetInfo } from "../domain/recsetup";
 import {
 	allAnswered,
 	canLogIn,
+	FIELDS,
 	currentPage,
 	isField,
 	matching,
@@ -37,13 +39,16 @@ import {
 	type Target,
 } from "../domain/setup";
 
-/** Why recsetup refused a typed answer, and what it says to do. */
-export type Refusal = { message: string; fix: string | null };
+/** Why recsetup refused a typed answer, what it says to do, and which character of the
+ * answer it is (a character's index in the typed text; null when no single character is). */
+export type Refusal = { message: string; fix: string | null; at: number | null };
 
 /** The question being asked. */
 export type Prompt =
-	/** A list, narrowed by what is typed; `index` is into the narrowed list. */
-	| { kind: "pick"; field: PickField; filter: string; index: number }
+	/** A list, narrowed by what is typed; `index` is into the narrowed list. `trying` is
+	 * what has been typed on the keyboard line while the layout is tried; null while the
+	 * keys narrow the list. */
+	| { kind: "pick"; field: PickField; filter: string; index: number; trying: string | null }
 	/** A name; `checking` while recsetup is asked whether it will do. */
 	| {
 			kind: "text";
@@ -70,6 +75,30 @@ export type Setup = ReturnType<typeof useSetup>;
 /** The hostname offered before one is typed: the distro's default. */
 function defaultHostname(system: TargetInfo): string {
 	return distroByOsId(system.os_id)?.defaultHostname ?? system.os_id;
+}
+
+/**
+ * Which character of a refused name is the fault, asked of recsetup and not worked out
+ * here: the first character whose replacement by a letter makes recsetup take the name.
+ * Null when no one character does (several are wrong, or the name is too long).
+ */
+async function faultAt(
+	target: string,
+	field: "hostname" | "user",
+	text: string,
+): Promise<number | null> {
+	const chars = [...text];
+	if (chars.length > 64) return null;
+	const accepted = await Promise.all(
+		chars.map(async (char, i) => {
+			if (char === "a") return false;
+			const fixed = chars.map((c, j) => (j === i ? "a" : c)).join("");
+			const result = await runCommand(planCommand(target, { [field]: fixed }));
+			return result.exitCode === 0;
+		}),
+	);
+	const at = accepted.indexOf(true);
+	return at < 0 ? null : at;
 }
 
 export function useSetup(target: Target | null) {
@@ -119,13 +148,21 @@ export function useSetup(target: Target | null) {
 	// Where each zone is, for the map beside the time zone list.
 	const root = system?.target.root;
 	const places = useMemo(() => (root ? readZonePlaces(root) : new Map()), [root]);
+	// Which family each keymap belongs to, for the keys on the keyboard card.
+	const families = useMemo(() => (root ? readKeymapFamilies(root) : () => null), [root]);
 
 	/** Asks `field`'s question, starting from its answer in `from` when it has one. */
 	const open = (field: FieldId, from: Session = session) => {
 		if (!system) return;
 		if (field === "keymap" || field === "timezone" || field === "locale") {
 			const at = options(field, system.choices).indexOf(from.answers[field] ?? START_AT[field]);
-			return setPrompt({ kind: "pick", field, filter: "", index: Math.max(0, at) });
+			return setPrompt({
+				kind: "pick",
+				field,
+				filter: "",
+				index: Math.max(0, at),
+				trying: null,
+			});
 		}
 		if (field === "root")
 			return setPrompt({
@@ -177,30 +214,42 @@ export function useSetup(target: Target | null) {
 			plan: { kind: "idle" },
 			apply: { kind: "idle" },
 		}));
-		const after = PAGE_IDS[PAGE_IDS.indexOf(field) + 1]!;
+		// With everything answered (an answer changed from the review), back to the review.
+		const after = allAnswered(next) ? "review" : PAGE_IDS[PAGE_IDS.indexOf(field) + 1]!;
 		setPage(after);
 		if (isField(after) && !next.answered[after]) open(after, next);
 		else setPrompt(null);
 	};
 
 	/** Asks recsetup whether it would take `request` (one answer), by planning it. */
-	const check = (request: Request, accepted: () => void) =>
+	const check = (
+		request: Request,
+		field: "hostname" | "user",
+		text: string,
+		lead: number,
+		accepted: () => void,
+	) =>
 		target !== null &&
 		guard(async () => {
 			setPrompt((p) => (p?.kind === "text" ? { ...p, checking: true, error: null } : p));
 			const plan = toPlan(await runCommand(planCommand(target.path, request)));
 			if (plan.kind === "ok") return accepted();
 			const refused = plan.kind === "failed" ? plan.failure : null;
-			const error: Refusal = refused?.error
+			const message = refused?.error
 				? { message: refused.error.message, fix: refused.error.remediation ?? null }
 				: { message: refused?.output.split("\n")[0] || "recsetup refused it", fix: null };
+			const at = await faultAt(target.path, field, text);
+			const error: Refusal = { ...message, at: at === null ? null : at + lead };
 			setPrompt((p) => (p?.kind === "text" ? { ...p, checking: false, error } : p));
 		});
 
 	const type = (text: string) =>
 		setPrompt((p) => {
 			if (!p || p.kind === "apply") return p;
-			if (p.kind === "pick") return { ...p, filter: p.filter + text, index: 0 };
+			if (p.kind === "pick") {
+				if (p.trying !== null) return { ...p, trying: p.trying + text };
+				return { ...p, filter: p.filter + text, index: 0 };
+			}
 			if (p.kind === "text") return p.checking ? p : { ...p, text: p.text + text, error: null };
 			return { ...p, text: p.text + text, error: null };
 		});
@@ -208,7 +257,10 @@ export function useSetup(target: Target | null) {
 	const erase = () =>
 		setPrompt((p) => {
 			if (!p || p.kind === "apply") return p;
-			if (p.kind === "pick") return { ...p, filter: p.filter.slice(0, -1), index: 0 };
+			if (p.kind === "pick") {
+				if (p.trying !== null) return { ...p, trying: p.trying.slice(0, -1) };
+				return { ...p, filter: p.filter.slice(0, -1), index: 0 };
+			}
 			if (p.kind === "text" && p.checking) return p;
 			return { ...p, text: p.text.slice(0, -1) };
 		});
@@ -216,8 +268,32 @@ export function useSetup(target: Target | null) {
 	/** Moves the list's selection by `by` rows. */
 	const move = (by: number) => {
 		if (prompt?.kind !== "pick" || !system) return;
-		const count = matching(options(prompt.field, system.choices), prompt.filter).length;
-		setPrompt({ ...prompt, index: Math.max(0, Math.min(count - 1, prompt.index + by)) });
+		const list = matching(options(prompt.field, system.choices), prompt.filter);
+		const index = Math.max(0, Math.min(list.length - 1, prompt.index + by));
+		setPrompt({ ...prompt, index });
+		// While a layout is tried, the one under the selection is the one on the console.
+		const chosen = list[index];
+		if (prompt.trying !== null && chosen !== undefined && chosen !== list[prompt.index])
+			loadLive(chosen);
+	};
+
+	/** Tab on the keyboard list: moves to the line to try the layout on, loading the
+	 * selected layout on this console, and back to the list. */
+	const tryIt = () => {
+		if (prompt?.kind !== "pick" || prompt.field !== "keymap" || !system) return;
+		if (prompt.trying !== null) return setPrompt({ ...prompt, trying: null });
+		const chosen = matching(options("keymap", system.choices), prompt.filter)[prompt.index];
+		if (chosen === undefined) return;
+		loadLive(chosen);
+		setPrompt({ ...prompt, trying: "" });
+	};
+
+	/** Jumps to question `n` (1 to 6) and asks it. */
+	const jump = (n: number) => {
+		const field = FIELDS[n - 1];
+		if (!field || !system) return;
+		setPage(field);
+		open(field);
 	};
 
 	const accept = () => {
@@ -231,17 +307,21 @@ export function useSetup(target: Target | null) {
 		if (prompt.kind === "text") {
 			if (prompt.checking) return;
 			const text = prompt.text.trim();
+			// Where the trimmed text starts in what was typed.
+			const lead = prompt.text.length - prompt.text.trimStart().length;
 			if (prompt.field === "hostname") {
 				if (!text)
 					return setPrompt({
 						...prompt,
-						error: { message: "The machine needs a name.", fix: null },
+						error: { message: "The machine needs a name.", fix: null, at: null },
 					});
-				return void check({ hostname: text }, () => settle("hostname", { hostname: text }));
+				return void check({ hostname: text }, "hostname", text, lead, () =>
+					settle("hostname", { hostname: text }),
+				);
 			}
 			// No name: no user.
 			if (!text) return settle("user", { user: null, userPassword: null });
-			return void check({ user: text }, () =>
+			return void check({ user: text }, "user", text, lead, () =>
 				setPrompt({
 					kind: "password",
 					who: "user",
@@ -355,6 +435,9 @@ export function useSetup(target: Target | null) {
 		move,
 		accept,
 		cancel: () => setPrompt(null),
+		tryIt,
+		jump,
+		families,
 		fetchPlan,
 		beginApply,
 		confirmApply,
