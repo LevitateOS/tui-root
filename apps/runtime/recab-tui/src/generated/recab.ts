@@ -78,6 +78,14 @@ export type ChangeRecord = {
 	actor: string | null;
 };
 
+export type Conflict = {
+	id: string;
+	path: string;
+	path_hex: string;
+	kind: string;
+	resolution: string | null;
+};
+
 export type DownloadProgress = {
 	release: string;
 	verified_files: number;
@@ -132,6 +140,17 @@ export type LifecycleState =
 	| "on_trial"
 	| "trial_failed"
 	| "unusable";
+
+export type MergeStatus = {
+	preparation: string;
+	revision: number;
+	release: string;
+	phase: string;
+	conflicts: Array<Conflict>;
+	unresolved: number;
+	report: SyncReport | null;
+	failure: string | null;
+};
 
 export type OtherSystem = "copy" | "previous" | "next" | "unknown";
 
@@ -314,6 +333,7 @@ export type UpdateStatus = {
 	 * P08 selects/validates the release; filesystem merging is owned by P09.
 	 */
 	merge_complete: boolean;
+	merge: MergeStatus | null;
 };
 
 export type Verdict = "ready" | "no_change" | "refused";
