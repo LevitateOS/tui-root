@@ -1,0 +1,8 @@
+#!/bin/sh
+# Stand-in for loadkeys in headless runs: it changes no console's keymap.
+# LOADKEYS_FIXTURE=fails plays a console that can't take one (a serial line).
+if [ "$LOADKEYS_FIXTURE" = fails ]; then
+	echo "Couldn't get a file descriptor referring to the console." >&2
+	exit 1
+fi
+exit 0

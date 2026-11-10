@@ -94,11 +94,11 @@ export function HubScreen({
 		},
 		mark: () => {
 			const action = step.action;
-			if (action.kind !== "shell" || !action.record) {
+			if (action.kind !== "app" || !action.byHand) {
 				return setNotice(`${step.title} is marked done by doing it`);
 			}
 			if (step.status === "blocked") return setNotice("finish the steps before it first");
-			reload(record(action.record));
+			reload(record(action.byHand));
 			setSelected((i) => Math.min(steps.length - 1, i + 1));
 		},
 		shell: () => handOff(SHELL_ACTION),
@@ -197,17 +197,16 @@ function StepPage({ step, statePath }: { step: Step; statePath: string }): React
 			{action.kind === "app" ? (
 				<Section title={`${keyFor(HUB_KEYS, "start")} starts`}>
 					<Commands lines={[action.argv.join(" ")]} />
+					{action.byHand ? (
+						<UiText intent="dimText">
+							Typed the guide's commands in the shell instead? {keyFor(HUB_KEYS, "mark")} marks the
+							step done.
+						</UiText>
+					) : null}
 				</Section>
 			) : action.kind === "run" ? (
 				<Section title={`${keyFor(HUB_KEYS, "start")} runs`}>
 					<Commands lines={action.lines} />
-				</Section>
-			) : action.kind === "shell" ? (
-				<Section title={`In the shell (${keyFor(HUB_KEYS, "start")} opens it)`}>
-					<Commands lines={action.lines} />
-					<UiText intent="dimText">
-						Then press {keyFor(HUB_KEYS, "mark")} here to mark the step done.
-					</UiText>
 				</Section>
 			) : action.kind === "none" ? (
 				<UiText intent="dimText">{action.why}</UiText>

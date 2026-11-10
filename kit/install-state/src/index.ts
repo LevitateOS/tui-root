@@ -17,6 +17,7 @@ import {
 
 export type { DiskResult, RecordedStep as StepName, StepResults };
 export type BaseResult = StepResults["base"];
+export type SetupResult = StepResults["setup"];
 
 export const STATE_SCHEMA = 1;
 export const DEFAULT_STATE_PATH = "/run/install/state.json";
@@ -45,7 +46,7 @@ export function statePath(env: Record<string, string | undefined> = process.env)
 	return env[STATE_PATH_ENV]?.trim() || DEFAULT_STATE_PATH;
 }
 
-type Shape = "string" | "string?" | "number?" | "true" | "mode" | "mounts";
+type Shape = "string" | "string?" | "number?" | "true" | "boolean" | "mode" | "mounts";
 
 /** The fields each step's result must have. */
 const SHAPES: { [S in RecordedStep]: { [K in keyof StepResults[S]]-?: Shape } } = {
@@ -60,7 +61,7 @@ const SHAPES: { [S in RecordedStep]: { [K in keyof StepResults[S]]-?: Shape } } 
 		root_device: "string?",
 	},
 	base: { target: "string", rootfs: "string?", entries: "number?", fstab: "string" },
-	setup: { manual: "true" },
+	setup: { manual: "boolean", hostname: "string?", user: "string?" },
 	boot: { mode: "mode" },
 };
 
@@ -74,6 +75,8 @@ function fits(value: unknown, shape: Shape): boolean {
 			return value === null || (typeof value === "number" && Number.isFinite(value));
 		case "true":
 			return value === true;
+		case "boolean":
+			return typeof value === "boolean";
 		case "mode":
 			return value === "ab" || value === "mutable";
 		case "mounts":

@@ -41,7 +41,9 @@
 		"setup": {
 			"done_at": "2026-11-07T12:10:00.000Z",
 			"result": {
-				"manual": true
+				"manual": true,
+				"hostname": null,
+				"user": null
 			}
 		}
 	}

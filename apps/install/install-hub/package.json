@@ -157,7 +157,7 @@
 				},
 				{
 					"name": "acorn",
-					"about": "On AcornOS the launcher names it, and the steps are AcornOS's.",
+					"about": "On AcornOS the launcher names it; the configuration step opens system-setup, and says how to mark it done when it was typed by hand.",
 					"args": [
 						"--os-name",
 						"AcornOS",
@@ -175,7 +175,11 @@
 						},
 						{
 							"keys": "j",
-							"expect": "--hostname acornos"
+							"expect": "$ system-setup"
+						},
+						{
+							"keys": "",
+							"expect": "d marks the"
 						}
 					]
 				}

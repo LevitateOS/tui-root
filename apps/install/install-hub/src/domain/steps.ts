@@ -10,14 +10,15 @@ import type { InstallState, StepName, StepResults } from "@levitate/install-stat
 
 /** What doing a step means, for the hub. */
 export type Action =
-	/** Start the step's app; it records its own result. */
-	| { kind: "app"; argv: readonly string[]; label: string }
+	/** Start the step's app; it records its own result. `byHand` is what the hub records
+	 * instead when the user did the step in the shell and marks it done. */
+	| { kind: "app"; argv: readonly string[]; label: string; byHand?: Record_ }
 	/** Run the step's commands in the terminal; on success, record `step`. */
 	| { kind: "run"; lines: readonly string[]; label: string; record?: Record_ }
 	/** Record `step` now (nothing to run). */
 	| { kind: "record"; label: string; record: Record_ }
-	/** A shell with the step's commands to type; with `record`, the user marks the step done after. */
-	| { kind: "shell"; lines: readonly string[]; label: string; record?: Record_ }
+	/** A shell; the hub comes back when it exits. */
+	| { kind: "shell"; label: string }
 	/** Nothing to do yet, and why. */
 	| { kind: "none"; why: string };
 
@@ -40,14 +41,15 @@ export interface Step {
 	guide: GuideRef;
 }
 
-/** What the hub records for a step that its own action completes. */
+/** What the hub records for a step that its own action completes, or (setup) that the
+ * user did by hand. */
 function recordFor(id: InstallStepId, state: InstallState): Record_ | undefined {
 	const disk = state.steps.disk?.result;
 	switch (id) {
 		case "preflight":
 			return { step: "preflight", result: { uefi: true, media: true } };
 		case "setup":
-			return { step: "setup", result: { manual: true } };
+			return { step: "setup", result: { manual: true, hostname: null, user: null } };
 		case "boot":
 			return disk ? { step: "boot", result: { mode: disk.mode } } : undefined;
 		default:
@@ -67,8 +69,19 @@ function summary(id: InstallStepId, state: InstallState): string | undefined {
 			return base.result.entries === null
 				? `copied to ${base.result.target}`
 				: `${formatCount(base.result.entries)} files copied to ${base.result.target}, fstab written`;
-		case "setup":
-			return state.steps.setup ? "marked done" : undefined;
+		case "setup": {
+			const setup = state.steps.setup?.result;
+			if (!setup) return undefined;
+			if (setup.manual) return "marked done";
+			return (
+				[
+					setup.hostname ? `hostname ${setup.hostname}` : null,
+					setup.user ? `user ${setup.user}` : null,
+				]
+					.filter(Boolean)
+					.join(", ") || "configured"
+			);
+		}
 		case "boot":
 			return boot ? `boot entries written (${MODE_NAME[boot.result.mode]})` : undefined;
 		default:
@@ -121,6 +134,7 @@ export function installSteps(
 							// The app ends by sending the user back here, not to a shell.
 							argv: [...run.argv, "--then", "hub"],
 							label: `open ${run.argv[0]}`,
+							byHand: record,
 						},
 					};
 				case "commands":
@@ -132,11 +146,6 @@ export function installSteps(
 							lines: run.lines,
 							record,
 						},
-					};
-				case "type":
-					return {
-						...base,
-						action: { kind: "shell", label: "open a shell for these", lines: run.lines, record },
 					};
 				case "unavailable":
 					return { ...base, action: { kind: "none", why: run.why } };

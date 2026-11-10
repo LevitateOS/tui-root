@@ -41,7 +41,7 @@ runApp({
 		},
 	],
 	notes: [
-		`Each step either starts its app (disk-plan), runs the install guide's commands in this terminal, or opens a shell with them; the hub comes back when that ends. What each step did is kept in the install state file (${STATE_PATH_ENV}, default ${DEFAULT_STATE_PATH}), which the step apps read.`,
+		`Each step either starts its app (disk-plan, base-system, system-setup) or runs the install guide's commands in this terminal; the hub comes back when that ends. What each step did is kept in the install state file (${STATE_PATH_ENV}, default ${DEFAULT_STATE_PATH}), which the step apps read.`,
 	],
 	keys: [{ title: "Keys", keymap: HUB_KEYS }],
 	run: (args, carried) => {

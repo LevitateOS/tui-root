@@ -1,0 +1,404 @@
+{
+	"name": "@levitate/system-setup",
+	"version": "0.1.0",
+	"private": true,
+	"description": "configure the new system with recsetup: keyboard, time zone, language, hostname, root password and a user, reviewed before anything is applied",
+	"license": "(MIT OR Apache-2.0)",
+	"bin": {
+		"system-setup": "./src/main.tsx"
+	},
+	"type": "module",
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"lint": "oxlint --config ../../../../.oxlintrc.json src --deny-warnings",
+		"format": "oxfmt --config ../../../../.oxfmtrc.json --write src package.json tsconfig.json",
+		"format:check": "oxfmt --config ../../../../.oxfmtrc.json --check src package.json tsconfig.json"
+	},
+	"dependencies": {
+		"@levitate/docs-content": "workspace:*",
+		"@levitate/install-state": "workspace:*",
+		"@levitate/tui-kit": "workspace:*",
+		"ink": "^6.8.0",
+		"react": "^19.2.0"
+	},
+	"devDependencies": {
+		"@types/bun": "^1.2.17",
+		"@types/react": "^19.2.0",
+		"typescript": "^5.9.2"
+	},
+	"levitate": {
+		"tools": [
+			"recsetup"
+		],
+		"inspect": {
+			"path": [
+				"fixtures"
+			],
+			"stories": [
+				{
+					"name": "answer everything and apply",
+					"about": "The whole step on a target mounted by hand: each question in order (the lists narrowed by typing), the passwords typed twice, recsetup's commands reviewed, applied after a yes, and the step saved to the install state file.",
+					"args": [
+						"--target",
+						"/mnt"
+					],
+					"env": {
+						"INSTALL_STATE": "/tmp/install-system-setup-story/state.json"
+					},
+					"steps": [
+						{
+							"expect": "LevitateOS"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Type to narrow the list"
+						},
+						{
+							"keys": "de",
+							"expect": "de-latin1"
+						},
+						{
+							"keys": "\\r",
+							"expect": "12 of 12"
+						},
+						{
+							"keys": "ams",
+							"expect": "Europe/Amsterdam"
+						},
+						{
+							"keys": "\\r",
+							"expect": "en_US.UTF-8"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Hostname:"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Password of root"
+						},
+						{
+							"keys": "secret\\r",
+							"expect": "Once more:"
+						},
+						{
+							"keys": "secret\\r",
+							"expect": "User name:"
+						},
+						{
+							"keys": "ann\\r",
+							"expect": "Password of ann"
+						},
+						{
+							"keys": "pw\\r",
+							"expect": "Once more:"
+						},
+						{
+							"keys": "pw\\r",
+							"expect": "What will run"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Apply these 6 steps to /mnt?"
+						},
+						{
+							"keys": "y",
+							"expect": "System configured"
+						}
+					]
+				},
+				{
+					"name": "from the base step",
+					"about": "After base-system: the target comes from the install state file's disk step, so no --target is needed.",
+					"env": {
+						"INSTALL_STATE": "fixtures/state-base-done.json"
+					},
+					"steps": [
+						{
+							"expect": "members of wheel, with sudo"
+						},
+						{
+							"keys": "",
+							"expect": "/mnt"
+						}
+					]
+				},
+				{
+					"name": "a hostname recsetup refuses",
+					"about": "A name with an underscore: recsetup's own message and fix show under the entry, and the question stays open.",
+					"args": [
+						"--target",
+						"/mnt"
+					],
+					"env": {
+						"INSTALL_STATE": "/tmp/install-system-setup-story/state.json"
+					},
+					"steps": [
+						{
+							"expect": "LevitateOS"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Type to narrow the list"
+						},
+						{
+							"keys": "\\r",
+							"expect": "12 of 12"
+						},
+						{
+							"keys": "\\r",
+							"expect": "en_US.UTF-8"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Hostname:"
+						},
+						{
+							"keys": "_pc\\r",
+							"expect": "is not a valid hostname"
+						},
+						{
+							"keys": "",
+							"expect": "What to do: use letters, digits and hyphens"
+						}
+					]
+				},
+				{
+					"name": "passwords that differ",
+					"about": "The second entry of root's password differs from the first: it says so and asks for both again.",
+					"args": [
+						"--target",
+						"/mnt"
+					],
+					"env": {
+						"INSTALL_STATE": "/tmp/install-system-setup-story/state.json"
+					},
+					"steps": [
+						{
+							"expect": "LevitateOS"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Type to narrow the list"
+						},
+						{
+							"keys": "\\r",
+							"expect": "12 of 12"
+						},
+						{
+							"keys": "\\r",
+							"expect": "en_US.UTF-8"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Hostname:"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Password of root"
+						},
+						{
+							"keys": "one\\r",
+							"expect": "Once more:"
+						},
+						{
+							"keys": "two\\r",
+							"expect": "The two don't match"
+						}
+					]
+				},
+				{
+					"name": "nobody could log in",
+					"about": "No password for root and no user: the review page refuses to apply and says what to set.",
+					"args": [
+						"--target",
+						"/mnt"
+					],
+					"env": {
+						"INSTALL_STATE": "/tmp/install-system-setup-story/state.json"
+					},
+					"steps": [
+						{
+							"expect": "LevitateOS"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Type to narrow the list"
+						},
+						{
+							"keys": "\\r",
+							"expect": "12 of 12"
+						},
+						{
+							"keys": "\\r",
+							"expect": "en_US.UTF-8"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Hostname:"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Password of root"
+						},
+						{
+							"keys": "\\r",
+							"expect": "User name:"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Nobody could log in"
+						},
+						{
+							"keys": "\\r",
+							"expect": "nobody could log in: set a root password"
+						}
+					]
+				},
+				{
+					"name": "apply fails",
+					"about": "A step fails part-way (the user can't be created): which step, what it printed, recsetup's error, and the steps that did not run.",
+					"args": [
+						"--target",
+						"/mnt"
+					],
+					"env": {
+						"INSTALL_STATE": "/tmp/install-system-setup-story/state.json",
+						"RECSETUP_FIXTURE": "apply-fails"
+					},
+					"steps": [
+						{
+							"expect": "LevitateOS"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Type to narrow the list"
+						},
+						{
+							"keys": "de",
+							"expect": "de-latin1"
+						},
+						{
+							"keys": "\\r",
+							"expect": "12 of 12"
+						},
+						{
+							"keys": "ams",
+							"expect": "Europe/Amsterdam"
+						},
+						{
+							"keys": "\\r",
+							"expect": "en_US.UTF-8"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Hostname:"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Password of root"
+						},
+						{
+							"keys": "secret\\r",
+							"expect": "Once more:"
+						},
+						{
+							"keys": "secret\\r",
+							"expect": "User name:"
+						},
+						{
+							"keys": "ann\\r",
+							"expect": "Password of ann"
+						},
+						{
+							"keys": "pw\\r",
+							"expect": "Once more:"
+						},
+						{
+							"keys": "pw\\r",
+							"expect": "What will run"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Apply these 6 steps to /mnt?"
+						},
+						{
+							"keys": "y",
+							"expect": "The configuration stopped"
+						},
+						{
+							"keys": "",
+							"expect": "cannot lock /etc/passwd"
+						}
+					]
+				},
+				{
+					"name": "console keeps its layout",
+					"about": "loadkeys fails (a serial line): the keyboard page says the new system gets the layout but this console does not.",
+					"args": [
+						"--target",
+						"/mnt"
+					],
+					"env": {
+						"INSTALL_STATE": "/tmp/install-system-setup-story/state.json",
+						"LOADKEYS_FIXTURE": "fails"
+					},
+					"steps": [
+						{
+							"expect": "LevitateOS"
+						},
+						{
+							"keys": "\\r",
+							"expect": "Type to narrow the list"
+						},
+						{
+							"keys": "\\r",
+							"expect": "12 of 12"
+						},
+						{
+							"keys": "\\e",
+							"expect": "not answered yet"
+						},
+						{
+							"keys": "k",
+							"expect": "This console keeps its own layout"
+						}
+					]
+				},
+				{
+					"name": "no system at the target",
+					"about": "The target holds no system (the base step has not run): recsetup's error and fix, and nothing is asked.",
+					"args": [
+						"--target",
+						"/mnt"
+					],
+					"env": {
+						"INSTALL_STATE": "/tmp/install-system-setup-story/state.json",
+						"RECSETUP_FIXTURE": "no-system"
+					},
+					"steps": [
+						{
+							"expect": "can't be configured"
+						},
+						{
+							"keys": "",
+							"expect": "What to do: extract a system"
+						}
+					]
+				},
+				{
+					"name": "no target",
+					"about": "Started before the disk step and without --target: the overview says where the target comes from, and nothing runs.",
+					"env": {
+						"INSTALL_STATE": "/tmp/install-system-setup-story/none.json"
+					},
+					"steps": [
+						{
+							"expect": "No system to configure yet"
+						}
+					]
+				}
+			]
+		}
+	}
+}

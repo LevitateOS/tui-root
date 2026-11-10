@@ -19,6 +19,9 @@ export type CommandOptions = {
 	/** Called with each line of stdout as it arrives (without the newline); the whole
 	 * stdout is still in the result. */
 	onLine?: (line: string) => void;
+	/** Text for the program's stdin, which is then closed; without it stdin is empty.
+	 * For what must not be an argument, such as passwords. */
+	stdin?: string;
 };
 
 /** Reads `stream` to the end, handing each complete line to `onLine`. */
@@ -56,7 +59,11 @@ export function startCommand(
 		durationMs: Date.now() - startedAt,
 	});
 	try {
-		const proc = Bun.spawn([...argv], { stdin: "ignore", stdout: "pipe", stderr: "pipe" });
+		const proc = Bun.spawn([...argv], {
+			stdin: options.stdin === undefined ? "ignore" : Buffer.from(options.stdin),
+			stdout: "pipe",
+			stderr: "pipe",
+		});
 		const { onLine } = options;
 		const result = Promise.all([
 			onLine ? readLines(proc.stdout, onLine) : new Response(proc.stdout).text(),

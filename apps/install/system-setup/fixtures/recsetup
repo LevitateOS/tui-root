@@ -1,0 +1,102 @@
+#!/bin/sh
+# Stand-in for recsetup in headless runs: it reads no target and changes nothing. It
+# prints what `recsetup inspect|plan|apply --root ROOT ... --json` prints for a LevitateOS
+# system at ROOT; RECSETUP_FIXTURE selects:
+#   no-system    inspect fails: ROOT holds no system built by the builder (E029)
+#   apply-fails  apply stops at the user step (E022); the steps after it are not run
+# plan and apply refuse a hostname with `_` and a user name with a capital, as recsetup
+# does (E030). Keep the JSON in the shape of recsetup's documents (src/domain/recsetup.ts).
+cmd=$1
+[ $# -gt 0 ] && shift
+root=/mnt tz= locale= keymap= hostname= user= rootpw= stdin=
+while [ $# -gt 0 ]; do
+	case "$1" in
+	--root) root=$2 && shift 2 ;;
+	--timezone) tz=$2 && shift 2 ;;
+	--locale) locale=$2 && shift 2 ;;
+	--keymap) keymap=$2 && shift 2 ;;
+	--hostname) hostname=$2 && shift 2 ;;
+	--user) user=$2 && shift 2 ;;
+	--root-password) rootpw=1 && shift ;;
+	--passwords-stdin) stdin=1 && shift ;;
+	--json) shift ;;
+	*)
+		echo "fixture recsetup: unsupported: $1" >&2
+		exit 2
+		;;
+	esac
+done
+fail() { # code number message remediation
+	printf '{\n  "schema_version": 1,\n  "code": "%s",\n  "message": "%s",\n  "remediation": "%s"\n}\n' "$1" "$3" "$4" >&2
+	exit "$2"
+}
+target="{\"root\":\"$root\",\"os_id\":\"levitateos\",\"os_name\":\"LevitateOS\",\"profile\":{\"packages\":\"rpm\",\"init\":\"systemd\",\"libc\":\"glibc\",\"privilege\":\"sudo\",\"desktop\":\"plasma\",\"kernel_line\":\"latest\"},\"admin\":{\"group\":\"wheel\",\"tool\":\"sudo\",\"rule_file\":\"/etc/sudoers.d/10-wheel\",\"rule_present\":true},\"has_zoneinfo\":true,\"default_shell\":\"/bin/bash\",\"boot_is_mountpoint\":true}"
+
+if [ "$cmd" = inspect ]; then
+	[ "$RECSETUP_FIXTURE" = no-system ] &&
+		fail E029 29 "'$root': no etc/os-release or usr/lib/os-release" "extract a system built by the current builder (its /etc/os-release carries the REC_* fields), and point --root at its top directory"
+	zones=
+	for zone in Africa/Cairo America/New_York America/Sao_Paulo Asia/Kolkata Asia/Tokyo Australia/Sydney Europe/Amsterdam Europe/Berlin Europe/Brussels Europe/London Europe/Paris UTC; do
+		zones="$zones${zones:+,}{\"name\":\"$zone\",\"region\":\"${zone%%/*}\"}"
+	done
+	zones=$(printf '%s' "$zones" | sed 's/"region":"UTC"/"region":""/')
+	locales=
+	for locale in cs_CZ de_CH de_DE en_GB en_US es_ES fi_FI fr_FR it_IT nb_NO nl_NL pt_BR pt_PT ru_RU sr_RS sv_SE; do
+		locales="$locales${locales:+,}{\"name\":\"$locale.UTF-8\"}"
+	done
+	keymaps=
+	for map in be-latin1 br-abnt2 cz de de-latin1 dvorak es fi fr fr-latin9 it jp106 nl no pl pt-latin1 ru se-latin1 sg uk us us-acentos; do
+		keymaps="$keymaps${keymaps:+,}\"$map\""
+	done
+	echo "{\"schema_version\":1,\"target\":$target,\"choices\":{\"timezones\":[$zones],\"locales\":[$locales],\"keymaps\":[$keymaps],\"shells\":[\"/bin/bash\",\"/bin/sh\"],\"groups\":[\"root\",\"wheel\"],\"users\":[\"root\"],\"services\":[]}}"
+	exit 0
+fi
+
+case "$cmd" in plan | apply) ;; *)
+	echo "fixture recsetup: unsupported command: $cmd" >&2
+	exit 2
+	;;
+esac
+case "$hostname" in *_* | -*) fail E030 30 "'$hostname' is not a valid hostname" "use letters, digits and hyphens (not first or last), at most 64 characters, such as my-pc" ;; esac
+case "$user" in *[!a-z0-9_-]* | [0-9-]*) fail E030 30 "'$user' is not a valid user name" "start with a lowercase letter or _, then lowercase letters, digits, _ or -, at most 32 characters" ;; esac
+
+status=planned
+[ "$cmd" = apply ] && status=done
+steps= index=0 failed=
+step() { # section description command
+	state=$status
+	if [ "$cmd" = apply ] && [ -n "$failed" ]; then
+		state=not_run
+	elif [ "$cmd" = apply ] && [ "$RECSETUP_FIXTURE" = apply-fails ] && [ "$1" = users ]; then
+		state=failed failed=1
+	fi
+	extra=
+	[ "$cmd" = apply ] && extra=",\"status\":\"$state\""
+	[ "$state" = done ] && extra="$extra,\"exit_status\":0,\"stdout\":\"\",\"stderr\":\"\""
+	[ "$state" = failed ] && extra="$extra,\"exit_status\":9,\"stdout\":\"\",\"stderr\":\"useradd: cannot lock /etc/passwd; try again later.\\n\""
+	steps="$steps${steps:+,}{\"index\":$index,\"section\":\"$1\",\"description\":\"$2\",\"command\":\"$3\"$extra}"
+	index=$((index + 1))
+}
+setup=/usr/libexec/recipe-system-setup
+[ -n "$tz" ] && step timezone "Set the time zone to $tz" "recchroot $root -- $setup timezone $tz"
+[ -n "$locale" ] && step locale "Set the system locale to $locale" "recchroot $root -- $setup locale $locale"
+[ -n "$keymap" ] && step keymap "Set the console keymap to $keymap" "recchroot $root -- $setup keymap $keymap"
+[ -n "$hostname" ] && step hostname "Set the hostname and hosts mapping to $hostname" "recchroot $root -- $setup hostname $hostname"
+[ -n "$user" ] && step users "Create user $user" "recchroot $root -- $setup user $user /bin/bash wheel"
+who=
+[ -n "$rootpw" ] && who=root
+[ -n "$user" ] && who="$who${who:+, }$user"
+[ -n "$who" ] && step passwords "Set the password of $who (read from stdin)" "recchroot $root -- chpasswd"
+names=$(printf '%s' "$who" | sed 's/, /","/g')
+[ -n "$names" ] && names="\"$names\""
+
+if [ "$cmd" = plan ]; then
+	echo "{\"schema_version\":1,\"target\":$target,\"request\":{},\"steps\":[$steps],\"warnings\":[],\"password_users\":[$names]}"
+	exit 0
+fi
+[ -n "$stdin" ] && cat >/dev/null
+if [ -n "$failed" ]; then
+	echo "{\"schema_version\":1,\"dry_run\":false,\"target\":$target,\"steps\":[$steps],\"warnings\":[],\"error\":{\"schema_version\":1,\"code\":\"E022\",\"message\":\"'Create user $user' failed with exit status 9\"}}"
+	fail E022 22 "'Create user $user' failed with exit status 9" "fix what the step's output says, then apply again"
+fi
+echo "{\"schema_version\":1,\"dry_run\":false,\"target\":$target,\"steps\":[$steps],\"warnings\":[],\"error\":null}"

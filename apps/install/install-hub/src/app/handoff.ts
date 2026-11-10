@@ -54,18 +54,7 @@ export function runAction(action: Action, live: Live): string | null {
 				: `${action.argv[0]} ended: ${describeTerminalRun(run)}`;
 		}
 		case "shell": {
-			say(
-				action.lines.length > 0
-					? [
-							"The install steps wait while you work in this shell. Commands for this step:",
-							"",
-							...action.lines.map((line) => `  ${line}`),
-							"",
-							"Type exit to go back.",
-							"",
-						]
-					: ["The install steps wait while you work in this shell. Type exit to go back.", ""],
-			);
+			say(["The install steps wait while you work in this shell. Type exit to go back.", ""]);
 			const run = runInTerminal([live.shell, "-l"]);
 			return run.kind === "not-started" ? `couldn't open ${live.shell}: ${run.error}` : null;
 		}
@@ -89,4 +78,4 @@ export function runAction(action: Action, live: Live): string | null {
 }
 
 /** Leaves the hub for a shell and comes back. */
-export const SHELL_ACTION: Action = { kind: "shell", label: "shell", lines: [] };
+export const SHELL_ACTION: Action = { kind: "shell", label: "shell" };
