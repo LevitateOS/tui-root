@@ -60,6 +60,40 @@ export type ChangeProgress = {
 	projection_bytes_written: number;
 };
 
+export type ChangeRecord = {
+	id: string;
+	/**
+	 * `install`, `update`, `remove` or `edit`.
+	 */
+	action: string;
+	/**
+	 * The recipe's package, or the edited path.
+	 */
+	package: string;
+	unix_time: number;
+	/**
+	 * Who asked for it, as the caller named itself (`--actor`): a label for
+	 * the person reading, not an authenticated identity.
+	 */
+	actor: string | null;
+};
+
+export type DownloadProgress = {
+	release: string;
+	verified_files: number;
+	total_files: number;
+	verified_bytes: number;
+	total_bytes: number;
+	reused_files: number;
+	producer_write_bytes: number;
+	producer_cancelled_write_bytes: number;
+	downloaded: boolean;
+	/**
+	 * False when a previous failed producer may have written unreported bytes.
+	 */
+	accounting_complete: boolean;
+};
+
 export type Finalization = {
 	generation: Generation;
 	seal: BootSeal;
@@ -77,6 +111,29 @@ export type Generation = {
 	kernel_digest: string;
 	initrd_digest: string | null;
 };
+
+export type Lifecycle = {
+	state: LifecycleState;
+	other: OtherSystem;
+	/**
+	 * A recab command holds the run lock right now. `None` when this reader
+	 * may not open the lock file.
+	 */
+	working: boolean | null;
+};
+
+export type LifecycleState =
+	| "stable"
+	| "open"
+	| "working"
+	| "interrupted"
+	| "ready"
+	| "restart_set"
+	| "on_trial"
+	| "trial_failed"
+	| "unusable";
+
+export type OtherSystem = "copy" | "previous" | "next" | "unknown";
 
 export type Preparation = {
 	id: string;
@@ -96,6 +153,10 @@ export type Preparation = {
 	finalization: Finalization | null;
 	change: ChangeProgress | null;
 	last_change: ChangeProgress | null;
+	/**
+	 * Every change finished in this preparation, oldest first.
+	 */
+	changes: Array<ChangeRecord>;
 };
 
 export type PreparationPhase =
@@ -108,6 +169,14 @@ export type PreparationPhase =
 	| "interrupted";
 
 export type Readiness = "empty" | "incomplete" | "ready" | "committed";
+
+export type ReleaseSummary = {
+	id: string;
+	sequence: number;
+	version: string;
+	channel: string;
+	total_bytes: number;
+};
 
 export type Slot = "A" | "B";
 
@@ -147,6 +216,7 @@ export type SlotView = {
 };
 
 export type Status = {
+	updates: UpdateStatus | null;
 	schema_version: number;
 	active_slot: Slot;
 	inactive_slot: Slot;
@@ -187,6 +257,10 @@ export type Status = {
 	 */
 	actions: Array<ActionView>;
 	preparation: Preparation | null;
+	/**
+	 * The same facts as one state a person can be told; see [`Lifecycle`].
+	 */
+	lifecycle: Lifecycle;
 	recovery_reason: string | null;
 };
 
@@ -226,6 +300,20 @@ export type TrialRecord = {
 	 */
 	detail: string;
 	unix_time: number;
+};
+
+export type UpdateStatus = {
+	phase: string;
+	highest_index: number;
+	available: ReleaseSummary | null;
+	download: DownloadProgress | null;
+	pending_release: string | null;
+	pending_preparation: string | null;
+	last_error: string | null;
+	/**
+	 * P08 selects/validates the release; filesystem merging is owned by P09.
+	 */
+	merge_complete: boolean;
 };
 
 export type Verdict = "ready" | "no_change" | "refused";
