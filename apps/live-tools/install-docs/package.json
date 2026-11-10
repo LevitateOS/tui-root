@@ -26,6 +26,7 @@
 	},
 	"levitate": {
 		"inspect": {
+			"path": [],
 			"pages": {
 				"list": [
 					"--pages"
@@ -33,7 +34,7 @@
 				"arg": "--slug"
 			},
 			"mask": [
-				"page \\d+/\\d+"
+				"page \\d+ of \\d+"
 			],
 			"stories": [
 				{
@@ -45,7 +46,8 @@
 					],
 					"steps": [
 						{
-							"keys": "\\t"
+							"keys": "\\t",
+							"expect": "Requirements"
 						}
 					]
 				},
@@ -64,6 +66,23 @@
 						{
 							"keys": "h",
 							"expect": "Get the LevitateOS live ISO"
+						}
+					]
+				},
+				{
+					"name": "second pane",
+					"about": "As the install screen's second pane (--pane) the band is flat: no brand colour, no distro name.",
+					"args": [
+						"--os-name",
+						"LevitateOS",
+						"--pane",
+						"--slug",
+						"installation-base"
+					],
+					"steps": [
+						{
+							"keys": "j",
+							"expect": "Verify Installation Media"
 						}
 					]
 				},
@@ -93,7 +112,7 @@
 					"steps": [
 						{
 							"keys": "j",
-							"expect": "Disk Preparation  lines 2-"
+							"expect": "Secure Boot: AcornOS's boot files are unsigned."
 						}
 					]
 				},
@@ -108,8 +127,8 @@
 					],
 					"steps": [
 						{
-							"keys": "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
-							"expect": "│ 5 │UUID=ABCD-1234  /boot   vfat    relatime,fmask=0022,dmask=0022"
+							"keys": "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+							"expect": "UUID=ABCD-1234  /boot   vfat"
 						}
 					]
 				},
@@ -125,11 +144,11 @@
 					"steps": [
 						{
 							"keys": "\\tjj",
-							"expect": "▸ ls /sys/firmware/efi/efivars (c to copy)"
+							"expect": "$ ls /sys/firmware/efi/efivars (c to copy)"
 						},
 						{
 							"keys": "j",
-							"expect": "▸ loadkeys us (c to copy)"
+							"expect": "$ loadkeys us (c to copy)"
 						}
 					]
 				}

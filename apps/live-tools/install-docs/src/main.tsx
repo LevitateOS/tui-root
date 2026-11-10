@@ -18,6 +18,10 @@ runApp({
 			choices: DISTROS.map((d) => d.osName),
 			help: "the distro whose docs to show, as the install screen's launcher names it",
 		},
+		{
+			name: "pane",
+			help: "draw as the second pane of the install screen: a flat band, no distro name",
+		},
 		{ name: "pages", help: "print every page slug, one per line, and exit" },
 	],
 	keys: [
@@ -25,7 +29,11 @@ runApp({
 		{ title: "Keys (page list focused)", keymap: NAV_KEYS },
 		{ title: "Keys (content focused)", keymap: CONTENT_KEYS },
 	],
-	theme: (args) => createInstallDocsTheme(DISTROS.find((d) => d.osName === args["os-name"])),
+	theme: (args) =>
+		createInstallDocsTheme(
+			DISTROS.find((d) => d.osName === args["os-name"]),
+			args.pane === true,
+		),
 	run: (args) => {
 		const distro = DISTROS.find((d) => d.osName === args["os-name"]);
 		if (!distro) throw new UsageError("--os-name names the distro whose docs to show");
@@ -39,6 +47,6 @@ runApp({
 		if (index < 0) {
 			throw new UsageError(`no page '${slug}' (--pages lists them)`);
 		}
-		return <InstallViewerScreen docs={docs} title={`${distro.osName} docs`} initialIndex={index} />;
+		return <InstallViewerScreen docs={docs} initialIndex={index} />;
 	},
 });

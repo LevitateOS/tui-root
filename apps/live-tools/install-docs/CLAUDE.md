@@ -4,7 +4,7 @@
 
 Terminal viewer for the docs in `@levitate/docs-content`. The launcher names the distro (`--os-name`) and the first page (`--slug`); the app holds no distro tables and reads nothing from the running system.
 
-- `src/main.tsx`: flags, page check, startup.
+- `src/main.tsx`: flags (`--slug`, `--os-name`, `--pages`, `--pane`), page check, startup.
 - `src/docs.ts`: one distro's pages (docs-content's shared pages and that distro's own), in nav order; links and section jumps.
 - `src/layout/`: a page laid out as styled lines with link/command anchors.
 - `src/presentation/ink/`: the viewer screen, sidebar, status bar, keys and theme.

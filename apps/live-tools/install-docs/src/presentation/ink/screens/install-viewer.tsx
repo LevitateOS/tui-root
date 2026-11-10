@@ -2,29 +2,28 @@ import { Box, useApp, useStdout } from "ink";
 import { useMemo, useState } from "react";
 import {
 	AppShell,
+	Heading,
+	HEADING_ROWS,
 	RichTextLine,
-	truncateLine,
 	useFocusPlane,
 	useKeymap,
 	useScrollState,
+	useTuiViewport,
 	fitFooter,
 	movesBack,
 	useShellLayout,
-	type NavListMode,
 	type RichTextRun,
 } from "@levitate/tui-kit";
 import { CONTENT_KEYS, NAV_KEYS, VIEWER_KEYS } from "../keymap";
 import type { Docs } from "../../../docs";
 import { layoutPage, type Line } from "../../../layout/page";
-import { InstallSidebar } from "../components/sidebar";
+import { InstallSidebar, type SidebarMode } from "../components/sidebar";
 import { installStatusSegments } from "../components/status-bar";
 import { useInstallNavigation } from "../hooks/use-install-navigation";
 
 type InstallViewerScreenProps = {
 	/** The docs of the distro the launcher named. */
 	docs: Docs;
-	/** Title of the page list. */
-	title: string;
 	initialIndex: number;
 };
 
@@ -35,20 +34,30 @@ function drawn(line: Line, selected: number | undefined): RichTextRun[] {
 	);
 }
 
-export function InstallViewerScreen({ docs, title, initialIndex }: InstallViewerScreenProps) {
+export function InstallViewerScreen({ docs, initialIndex }: InstallViewerScreenProps) {
 	const { exit } = useApp();
 	const back = (key: string) => movesBack([...NAV_KEYS, ...CONTENT_KEYS], key);
-	const shell = useShellLayout();
+	const { columns: terminalColumns } = useTuiViewport();
+	const shell = useShellLayout({
+		navWidth: terminalColumns < 90 ? 26 : 30,
+		navFlush: true,
+		steps: true,
+		action: true,
+	});
 	const navigation = useInstallNavigation(docs, initialIndex);
 	const { write } = useStdout();
 	// When only one pane fits (the install screen's docs pane), start on the page itself.
 	const focus = useFocusPlane({ initial: shell.narrow ? "content" : "navigation" });
-	const [sidebarMode, setSidebarMode] = useState<NavListMode>("focus-section");
+	const [sidebarMode, setSidebarMode] = useState<SidebarMode>("focus-section");
 	const [actionIndex, setActionIndex] = useState(0);
 	const [runtimeNote, setRuntimeNote] = useState<string | undefined>(undefined);
 
 	const currentItem = docs.pages[navigation.safeIndex]!;
 	const columns = shell.content.textColumns;
+	// The first section is the install guide: its pages are numbered steps and tick as you pass.
+	const section = docs.pages.filter((page) => page.sectionTitle === currentItem.sectionTitle);
+	const position = section.findIndex((page) => page.slug === currentItem.slug);
+	const isGuide = currentItem.sectionTitle === docs.pages[0]!.sectionTitle;
 	const content = docs.content(currentItem.slug);
 	const page = useMemo(() => layoutPage(content, columns), [content, columns]);
 	const actions = page.anchors;
@@ -60,11 +69,15 @@ export function InstallViewerScreen({ docs, title, initialIndex }: InstallViewer
 			pageCount: docs.pages.length,
 			focus: focus.plane,
 			action: actions.length > 0 ? `${actionIndex + 1}/${actions.length}` : undefined,
-			note: runtimeNote,
 		}),
 	);
 	const rows = layout.content.textRows;
-	const scroll = useScrollState(page.lines.length - rows);
+	// A page that fits only without its heading still scrolls once, to show its last lines.
+	const furthest =
+		page.lines.length > rows - HEADING_ROWS ? Math.max(1, page.lines.length - rows) : 0;
+	const scroll = useScrollState(furthest);
+	// The heading shows at the top of the page and goes with the first scroll.
+	const headingRows = scroll.offset === 0 ? HEADING_ROWS : 0;
 	const selectedAnchor = focus.isContent && actions.length > 0 ? actionIndex : undefined;
 
 	const showPage = (move: () => void) => {
@@ -75,8 +88,9 @@ export function InstallViewerScreen({ docs, title, initialIndex }: InstallViewer
 	};
 	const reveal = (index: number) => {
 		const line = actions[index]?.line ?? 0;
+		const room = scroll.offset === 0 ? rows - HEADING_ROWS : rows;
 		if (line < scroll.offset) scroll.scrollTo(line);
-		else if (line >= scroll.offset + rows) scroll.scrollTo(line - rows + 1);
+		else if (line >= scroll.offset + room) scroll.scrollTo(Math.max(1, line - rows + 1));
 	};
 	const moveAction = (delta: number) => {
 		if (actions.length === 0) {
@@ -147,30 +161,48 @@ export function InstallViewerScreen({ docs, title, initialIndex }: InstallViewer
 		{ active: focus.isContent },
 	);
 
-	const visible = page.lines.slice(scroll.offset, scroll.offset + rows);
-	const shown =
-		page.lines.length === 0 ? "0-0" : `${scroll.offset + 1}-${scroll.offset + visible.length}`;
+	const firstLine = scroll.offset;
+	const visible = page.lines.slice(firstLine, firstLine + rows - headingRows);
+	const selected = actions[actionIndex];
+	const action =
+		runtimeNote !== undefined
+			? { note: runtimeNote, intent: "warning" as const }
+			: focus.isContent && selected?.kind === "link"
+				? { label: `Open ${selected.label}`, key: "Enter" }
+				: undefined;
+	const navColumns = (layout.nav ?? layout.content).textColumns;
 	return (
 		<AppShell
 			layout={layout}
 			focus={focus.plane}
-			navTitle={title}
+			navTitle="Guide"
 			nav={
 				<InstallSidebar
 					items={docs.pages}
 					selectedIndex={navigation.safeIndex}
-					maxWidth={(layout.nav ?? layout.content).textColumns}
+					width={navColumns}
+					rows={(layout.nav ?? layout.content).textRows}
 					mode={sidebarMode}
 				/>
 			}
-			contentTitle={truncateLine(
-				`${currentItem.title}  lines ${shown}/${Math.max(page.lines.length, 1)}`,
-				columns,
-			)}
+			contentTitle={currentItem.title}
+			progress={{
+				total: section.length,
+				done: isGuide ? position : 0,
+				current: position,
+			}}
+			action={action}
 			content={
 				<Box flexDirection="column" height={rows} overflowY="hidden">
+					{headingRows > 0 ? (
+						<Heading
+							title={currentItem.title}
+							subtitle={`${currentItem.sectionTitle}, page ${position + 1} of ${section.length}`}
+							glyph={isGuide ? position + 1 : undefined}
+						/>
+					) : null}
 					{visible.map((line, i) => (
-						<RichTextLine key={scroll.offset + i} runs={drawn(line, selectedAnchor)} />
+						<RichTextLine key={firstLine + i} runs={drawn(line, selectedAnchor)} />
 					))}
 				</Box>
 			}

@@ -2,14 +2,14 @@
 
 Where to change how install-docs looks.
 
-- Colours, glyphs and markers: `src/presentation/ink/theme/index.ts`. Each intent is one
-  `#rrggbb` (or `"inherit"` for the terminal's own colour); admonition colours are
-  `NOTE_COLORS` there. Every colour goes through the kit's `resolveColor`, so chalk adapts it
-  to the terminal (256 or 16 colours) and `NO_COLOR` turns all of it off. No component holds a
-  colour literal.
+- Colours: the kit's theme intents (text, info, dimText, faintText, highlight, accent,
+  panelBackground, selection); this app names no literal colour except the syntax colours
+  a code block's content carries. The brand's colours and the flat band of `--pane`:
+  `src/presentation/ink/theme/index.ts`, which also holds the pane widths.
 - How each content block becomes lines (text, code, command, table, list, conversation,
   interactive, qa, note): `layoutBlock` in `src/layout/page.ts`, one case per block kind.
-- Shell syntax colouring in code and command lines: `src/layout/syntax-markup.ts`.
+- The reading measure (`MEASURE`), the command block and the numbered titles: `src/layout/page.ts`.
+- Syntax colouring in code blocks: `src/layout/syntax-markup.ts`.
 - The page list: `src/presentation/ink/components/sidebar.tsx`.
 - The status line: `src/presentation/ink/components/status-bar.tsx`.
 - The frame (panes, titles, scrolling): the kit's `AppShell`, used by

@@ -5,20 +5,12 @@ import {
 	appendRun,
 	runsText,
 	textWidth,
-	truncateLine,
 	wrapRuns,
 	type ColorIntent,
 	type RichTextRun,
 	type ThemeColor,
 } from "@levitate/tui-kit";
 import { parseSyntaxTokenLine } from "./syntax-markup";
-import {
-	COMMAND_COLORS,
-	DOCS_GLYPHS,
-	MARKERS,
-	NOTE_COLORS,
-	NOTE_GLYPHS,
-} from "../presentation/ink/theme/index";
 
 /**
  * A styled run of a laid-out page. `anchor` ties it to an action (a link or a
@@ -35,9 +27,18 @@ export type Anchor =
 /** A page laid out for one width: what is drawn, counted and scrolled. */
 export type PageLayout = { lines: Line[]; anchors: Anchor[] };
 
+/** The reading measure: the widest a line of the page runs, however wide the pane is. */
+export const MEASURE = 56;
 /** A column wider than this wraps its cells instead. */
 const MAX_TABLE_COLUMN = 32;
 const LIST_INDENT = 2;
+/** Columns between the cells of a table. */
+const TABLE_GAP = 2;
+/** The prompt's column and the command's, inside a command block. */
+const PROMPT_COLUMN = 2;
+const COMMAND_COLUMN = 4;
+/** The surface of command and code blocks. */
+const BLOCK = "panelBackground" as const;
 
 class Page {
 	lines: Line[] = [];
@@ -173,49 +174,50 @@ function codeRuns(
 	);
 }
 
+/** How a selected command or link is drawn: the selection bar. */
+const SELECTED_BAR = {
+	intent: "selection",
+	color: undefined,
+	backgroundIntent: "selectionBackground",
+	background: undefined,
+	bold: true,
+} as const satisfies Partial<Run>;
+
+/**
+ * A command as a block of the darker surface behind a prompt. While selected, every row
+ * is the selection bar, and the space after the last row says how to copy it (the line's
+ * width never changes, so nothing reflows).
+ */
 function commandLines(
 	page: Page,
-	lines: readonly Run[][],
+	lines: readonly string[],
 	width: number,
 	indent: number,
 	anchor?: number,
 ): void {
-	const prompt = COMMAND_COLORS.prompt;
-	const background = COMMAND_COLORS.background;
-	// While selected, every row of the command is highlighted, and the space after its last
-	// row says how to copy it (the line's width never changes, so nothing reflows).
-	const highlight: Partial<Run> = {
-		intent: "linkActive",
-		color: undefined,
-		backgroundIntent: "linkActiveBackground",
-		background: undefined,
-	};
 	const mark = (run: Run): Run =>
-		anchor === undefined ? run : { ...run, anchor, selected: { ...highlight, ...run.selected } };
+		anchor === undefined ? run : { ...run, anchor, selected: { ...SELECTED_BAR, ...run.selected } };
 	const rows: Line[] = [];
-	lines.forEach((runs, i) => {
-		const lead: Run =
-			i === 0 && anchor !== undefined
-				? {
-						text: "$ ",
-						color: prompt,
-						background,
-						bold: true,
-						selected: { text: `${MARKERS.selected} ` },
-					}
-				: { text: i === 0 ? "$ " : "  ", color: prompt, background, bold: true };
+	lines.forEach((text) => {
 		hardWrap(
-			runs.map((run) => ({ ...run, background, bold: true })),
-			Math.max(1, width - 2),
+			expandTabs([{ text, intent: "highlight", backgroundIntent: BLOCK }]),
+			Math.max(1, width - COMMAND_COLUMN - 1),
 		).forEach((row, j) => {
-			const head = j === 0 ? lead : { text: "  ", color: prompt, background };
-			rows.push([head, ...(row as Line)].map(mark));
+			const head: Run[] =
+				j === 0 && rows.length === 0
+					? [
+							{ text: " ".repeat(PROMPT_COLUMN), backgroundIntent: BLOCK },
+							{ text: "$", intent: "accent", backgroundIntent: BLOCK, bold: true },
+							{ text: " ".repeat(COMMAND_COLUMN - PROMPT_COLUMN - 1), backgroundIntent: BLOCK },
+						]
+					: [{ text: " ".repeat(COMMAND_COLUMN), backgroundIntent: BLOCK }];
+			rows.push([...head, ...(row as Line)].map(mark));
 		});
 	});
 	rows.forEach((row, r) => {
 		const free = width - textWidth(runsText(row));
 		const hint = r === rows.length - 1 ? copyHint(free) : "";
-		const fill: Run = { text: " ".repeat(Math.max(0, free)), background };
+		const fill: Run = { text: " ".repeat(Math.max(0, free)), backgroundIntent: BLOCK };
 		const padded =
 			free > 0
 				? [
@@ -235,21 +237,21 @@ function copyHint(free: number): string {
 	return [` (${key} to copy)`, ` (${key})`].find((hint) => hint.length <= free) ?? "";
 }
 
+/** Data in columns: a quiet bold header, rows in the text colour, no lines between. */
 function table(
 	page: Page,
 	block: Extract<ContentBlock, { type: "table" }>,
 	width: number,
 	indent: number,
 ): void {
-	const separator = ` ${DOCS_GLYPHS.v} `;
 	const header = block.headers.map((cell) =>
-		inline(page, cell, "heading").map((run) => ({ ...run, bold: true })),
+		inline(page, cell, "faintText").map((run) => ({ ...run, bold: true })),
 	);
 	// The monospace column (commands, paths) reads as code, as on the website.
 	const rows = block.rows.map((row) =>
 		row.map((cell, c) =>
 			c === block.monospaceCol
-				? inline(page, cell, "text").map((run) => ({ ...run, intent: "code" as const }))
+				? inline(page, cell, "text").map((run) => ({ ...run, intent: "highlight" as const }))
 				: inline(page, cell, "text"),
 		),
 	);
@@ -261,121 +263,77 @@ function table(
 			Math.max(1, ...[header, ...rows].map((row) => textWidth(runsText(row[c] ?? [])))),
 		),
 	);
-	const room = Math.max(columns, width - separator.length * (columns - 1));
+	const room = Math.max(columns, width - TABLE_GAP * (columns - 1));
 	const total = natural.reduce((a, b) => a + b, 0);
 	const widths =
 		total <= room ? natural : natural.map((w) => Math.max(1, Math.floor((w * room) / total)));
-	const background = "panelBackground" as const;
 	const emit = (cells: Run[][]) => {
 		const wrapped = widths.map((w, c) => wrapRuns(cells[c] ?? [], w) as Line[]);
 		const height = Math.max(...wrapped.map((lines) => lines.length));
 		for (let r = 0; r < height; r += 1) {
 			const line: Line = [];
 			widths.forEach((w, c) => {
-				if (c > 0) line.push({ text: separator, intent: "dimText", backgroundIntent: background });
-				line.push(...padTo(wrapped[c]![r] ?? [], w, { backgroundIntent: background }));
+				if (c > 0) line.push({ text: " ".repeat(TABLE_GAP) });
+				line.push(...padTo(wrapped[c]![r] ?? [], w));
 			});
 			page.push(line, indent);
 		}
 	};
 	emit(header);
-	const { h, x } = DOCS_GLYPHS;
-	const divider = widths.map((w) => h.repeat(w)).join(`${h}${x}${h}`);
-	page.push([{ text: divider, intent: "dimText", backgroundIntent: background }], indent);
 	rows.forEach(emit);
 }
 
+/** Code as a block of the darker surface: its language and file, then numbered lines. */
 function code(
 	page: Page,
 	block: Extract<ContentBlock, { type: "code" }>,
 	width: number,
 	indent: number,
 ): void {
-	const g = DOCS_GLYPHS;
-	const inner = Math.max(1, width - 2);
+	const background = { backgroundIntent: BLOCK } as const;
 	const source = block.content.split("\n");
 	const digits = Math.max(2, String(source.length).length);
-	const gutter = digits + 2;
-	const codeWidth = Math.max(1, inner - gutter);
-	const border = { intent: "panelBorder" } as const;
-	const label = truncateLine(
-		[block.language.toUpperCase(), block.filename].filter(Boolean).join(" • "),
-		Math.max(1, inner - 2),
-	);
-	page.push(
-		[
-			{ ...border, text: g.tl },
-			{ text: ` ${label} `, intent: "accent", bold: true },
-			{ ...border, text: g.h.repeat(Math.max(0, inner - textWidth(label) - 2)) },
-			{ ...border, text: g.tr },
-		],
-		indent,
-	);
+	const gutter = digits + 3;
+	const codeWidth = Math.max(1, width - gutter - 1);
+	const label = [block.language.toUpperCase(), block.filename].filter(Boolean).join(" · ");
+	const row = (runs: Line) => page.push(padTo(runs, width, background), indent);
+	row([
+		{ text: " ", ...background },
+		{ text: label, intent: "faintText", bold: true, ...background },
+	]);
 	if (block.content.length === 0) {
-		page.push(
-			[
-				{ ...border, text: g.v },
-				...padTo([{ text: "(empty code block)", intent: "dimText" }], inner),
-				{ ...border, text: g.v },
-			],
-			indent,
-		);
+		row([
+			{ text: " ".repeat(gutter), ...background },
+			{ text: "(empty code block)", intent: "dimText", ...background },
+		]);
+		return;
 	}
 	source.forEach((plain, i) => {
-		if (block.content.length === 0) return;
 		const rows = hardWrap(codeRuns(block.highlightedLines?.[i], plain, undefined), codeWidth);
-		rows.forEach((row, j) => {
+		rows.forEach((cells, j) => {
 			const number = j === 0 ? String(i + 1).padStart(digits) : " ".repeat(digits);
-			page.push(
-				[
-					{ ...border, text: g.v },
-					{ text: `${number} ${g.v}`, intent: "dimText" },
-					...padTo(row, codeWidth),
-					{ ...border, text: g.v },
-				],
-				indent,
-			);
+			row([
+				{ text: ` ${number}  `, intent: "faintText", ...background },
+				...(cells as Line).map((run) => ({ intent: "text" as const, ...run, ...background })),
+			]);
 		});
 	});
-	page.push([{ ...border, text: `${g.bl}${g.h.repeat(inner)}${g.br}` }], indent);
 }
 
+/** A note is plain text: quiet for information, in colour with a word for a warning. */
 function note(
 	page: Page,
 	block: Extract<ContentBlock, { type: "note" }>,
 	width: number,
 	indent: number,
 ): void {
-	const colors = NOTE_COLORS[block.variant];
-	const intent = ({ info: "info", warning: "warning", danger: "error" } as const)[block.variant];
-	const background = colors.backgroundColor;
-	const content = inline(page, block.content, intent);
-	if (width < 4) {
-		page.push(
-			[{ text: `${colors.label}: `, color: colors.labelColor, background, bold: true }, ...content],
-			indent,
-		);
-		return;
-	}
-	const g = NOTE_GLYPHS;
-	const inner = width - 4;
-	const border = { color: colors.borderColor, background };
-	const row = (runs: Line) => [
-		{ ...border, text: `${g.v} ` },
-		...padTo(runs, inner, { background }),
-		{ ...border, text: ` ${g.v}` },
-	];
-	page.push([{ ...border, text: `${g.tl}${g.h.repeat(width - 2)}${g.tr}` }], indent);
-	page.push(
-		row([
-			{ text: truncateLine(colors.label, inner), color: colors.labelColor, background, bold: true },
-		]),
-		indent,
-	);
-	for (const line of wrapRuns(content, inner) as Line[]) {
-		page.push(row(line.map((run) => ({ ...run, background }))), indent);
-	}
-	page.push([{ ...border, text: `${g.bl}${g.h.repeat(width - 2)}${g.br}` }], indent);
+	const intent = ({ info: "dimText", warning: "warning", danger: "error" } as const)[block.variant];
+	const lead: Run[] =
+		block.variant === "info"
+			? []
+			: [{ text: `${block.variant === "danger" ? "Danger" : "Warning"}  `, intent, bold: true }];
+	const content = [...lead, ...inline(page, block.content, intent)];
+	for (const line of wrapRuns(content, width) as Line[]) page.push(line, indent);
 }
 
 /** Lays out one docs block at `indent`, in `width` columns counted from the pane's edge. */
@@ -383,24 +341,16 @@ function layoutBlock(page: Page, block: ContentBlock, width: number, indent: num
 	const w = Math.max(1, width - indent);
 	switch (block.type) {
 		case "text":
-			for (const line of wrapRuns(inline(page, block.content, "text"), w)) page.push(line, indent);
+			for (const line of wrapRuns(inline(page, block.content, "info"), w)) page.push(line, indent);
 			return;
 		case "code":
 			return code(page, block, w, indent);
 		case "command": {
-			for (const line of wrapRuns([{ text: block.description, intent: "dimText" }], w))
+			for (const line of wrapRuns([{ text: block.description, intent: "info" }], w))
 				page.push(line, indent);
 			const plain = Array.isArray(block.command) ? block.command : block.command.split("\n");
 			const anchor = page.anchor({ kind: "command", command: plain.join("\n"), line: -1 });
-			commandLines(
-				page,
-				plain.map((line, i) =>
-					codeRuns(block.highlightedCommandLines?.[i], line, COMMAND_COLORS.prompt),
-				),
-				w,
-				indent,
-				anchor,
-			);
+			commandLines(page, plain, w, indent, anchor);
 			if (block.output) {
 				for (const line of block.output.split("\n")) {
 					for (const row of wrapRuns([{ text: line, intent: "dimText" }], w))
@@ -413,14 +363,14 @@ function layoutBlock(page: Page, block: ContentBlock, width: number, indent: num
 			return table(page, block, w, indent);
 		case "list":
 			block.items.forEach((item, i) => {
-				const marker: Run = { text: block.ordered ? `${i + 1}.` : "•", intent: "subheading" };
+				const marker: Run = { text: block.ordered ? `${i + 1}.` : "•", intent: "accent" };
 				const text = typeof item === "string" || Array.isArray(item) ? item : item.text;
-				prefixed(page, marker, inline(page, text, "subheading"), w, indent);
+				prefixed(page, marker, inline(page, text, "info"), w, indent);
 				if (typeof item === "object" && !Array.isArray(item)) {
 					for (const child of item.children ?? []) {
 						prefixed(
 							page,
-							{ text: "•", intent: "dimText" },
+							{ text: "•", intent: "faintText" },
 							inline(page, child, "dimText"),
 							w - LIST_INDENT,
 							indent + LIST_INDENT,
@@ -431,34 +381,27 @@ function layoutBlock(page: Page, block: ContentBlock, width: number, indent: num
 			return;
 		case "interactive":
 			if (block.intro) {
-				for (const line of wrapRuns(inline(page, block.intro, "dimText"), w))
-					page.push(line, indent);
+				for (const line of wrapRuns(inline(page, block.intro, "info"), w)) page.push(line, indent);
 			}
 			for (const step of block.steps) {
 				// Each step's command can be selected and copied, like a command block's.
 				const anchor = page.anchor({ kind: "command", command: step.command, line: -1 });
-				commandLines(
-					page,
-					[[{ text: step.command, color: COMMAND_COLORS.prompt }]],
-					w,
-					indent,
-					anchor,
-				);
-				for (const line of wrapRuns(inline(page, step.description, "text"), w))
+				commandLines(page, [step.command], w, indent, anchor);
+				for (const line of wrapRuns(inline(page, step.description, "info"), w))
 					page.push(line, indent);
 			}
 			return;
 		case "qa":
 			block.items.forEach((item, i) => {
 				if (i > 0) page.push([]);
-				page.push([{ text: "Q >", intent: "heading", bold: true }], indent);
+				page.push([{ text: "Q", intent: "accent", bold: true }], indent);
 				for (const line of wrapRuns(
-					inline(page, item.question, "heading"),
+					inline(page, item.question, "text").map((run) => ({ ...run, bold: true })),
 					Math.max(1, w - LIST_INDENT),
 				)) {
 					page.push(line, indent + LIST_INDENT);
 				}
-				page.push([{ text: "A >", intent: "subheading", bold: true }], indent);
+				page.push([{ text: "A", intent: "dimText", bold: true }], indent);
 				if (item.answer.length === 0) {
 					page.push([{ text: "(no answer provided)", intent: "dimText" }], indent + LIST_INDENT);
 				}
@@ -470,30 +413,39 @@ function layoutBlock(page: Page, block: ContentBlock, width: number, indent: num
 	}
 }
 
-/** The whole page at `width`: intro, then each section's heading and blocks, one blank line between items. */
-export function layoutPage(content: DocsContent, width: number): PageLayout {
+/** A section title: a leading "2." as a number in the accent, the words in bold. */
+function sectionTitle(title: string, level: number | undefined): Line {
+	const numbered = /^(\d+)\.\s+(.*)$/.exec(title);
+	if (numbered) {
+		return [
+			{ text: numbered[1]!, intent: "accent", bold: true },
+			{ text: `  ${numbered[2]}`, intent: "text", bold: true },
+		];
+	}
+	return [{ text: title, intent: level === 3 ? "info" : "text", bold: true }];
+}
+
+/**
+ * The whole page at the reading measure (or `width`, when that is narrower): intro, then
+ * each section's title and blocks, one blank line between blocks.
+ */
+export function layoutPage(content: DocsContent, columns: number): PageLayout {
+	const width = Math.min(columns, MEASURE);
 	const page = new Page();
 	const gap = () => {
 		if (page.lines.length > 0) page.push([]);
 	};
-	const intro = inline(page, content.intro, "dimText");
+	const intro = inline(page, content.intro, "info");
 	if (runsText(intro).trim().length > 0) {
 		for (const line of wrapRuns(intro, width)) page.push(line);
 	}
 	for (const section of content.sections) {
 		gap();
-		const level3 = section.level === 3;
-		page.push([
-			{
-				text: `${level3 ? MARKERS.subheading : MARKERS.heading} ${section.title}`,
-				intent: level3 ? "subheading" : "heading",
-				bold: true,
-			},
-		]);
-		for (const item of section.content) {
-			gap();
+		page.push(sectionTitle(section.title, section.level));
+		section.content.forEach((item, i) => {
+			if (i > 0) gap();
 			layoutBlock(page, item, width, 0);
-		}
+		});
 	}
 	return { lines: page.lines, anchors: page.anchors };
 }
