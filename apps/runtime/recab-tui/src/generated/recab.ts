@@ -41,6 +41,25 @@ export type BootSeal = {
 	protocol: number;
 };
 
+export type ChangeProgress = {
+	id: string;
+	action: string;
+	package: string;
+	report: SyncReport | null;
+	/**
+	 * Recipe /proc/self/io deltas, including reaped children and streams.
+	 * Not physical SSD traffic; null means unmeasured.
+	 */
+	producer_io: { [key in string]: number } | null;
+	/**
+	 * Entire recab invocation through cleanup, including the Recipe subprocess.
+	 * Available in the returned result; the persisted receipt predates cleanup.
+	 * Final result serialization follows this observation.
+	 */
+	invocation_io: { [key in string]: number } | null;
+	projection_bytes_written: number;
+};
+
 export type Finalization = {
 	generation: Generation;
 	seal: BootSeal;
@@ -75,6 +94,8 @@ export type Preparation = {
 	synchronized: boolean;
 	synchronization: SyncReport | null;
 	finalization: Finalization | null;
+	change: ChangeProgress | null;
+	last_change: ChangeProgress | null;
 };
 
 export type PreparationPhase =
