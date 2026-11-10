@@ -311,6 +311,11 @@ export type SyncReport = {
 export type TrialRecord = {
 	slot: Slot;
 	/**
+	 * Missing only in historical records written before generation-bound assessment.
+	 */
+	generation: string | null;
+	fallback_generation: string | null;
+	/**
 	 * The trial was healthy and committed; otherwise it was abandoned.
 	 */
 	committed: boolean;
