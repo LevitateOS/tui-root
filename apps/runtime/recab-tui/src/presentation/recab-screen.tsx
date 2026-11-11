@@ -139,7 +139,6 @@ export function RecabScreen(): ReactNode {
 	]);
 	const scroll = usePageScroll(pageHeight, layout.content.textRows, prompt === null);
 
-	const runOf = (id: ActionId) => recab.runs.find((run) => run.action === id) ?? null;
 	const previousRun = recab.runs.find((r) => r.action === view) ?? null;
 	const plan =
 		view === "overview" || view === "history"

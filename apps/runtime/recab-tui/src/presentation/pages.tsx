@@ -16,7 +16,6 @@ import {
 	truncateLines,
 	useIntentColor,
 	useSurfaceBackground,
-	WordSlots,
 	type ColorIntent,
 	type CommandResult,
 } from "@levitate/tui-kit";
