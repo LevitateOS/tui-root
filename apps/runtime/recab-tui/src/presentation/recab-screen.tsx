@@ -20,7 +20,7 @@ import {
 	type RailGroup,
 } from "@levitate/tui-kit";
 import {
-	ACTION_IDS,
+	actionIds,
 	planAction,
 	TAKES_MACHINE_DOWN,
 	type ActionId,
@@ -34,24 +34,16 @@ import { useRecab, type Prompt, type Run } from "./use-recab";
 type View = "overview" | ActionId | "history";
 
 /** What the rail and the band call a change when there is no plan to name it. */
-const PLACE: Record<ActionId, string> = {
-	try: "Try the other slot",
-	commit: "Commit",
-	rollback: "Roll back",
-	stage: "Write a system",
-	reboot: "Reboot",
-};
-
-const VIEWS: readonly View[] = ["overview", ...ACTION_IDS, "history"];
-
-const HOTKEY: Record<ActionId, string> = {
-	try: "t",
+const HOTKEY: Record<string, string> = {
+	set_next: "t",
 	commit: "c",
 	rollback: "x",
-	stage: "s",
+	update_media: "s",
 	reboot: "R",
+	prepare: "p",
+	finalize: "f",
+	update_check: "u",
 };
-
 export function RecabScreen(): ReactNode {
 	const { exit } = useApp();
 	const { columns } = useTuiViewport();
@@ -66,6 +58,8 @@ export function RecabScreen(): ReactNode {
 	const [notice, setNotice] = useState<string | null>(null);
 
 	const s = recab.current;
+	const ACTION_IDS = actionIds(s);
+	const VIEWS: View[] = ["overview", ...ACTION_IDS, "history"];
 	const plans: ActionPlan[] = s ? ACTION_IDS.map((id) => planAction(id, s)) : [];
 	const planFor = (id: ActionId) => plans.find((plan) => plan.id === id) ?? null;
 	const prompt = recab.prompt;
@@ -123,11 +117,9 @@ export function RecabScreen(): ReactNode {
 	const keys =
 		prompt?.kind === "confirm"
 			? CONFIRM_KEYS
-			: prompt?.kind === "token"
-				? TEXT_KEYS.filter((b) => b.action !== "complete")
-				: prompt
-					? TEXT_KEYS
-					: MAIN_KEYS.filter((b) => FOOTER_ACTIONS.includes(b.action));
+			: prompt
+				? TEXT_KEYS
+				: MAIN_KEYS.filter((b) => FOOTER_ACTIONS.includes(b.action));
 	const pageHeight = usePageHeight(view);
 	const scrollable = !prompt && pageHeight.height > shell.content.textRows - 2;
 	const layout = fitFooter(shell, [
@@ -148,8 +140,14 @@ export function RecabScreen(): ReactNode {
 	const scroll = usePageScroll(pageHeight, layout.content.textRows, prompt === null);
 
 	const runOf = (id: ActionId) => recab.runs.find((run) => run.action === id) ?? null;
-	const plan = view === "overview" || view === "history" ? null : planFor(view);
-	const run = plan ? runOf(plan.id) : null;
+	const previousRun = recab.runs.find((r) => r.action === view) ?? null;
+	const plan =
+		view === "overview" || view === "history"
+			? null
+			: (planFor(view) ??
+				prompt?.plan ??
+				(previousRun?.before ? planAction(view, previousRun.before) : null));
+	const run = previousRun;
 	const page =
 		view === "overview" ? (
 			<OverviewPage status={recab.status} />
@@ -165,8 +163,8 @@ export function RecabScreen(): ReactNode {
 			: view === "history"
 				? "History"
 				: view === "stage"
-					? PLACE.stage
-					: (planFor(view)?.label ?? PLACE[view]);
+					? "Merge release media"
+					: (planFor(view)?.label ?? view.replaceAll("_", " "));
 	const rail = layout.nav ?? layout.content;
 	return (
 		<AppShell
@@ -175,7 +173,12 @@ export function RecabScreen(): ReactNode {
 			navTitle="Updates"
 			nav={
 				<RailList
-					groups={railGroups(plans, recab.runs.length)}
+					groups={railGroups(
+						plans,
+						recab.runs.length,
+						view,
+						Math.max(5, layout.content.textRows - 8),
+					)}
 					selected={view}
 					width={rail.textColumns}
 				/>
@@ -214,16 +217,27 @@ const VERDICT_STATE: Record<ActionPlan["verdict"]["kind"], PathState> = {
 
 /** The overview, each change marked with whether recab would make it now and its hotkey,
  * and the history. */
-function railGroups(plans: readonly ActionPlan[], runs: number): RailGroup[] {
+function railGroups(
+	plans: readonly ActionPlan[],
+	runs: number,
+	selected: View,
+	limit: number,
+): RailGroup[] {
+	const ids = plans.length ? plans.map((p) => p.id) : actionIds(null);
+	const at = ids.indexOf(selected);
+	const visible = ids.slice(
+		Math.max(0, at - Math.floor(limit / 2)),
+		Math.max(0, at - Math.floor(limit / 2)) + limit,
+	);
 	return [
 		{ items: [{ id: "overview", label: "Overview", state: "none", hint: "o" }] },
 		{
 			title: "Changes",
-			items: ACTION_IDS.map((id) => {
+			items: visible.map((id) => {
 				const plan = plans.find((p) => p.id === id);
 				return {
 					id,
-					label: plan?.label ?? PLACE[id],
+					label: plan?.label ?? id.replaceAll("_", " "),
 					state: plan ? VERDICT_STATE[plan.verdict.kind] : "none",
 					hint: HOTKEY[id],
 				};
@@ -258,7 +272,8 @@ function pageAction(input: {
 	if (!plan || prompt) return undefined;
 	if (run && !run.result)
 		return {
-			note: plan.id === "stage" ? "recab stage prints no progress: it is still writing" : "running",
+			note:
+				plan.id === "stage" ? "recab is working; verified progress appears in Overview" : "running",
 			intent: "warning",
 		};
 	if (run?.result) {

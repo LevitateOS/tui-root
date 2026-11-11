@@ -2,7 +2,7 @@
 	"name": "@levitate/recab-tui",
 	"version": "0.1.0",
 	"private": true,
-	"description": "A/B slots at a glance, and recab's changes (try, commit, roll back, write a system) with their effect before and after",
+	"description": "Prepare system changes and releases, resolve conflicts and trial either generation through recab",
 	"bin": {
 		"recab-tui": "./src/main.tsx"
 	},
@@ -34,161 +34,215 @@
 			],
 			"stories": [
 				{
-					"name": "overview",
-					"about": "Running slot A, committed; slot B's last trial failed and B is the rollback target.",
-					"steps": [
-						{
-							"expect": "Two systems, one running"
-						}
-					]
-				},
-				{
-					"name": "trial pending",
-					"about": "Slot B is set to boot once on the next reboot, as a trial.",
+					"name": "A stable",
+					"about": "Lifecycle presentation while A runs; backend fixture supplies verdicts.",
 					"env": {
-						"RECAB_FIXTURE": "trial"
+						"RECAB_FIXTURE": "stable",
+						"RECAB_FIXTURE_SLOT": "A"
 					},
 					"steps": [
 						{
-							"expect": "Slot B boots next, once"
+							"expect": "Running slot A, committed"
 						}
 					]
 				},
 				{
-					"name": "running a trial",
-					"about": "Running slot B on trial, not committed: the trial service still has to judge it.",
+					"name": "A preparing",
+					"about": "Lifecycle presentation while A runs; backend fixture supplies verdicts.",
 					"env": {
-						"RECAB_FIXTURE": "uncommitted"
+						"RECAB_FIXTURE": "preparing",
+						"RECAB_FIXTURE_SLOT": "A"
 					},
 					"steps": [
 						{
-							"expect": "Running slot B on trial: not committed"
+							"expect": "Prepared system accepts changes"
 						}
 					]
 				},
 				{
-					"name": "status unreadable",
-					"about": "recab status fails, as on a system recab doesn't manage: the error and what to do.",
+					"name": "A conflicted",
+					"about": "Lifecycle presentation while A runs; backend fixture supplies verdicts.",
 					"env": {
-						"RECAB_FIXTURE": "no-status"
+						"RECAB_FIXTURE": "conflicted",
+						"RECAB_FIXTURE_SLOT": "A"
 					},
 					"steps": [
 						{
-							"expect": "recab couldn't read the A/B state"
+							"expect": "Resolve release conflicts"
 						}
 					]
 				},
 				{
-					"name": "try the other slot",
-					"about": "t, Enter, y: set slot B to boot once, then the slots before and after.",
-					"steps": [
-						{
-							"keys": "t",
-							"expect": "Try slot B on the next boot"
-						},
-						{
-							"keys": "\\r",
-							"expect": "Run recab set-next B?"
-						},
-						{
-							"keys": "y",
-							"expect": "Reboot to start the trial"
-						}
-					]
-				},
-				{
-					"name": "commit a trial",
-					"about": "Running uncommitted slot B: commit keeps it as known-good and the default.",
+					"name": "A interrupted",
+					"about": "Lifecycle presentation while A runs; backend fixture supplies verdicts.",
 					"env": {
-						"RECAB_FIXTURE": "uncommitted"
+						"RECAB_FIXTURE": "interrupted",
+						"RECAB_FIXTURE_SLOT": "A"
 					},
 					"steps": [
 						{
-							"keys": "c\\ry",
-							"expect": "Slot B is committed"
+							"expect": "An operation needs recovery"
 						}
 					]
 				},
 				{
-					"name": "nothing to roll back to",
-					"about": "A fresh install: Roll back is refused, and the page says why.",
+					"name": "A ready",
+					"about": "Lifecycle presentation while A runs; backend fixture supplies verdicts.",
 					"env": {
-						"RECAB_FIXTURE": "fresh"
+						"RECAB_FIXTURE": "ready",
+						"RECAB_FIXTURE_SLOT": "A"
 					},
 					"steps": [
 						{
-							"keys": "x",
-							"expect": "recab would refuse this now"
+							"expect": "Prepared system is finalized"
 						}
 					]
 				},
 				{
-					"name": "write a system",
-					"about": "Write a new system to slot B: a missing path and a non-EROFS file are caught as you type, then typing B confirms.",
-					"steps": [
-						{
-							"keys": "s\\r",
-							"expect": "The system image"
-						},
-						{
-							"keys": "/nonexistent\\r",
-							"expect": "doesn't exist"
-						},
-						{
-							"keys": "\\e\\r/etc/os-release\\r",
-							"expect": "not an EROFS image"
-						},
-						{
-							"keys": "\\e\\rfixtures/images/filesystem.erofs\\rfixtures/images/vmlinuz\\r\\r",
-							"expect": "Type B to erase slot B"
-						},
-						{
-							"keys": "B\\r",
-							"expect": "Slot B holds the new system"
-						}
-					]
-				},
-				{
-					"name": "history",
-					"about": "Two changes ran, a trial set and then cancelled, and both are on the history line, newest first.",
-					"steps": [
-						{
-							"keys": "t\\ry",
-							"expect": "Reboot to start the trial"
-						},
-						{
-							"keys": "x\\ry",
-							"expect": "Roll back"
-						},
-						{
-							"keys": "H",
-							"expect": "This session"
-						}
-					]
-				},
-				{
-					"name": "change fails",
-					"about": "Every change fails for want of root: recab's error and the advice to run as root.",
+					"name": "A trial",
+					"about": "Lifecycle presentation while A runs; backend fixture supplies verdicts.",
 					"env": {
-						"RECAB_FIXTURE": "fail"
+						"RECAB_FIXTURE": "trial",
+						"RECAB_FIXTURE_SLOT": "A"
 					},
 					"steps": [
 						{
-							"keys": "t\\ry",
-							"expect": "Run recab-tui as root"
+							"expect": "Slot B boots once on the next reboot"
 						}
 					]
 				},
 				{
-					"name": "stage refused",
-					"about": "recab refuses the stage (exit 21): its own reason is the advice, nothing generic.",
+					"name": "A failed",
+					"about": "Lifecycle presentation while A runs; backend fixture supplies verdicts.",
 					"env": {
-						"RECAB_FIXTURE": "refuse"
+						"RECAB_FIXTURE": "failed",
+						"RECAB_FIXTURE_SLOT": "A"
 					},
 					"steps": [
 						{
-							"keys": "s\\rfixtures/images/filesystem.erofs\\rfixtures/images/vmlinuz\\r\\rB\\r",
-							"expect": "is not an EROFS image"
+							"expect": "The prepared generation failed its trial"
+						}
+					]
+				},
+				{
+					"name": "B stable",
+					"about": "Lifecycle presentation while B runs; backend fixture supplies verdicts.",
+					"env": {
+						"RECAB_FIXTURE": "stable",
+						"RECAB_FIXTURE_SLOT": "B"
+					},
+					"steps": [
+						{
+							"expect": "Running slot B, committed"
+						}
+					]
+				},
+				{
+					"name": "B preparing",
+					"about": "Lifecycle presentation while B runs; backend fixture supplies verdicts.",
+					"env": {
+						"RECAB_FIXTURE": "preparing",
+						"RECAB_FIXTURE_SLOT": "B"
+					},
+					"steps": [
+						{
+							"expect": "Prepared system accepts changes"
+						}
+					]
+				},
+				{
+					"name": "B conflicted",
+					"about": "Lifecycle presentation while B runs; backend fixture supplies verdicts.",
+					"env": {
+						"RECAB_FIXTURE": "conflicted",
+						"RECAB_FIXTURE_SLOT": "B"
+					},
+					"steps": [
+						{
+							"expect": "Resolve release conflicts"
+						}
+					]
+				},
+				{
+					"name": "B interrupted",
+					"about": "Lifecycle presentation while B runs; backend fixture supplies verdicts.",
+					"env": {
+						"RECAB_FIXTURE": "interrupted",
+						"RECAB_FIXTURE_SLOT": "B"
+					},
+					"steps": [
+						{
+							"expect": "An operation needs recovery"
+						}
+					]
+				},
+				{
+					"name": "B ready",
+					"about": "Lifecycle presentation while B runs; backend fixture supplies verdicts.",
+					"env": {
+						"RECAB_FIXTURE": "ready",
+						"RECAB_FIXTURE_SLOT": "B"
+					},
+					"steps": [
+						{
+							"expect": "Prepared system is finalized"
+						}
+					]
+				},
+				{
+					"name": "B trial",
+					"about": "Lifecycle presentation while B runs; backend fixture supplies verdicts.",
+					"env": {
+						"RECAB_FIXTURE": "trial",
+						"RECAB_FIXTURE_SLOT": "B"
+					},
+					"steps": [
+						{
+							"expect": "Slot A boots once on the next reboot"
+						}
+					]
+				},
+				{
+					"name": "B failed",
+					"about": "Lifecycle presentation while B runs; backend fixture supplies verdicts.",
+					"env": {
+						"RECAB_FIXTURE": "failed",
+						"RECAB_FIXTURE_SLOT": "B"
+					},
+					"steps": [
+						{
+							"expect": "The prepared generation failed its trial"
+						}
+					]
+				},
+				{
+					"name": "prepare finalize schedule",
+					"about": "Concrete operation commands carry the preparation revision.",
+					"steps": [
+						{
+							"keys": "p\ry",
+							"expect": "Operation completed"
+						},
+						{
+							"keys": "f\ry",
+							"expect": "Operation completed"
+						},
+						{
+							"keys": "t\ry",
+							"expect": "Operation completed"
+						}
+					]
+				},
+				{
+					"name": "resolve captured conflict",
+					"about": "A resolved conflict disappears from the catalog while its completed result remains readable.",
+					"env": {
+						"RECAB_FIXTURE": "conflicted"
+					},
+					"steps": [
+						{
+							"keys": "jjjjjjj\rlocal\r\ry",
+							"expect": "Operation completed"
 						}
 					]
 				}

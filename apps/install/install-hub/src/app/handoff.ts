@@ -3,6 +3,7 @@
  * `useHandOff`), `runAction` runs it with the terminal to itself, and the screen starts
  * again with the notice it returns, reading the state file afresh.
  */
+import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { shellQuote } from "@levitate/docs-content/install";
@@ -32,6 +33,29 @@ export function loadState(): { state: InstallState; error: string | null } {
 
 export function record(entry: Record_): string | null {
 	try {
+		if (entry.step === "boot" && entry.result.mode === "ab") {
+			const target = readState().steps.disk?.result.target;
+			if (!target) return "The installation target is missing";
+			const q = spawnSync("recab", ["--json", "verify-installation", "--root", target], {
+				encoding: "utf8",
+			});
+			if (q.status !== 0)
+				return (
+					q.stderr.trim() || "Both personalized bootable systems must be verified before finishing"
+				);
+			const proof = JSON.parse(q.stdout);
+			if (
+				proof.complete !== true ||
+				!proof.slots?.includes("A") ||
+				!proof.slots?.includes("B") ||
+				!proof.generation
+			)
+				return "Both initial roots must be verified";
+			entry = {
+				step: "boot",
+				result: { ...entry.result, verified_slots: proof.slots, generation: proof.generation },
+			};
+		}
 		recordStep(entry.step, entry.result);
 		return null;
 	} catch (error) {

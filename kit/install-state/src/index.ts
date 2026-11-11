@@ -46,7 +46,16 @@ export function statePath(env: Record<string, string | undefined> = process.env)
 	return env[STATE_PATH_ENV]?.trim() || DEFAULT_STATE_PATH;
 }
 
-type Shape = "string" | "string?" | "number?" | "true" | "boolean" | "mode" | "mounts";
+type Shape =
+	| "string"
+	| "string?"
+	| "number?"
+	| "true"
+	| "boolean"
+	| "mode"
+	| "mounts"
+	| "optional-string"
+	| "slots?";
 
 /** The fields each step's result must have. */
 const SHAPES: { [S in RecordedStep]: { [K in keyof StepResults[S]]-?: Shape } } = {
@@ -62,11 +71,20 @@ const SHAPES: { [S in RecordedStep]: { [K in keyof StepResults[S]]-?: Shape } } 
 	},
 	base: { target: "string", rootfs: "string?", entries: "number?", fstab: "string" },
 	setup: { manual: "boolean", hostname: "string?", user: "string?" },
-	boot: { mode: "mode" },
+	boot: { mode: "mode", verified_slots: "slots?", generation: "optional-string" },
 };
 
 function fits(value: unknown, shape: Shape): boolean {
 	switch (shape) {
+		case "optional-string":
+			return value === undefined || (typeof value === "string" && value.length > 0);
+		case "slots?":
+			return (
+				value === undefined ||
+				(Array.isArray(value) &&
+					value.every((s) => s === "A" || s === "B") &&
+					new Set(value).size === value.length)
+			);
 		case "string":
 			return typeof value === "string" && value.length > 0;
 		case "string?":

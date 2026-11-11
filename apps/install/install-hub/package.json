@@ -30,7 +30,8 @@
 		"tools": [
 			"recfstab",
 			"recchroot",
-			"recsetup"
+			"recsetup",
+			"recab"
 		],
 		"inspect": {
 			"stories": [

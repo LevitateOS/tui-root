@@ -1,32 +1,29 @@
-/** The screen's state: recab's status, the question being asked, and the runs so far. */
-import { resolve } from "node:path";
 import { useEffect, useRef, useState } from "react";
 import { startCommand, type CommandResult } from "@levitate/tui-kit";
-import type { Slot, Status } from "../generated/recab";
-import { checkPath, completePath, readRecabStatus, type StatusRead } from "../app/recab-runner";
+import type { Status } from "../generated/recab";
+import { completePath, readRecabStatus, type StatusRead } from "../app/recab-runner";
 import {
-	stageArgv,
+	operationArgv,
 	TAKES_MACHINE_DOWN,
-	type ActionId,
 	type ActionPlan,
-	type StageAnswers,
+	type ActionId,
 } from "../domain/actions";
-
-export type StageField = keyof StageAnswers;
-
-const FIELDS: readonly StageField[] = ["rootfs", "kernel", "initrd"];
-
-export const FIELD_QUESTION: Record<StageField, string> = {
-	rootfs: "The system image: an EROFS file, or a partition holding one",
-	kernel: "The kernel image (vmlinuz) for the new system",
-	initrd: "Its initramfs (initramfs-installed.img on the release ISO)",
-};
-
 export type Prompt =
-	| { kind: "path"; field: StageField; answers: StageAnswers; text: string; error: string | null }
-	| { kind: "confirm"; action: ActionId; argv: readonly string[] }
-	| { kind: "token"; action: ActionId; argv: readonly string[]; slot: Slot; text: string };
-
+	| {
+			kind: "path";
+			plan: ActionPlan;
+			index: number;
+			answers: Record<string, string>;
+			text: string;
+			error: string | null;
+	  }
+	| {
+			kind: "confirm";
+			plan: ActionPlan;
+			action: ActionId;
+			argv: readonly string[];
+			destructive: boolean;
+	  };
 export type Run = {
 	id: number;
 	action: ActionId;
@@ -34,115 +31,102 @@ export type Run = {
 	before: Status | null;
 	startedAt: number;
 	result: CommandResult | null;
-	/** The status read once it finished. */
 	after: StatusRead | null;
 };
-
 export type Recab = ReturnType<typeof useRecab>;
-
 export function useRecab() {
 	const [status, setStatus] = useState<StatusRead>({ kind: "reading" });
 	const [prompt, setPrompt] = useState<Prompt | null>(null);
 	const [runs, setRuns] = useState<readonly Run[]>([]);
 	const [now, setNow] = useState(Date.now());
-	// A ref, not state: two keys handled in one batch must not both start a run.
 	const busy = useRef(false);
 	const nextId = useRef(1);
-
-	const refresh = async (): Promise<StatusRead> => {
-		setStatus((s) => (s.kind === "failed" ? { kind: "reading" } : s));
+	const refresh = async () => {
 		const read = await readRecabStatus();
 		setStatus(read);
 		return read;
 	};
 	useEffect(() => void refresh(), []);
-
-	const running = runs.find((run) => run.result === null) ?? null;
-	// The elapsed time ticks while something runs.
+	const running = runs.find((r) => r.result === null) ?? null;
 	useEffect(() => {
 		if (!running) return;
-		const timer = setInterval(() => setNow(Date.now()), 1000);
+		const timer = setInterval(() => {
+			setNow(Date.now());
+			void refresh();
+		}, 1000);
 		return () => clearInterval(timer);
 	}, [running?.id]);
-
 	const current = status.kind === "ok" ? status.status : null;
-
 	const execute = (action: ActionId, argv: readonly string[]) => {
 		if (busy.current) return;
 		busy.current = true;
 		setPrompt(null);
 		const id = nextId.current++;
-		setNow(Date.now());
 		setRuns((all) => [
 			{ id, action, argv, before: current, startedAt: Date.now(), result: null, after: null },
 			...all,
 		]);
 		void startCommand(argv).result.then(async (result) => {
-			setRuns((all) => all.map((run) => (run.id === id ? { ...run, result } : run)));
 			const after = TAKES_MACHINE_DOWN[action] ? null : await refresh();
-			setRuns((all) => all.map((run) => (run.id === id ? { ...run, after } : run)));
+			setRuns((all) => all.map((r) => (r.id === id ? { ...r, result, after } : r)));
 			busy.current = false;
 		});
 	};
-
-	/** Enter on a change: ask what it needs, then for a yes. */
 	const begin = (plan: ActionPlan): string | null => {
-		if (busy.current) return "a change is running";
+		if (busy.current) return "A command is running";
 		if (plan.verdict.kind !== "ready") return plan.verdict.reason;
-		if (plan.id === "stage") {
+		if (plan.inputs.length)
+			setPrompt({ kind: "path", plan, index: 0, answers: {}, text: "", error: null });
+		else
 			setPrompt({
-				kind: "path",
-				field: "rootfs",
-				answers: { rootfs: "", kernel: "", initrd: "" },
-				text: "",
-				error: null,
+				kind: "confirm",
+				plan,
+				action: plan.id,
+				argv: plan.argv,
+				destructive: plan.destructive,
 			});
-			return null;
-		}
-		if (plan.argv) setPrompt({ kind: "confirm", action: plan.id, argv: plan.argv });
 		return null;
 	};
-
 	const type = (text: string) =>
-		setPrompt((p) =>
-			p && p.kind !== "confirm"
-				? { ...p, text: p.text + text, ...(p.kind === "path" ? { error: null } : {}) }
-				: p,
-		);
+		setPrompt((p) => (p?.kind === "path" ? { ...p, text: p.text + text, error: null } : p));
 	const erase = () =>
-		setPrompt((p) => (p && p.kind !== "confirm" ? { ...p, text: p.text.slice(0, -1) } : p));
+		setPrompt((p) => (p?.kind === "path" ? { ...p, text: p.text.slice(0, -1) } : p));
 	const complete = () =>
-		setPrompt((p) => (p?.kind === "path" ? { ...p, text: completePath(p.text), error: null } : p));
+		setPrompt((p) => (p?.kind === "path" ? { ...p, text: completePath(p.text) } : p));
 	const cancel = () => setPrompt(null);
-
 	const accept = () => {
 		if (!prompt) return;
 		if (prompt.kind === "confirm") return execute(prompt.action, prompt.argv);
-		if (prompt.kind === "token") {
-			if (prompt.text.trim().toUpperCase() === prompt.slot) execute(prompt.action, prompt.argv);
-			else setPrompt({ ...prompt, text: "" });
-			return;
-		}
-		const text = prompt.text.trim();
-		const error =
-			prompt.field === "initrd" && text === ""
-				? null
-				: checkPath(text, prompt.field === "rootfs" ? "image" : "file");
+		const field = prompt.plan.inputs[prompt.index]!;
+		const value = prompt.text.trim();
+		let error =
+			field.required && !value
+				? "A value is required"
+				: field.choices.length && !field.choices.includes(value)
+					? `Choose ${field.choices.join(", ")}`
+					: null;
+		if (
+			!error &&
+			field.name === "file" &&
+			prompt.answers.choice &&
+			prompt.answers.choice !== "edited" &&
+			value
+		)
+			error = "A file is only used with an edited resolution";
 		if (error) return setPrompt({ ...prompt, error });
-		// recab gets full paths, whatever the working directory.
-		const answers = { ...prompt.answers, [prompt.field]: text && resolve(text) };
-		const field = FIELDS[FIELDS.indexOf(prompt.field) + 1];
-		if (field) return setPrompt({ kind: "path", field, answers, text: "", error: null });
-		if (current)
-			setPrompt({
-				kind: "token",
-				action: "stage",
-				argv: stageArgv(answers),
-				slot: current.inactive_slot,
-				text: "",
-			});
+		const answers = { ...prompt.answers, [field.name]: value };
+		if (prompt.index + 1 < prompt.plan.inputs.length)
+			return setPrompt({ ...prompt, index: prompt.index + 1, answers, text: "", error: null });
+		if (answers.choice === "edited" && !answers.file)
+			return setPrompt({ ...prompt, error: "An edited resolution requires a file" });
+		setPrompt({
+			kind: "confirm",
+			plan: prompt.plan,
+			action: prompt.plan.id,
+			argv: operationArgv(prompt.plan, answers),
+			destructive: prompt.plan.destructive,
+		});
 	};
-
 	return {
 		status,
 		current,

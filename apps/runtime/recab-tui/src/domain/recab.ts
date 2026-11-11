@@ -14,7 +14,13 @@ import { SLOTS, type Slot, type Status } from "../generated/recab";
 export function parseRecabStatusJson(input: string): Status | null {
 	try {
 		const value = JSON.parse(input) as Partial<Status> | null;
-		return value && SLOTS.includes(value.active_slot as Slot) ? (value as Status) : null;
+		return value &&
+			value.schema_version === 10 &&
+			Array.isArray(value.operations) &&
+			value.lifecycle &&
+			SLOTS.includes(value.active_slot as Slot)
+			? (value as Status)
+			: null;
 	} catch {
 		return null;
 	}
@@ -35,47 +41,22 @@ export type Headline = { tone: Tone; title: string; lines: string[] };
 
 /** The machine's A/B state in one sentence, and what follows from it. */
 export function headline(s: Status): Headline {
-	const good = s.known_good_slot;
-	if (s.trial_pending && s.next_boot)
-		return {
-			tone: "info",
-			title: `Slot ${s.next_boot} boots once on the next reboot`,
-			lines: [
-				`If slot ${s.next_boot} starts healthy, recab commits it and it becomes the default.`,
-				good
-					? `If it fails, the machine reboots into slot ${good}, the known-good slot.`
-					: "No known-good slot is recorded to fall back to.",
-			],
-		};
-	if (!s.committed)
-		return {
-			tone: "warning",
-			title: `Running slot ${s.active_slot} on trial: not committed`,
-			lines: [
-				`The trial service commits slot ${s.active_slot} once startup is healthy (Commit does it by hand).`,
-				good
-					? `Rebooting before then returns to slot ${good}.`
-					: "No known-good slot is recorded to return to.",
-			],
-		};
-	if (s.default_slot !== good)
-		return {
-			tone: "warning",
-			title: "The default isn't the known-good slot",
-			lines: [
-				`${slotName(s.default_slot)} boots by default, but ${slotName(good)} is known-good.`,
-				`Commit makes slot ${s.active_slot} both, so a failed trial falls back to it.`,
-			],
-		};
+	const labels: Record<string, string> = {
+		stable: `Running slot ${s.active_slot}, committed`,
+		open: "Prepared system accepts changes",
+		working: "recab is working",
+		interrupted: "An operation needs recovery",
+		conflicted: "Resolve release conflicts",
+		ready: "Prepared system is finalized",
+		restart_set: `Slot ${s.next_boot} boots once on the next reboot`,
+		on_trial: `Running slot ${s.active_slot} on trial: not committed`,
+		trial_failed: "The prepared generation failed its trial",
+		unusable: "System recovery is required",
+	};
 	return {
-		tone: "success",
-		title: `Running slot ${s.active_slot}, committed`,
-		lines: [
-			`Slot ${s.active_slot} is known-good and boots by default.`,
-			s.rollback_slot
-				? `Slot ${s.rollback_slot} still holds the previous system: Roll back returns to it.`
-				: `Slot ${s.inactive_slot} holds no system to roll back to; Write a system puts an update there.`,
-		],
+		tone: s.recovery_reason ? "warning" : "info",
+		title: labels[s.lifecycle.state] ?? s.lifecycle.state,
+		lines: [s.recovery_reason ?? `The other system is ${s.lifecycle.other}.`],
 	};
 }
 
@@ -102,7 +83,7 @@ export function slotTags(s: Status, slot: Slot): SlotTag[] {
 	if (s.rollback_slot === slot && s.active_slot !== slot)
 		tags.push({ text: "roll back target", intent: "info" });
 	const trial = s.last_trial;
-	if (trial?.slot === slot)
+	if (s.lifecycle.trial_current && trial?.slot === slot)
 		tags.push(
 			trial.committed
 				? { text: "last trial: kept", intent: "success" }
@@ -133,9 +114,9 @@ const ERROR_HELP: Record<number, string | (() => string)> = {
 		const tool = privilegeTool();
 		return `Run recab-tui as root${tool ? ` (with ${tool})` : ""}: changes write EFI variables and the ESP.`;
 	},
-	20: "recab needs UEFI with efivarfs (/sys/firmware/efi/efivars); writing a system also needs blkid, mkfs.ext4, mount and recstrap.",
+	20: "recab needs access to the UEFI boot backend. Read the reported reason before retrying.",
 	22: "The change stopped part way. Check the slots before rebooting; recab never selects a slot that can't boot.",
-	23: "The trial boot wasn't healthy and wasn't committed; the machine returns to the known-good slot.",
+	23: "Trial assessment or recovery needs attention. Read the message to see whether a reboot was requested.",
 };
 
 /** The running system's privilege tool, from its os-release profile; null when it declares none. */
@@ -164,6 +145,18 @@ function helpFor(code: number): string | null {
 /** recab's error from a failed run: `recab: [RECAB_ERR_…] message` on stderr. */
 export function recabError(result: CommandResult): RecabError {
 	const text = (result.stderr.trim() || result.stdout.trim()).replace(/^recab:\s*/, "");
+	for (const line of text.split("\n").reverse()) {
+		try {
+			const e = JSON.parse(line);
+			if (e.message && ("class" in e || e.event === "failed"))
+				return { tag: e.class ?? null, message: e.message, help: helpFor(result.exitCode ?? 1) };
+		} catch {}
+	}
+	try {
+		const e = JSON.parse(text);
+		if (e.message)
+			return { tag: e.class ?? null, message: e.message, help: helpFor(result.exitCode ?? 1) };
+	} catch {}
 	const tag = /\[(RECAB_ERR_[A-Z_]+)\]\s*/.exec(text);
 	return {
 		tag: tag?.[1] ?? null,
@@ -202,9 +195,14 @@ export function slotBlock(s: Status, slot: Slot): SlotBlock {
 	const view = (s.slots ?? []).find((v) => v.slot === slot);
 	const running = s.active_slot === slot;
 	const next = !running && s.trial_pending && s.next_boot === slot;
-	const trial = s.last_trial?.slot === slot ? s.last_trial : null;
+	const trial = s.lifecycle.trial_current && s.last_trial?.slot === slot ? s.last_trial : null;
 	const parts: SlotTag[] = [];
-	if (view && !view.bootable) parts.push({ text: "cannot boot", intent: "error" });
+	if (view && !view.generation_ready)
+		parts.push({
+			text:
+				view.readiness === "incomplete" ? "preparation not finalized" : "generation not bootable",
+			intent: "warning",
+		});
 	if (trial)
 		parts.push(
 			trial.committed

@@ -1,0 +1,6 @@
+#!/bin/sh
+# UI fixture only: actual paired-root completion is checked by the real CLI integration.
+case "$*" in
+*verify-installation*) printf '%s\n' '{"schema_version":1,"complete":true,"slots":["A","B"],"generation":"paired-fixture-generation"}';;
+*) exit 2;;
+esac

@@ -53,7 +53,12 @@
 		"boot": {
 			"done_at": "2026-11-07T12:12:00.000Z",
 			"result": {
-				"mode": "ab"
+				"mode": "ab",
+				"verified_slots": [
+					"A",
+					"B"
+				],
+				"generation": "paired-fixture-generation"
 			}
 		}
 	}

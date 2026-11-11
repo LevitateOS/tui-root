@@ -120,6 +120,14 @@ export type Generation = {
 	initrd_digest: string | null;
 };
 
+export type Input = {
+	name: string;
+	label: string;
+	flag: string | null;
+	required: boolean;
+	choices: Array<string>;
+};
+
 export type Lifecycle = {
 	state: LifecycleState;
 	other: OtherSystem;
@@ -128,6 +136,8 @@ export type Lifecycle = {
 	 * may not open the lock file.
 	 */
 	working: boolean | null;
+	reboot_needed: boolean;
+	trial_current: boolean;
 };
 
 export type LifecycleState =
@@ -139,6 +149,7 @@ export type LifecycleState =
 	| "restart_set"
 	| "on_trial"
 	| "trial_failed"
+	| "conflicted"
 	| "unusable";
 
 export type MergeStatus = {
@@ -150,6 +161,22 @@ export type MergeStatus = {
 	unresolved: number;
 	report: SyncReport | null;
 	failure: string | null;
+};
+
+export type Operation = {
+	id: string;
+	label: string;
+	/**
+	 * Arguments to recab, excluding its executable. Never a shell command.
+	 */
+	argv: Array<string>;
+	inputs: Array<Input>;
+	/**
+	 * Ready permits requesting the operation; execution revalidates disk facts.
+	 */
+	verdict: Verdict;
+	reason: string | null;
+	destructive: boolean;
 };
 
 export type OtherSystem = "copy" | "previous" | "next" | "unknown";
@@ -235,6 +262,9 @@ export type SlotView = {
 };
 
 export type Status = {
+	operations: Array<Operation>;
+	running_release: string | null;
+	prepared_release: string | null;
 	updates: UpdateStatus | null;
 	schema_version: number;
 	active_slot: Slot;
@@ -377,6 +407,14 @@ export type Health = {
 export type InitSystem = "systemd" | "openrc";
 
 export type Startup = "running" | "failed" | "emergency" | "timed_out" | "inconclusive";
+
+export type Event = {
+	schema_version: number;
+	event: string;
+	operation: string;
+	message: string;
+	code: number | null;
+};
 
 export type ErrorClass =
 	| "permission"

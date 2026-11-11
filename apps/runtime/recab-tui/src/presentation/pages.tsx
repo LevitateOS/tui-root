@@ -31,7 +31,7 @@ import {
 	type SlotBlock,
 } from "../domain/recab";
 import type { StatusRead } from "../app/recab-runner";
-import { FIELD_QUESTION, type Prompt, type Run, type StageField } from "./use-recab";
+import { type Prompt, type Run } from "./use-recab";
 
 /** A line of text on the surface it sits on. */
 function Line({
@@ -189,7 +189,7 @@ export function OverviewPage({ status }: { status: StatusRead }): ReactNode {
 		);
 	const s = status.status;
 	const head = headline(s);
-	const trial = s.last_trial;
+	const trial = s.lifecycle.trial_current ? s.last_trial : null;
 	const trialPending = s.trial_pending && s.next_boot;
 	return (
 		<Box flexDirection="column">
@@ -207,6 +207,41 @@ export function OverviewPage({ status }: { status: StatusRead }): ReactNode {
 				<Heading title={head.title} subtitle={head.lines.join(" ")} />
 			)}
 			<StatusBlocks status={s} />
+			<Facts
+				rows={[
+					["Lifecycle", s.lifecycle.state],
+					["Running release", s.running_release ?? "unknown"],
+					["Candidate release", s.prepared_release ?? "none"],
+					[
+						"Preparation",
+						s.preparation
+							? `slot ${s.preparation.slot} · ${s.preparation.id} · revision ${s.preparation.revision} · ${s.preparation.phase}`
+							: "none",
+					],
+					["Reboot needed", s.lifecycle.reboot_needed ? "yes" : "no"],
+					["Update", s.updates?.phase ?? "unknown"],
+				]}
+			/>
+			{s.recovery_reason ? <Line intent="error">{s.recovery_reason}</Line> : null}
+			{s.updates?.last_error ? <Line intent="warning">{s.updates.last_error}</Line> : null}
+			{s.updates?.available ? (
+				<Line>{`Available: ${s.updates.available.version} · ${s.updates.available.total_bytes} bytes`}</Line>
+			) : null}
+			{s.updates?.download ? (
+				<Line>{`${s.updates.download.verified_bytes}/${s.updates.download.total_bytes} verified bytes${s.updates.download.downloaded ? " · downloaded" : ""}`}</Line>
+			) : null}
+			{s.preparation?.changes.map((c) => (
+				<Line key={c.id}>{`${c.action} ${c.package} · ${c.actor ?? "person"}`}</Line>
+			))}
+			{s.preparation?.change ? (
+				<Line intent="warning">{`Pending change: ${s.preparation.change.package} · ${s.preparation.change.action}`}</Line>
+			) : null}
+			{s.updates?.merge?.conflicts
+				.filter((c) => !c.resolution)
+				.map((c) => (
+					<Line key={c.id} intent="warning">{`${c.path}: ${c.kind}`}</Line>
+				))}
+
 			{trialPending ? (
 				<Fork target={s.next_boot!} fallback={s.known_good_slot ?? s.active_slot} />
 			) : (
@@ -251,37 +286,20 @@ function ChangeTable({ changes }: { changes: readonly Change[] }): ReactNode {
 	);
 }
 
-const FIELD_LABEL: Record<StageField, string> = {
-	rootfs: "System image",
-	kernel: "Kernel",
-	initrd: "Initramfs",
-};
-
-const FIELDS: readonly StageField[] = ["rootfs", "kernel", "initrd"];
-
-/** The path questions, one at a time: what is answered stays as a quiet row above. */
 function PathQuestions({ prompt }: { prompt: Extract<Prompt, { kind: "path" }> }): ReactNode {
 	const width = useContext(ContentWidth);
-	const here = FIELDS.indexOf(prompt.field);
+	const field = prompt.plan.inputs[prompt.index]!;
 	return (
 		<Box flexDirection="column">
-			{FIELDS.slice(0, here).map((field) => (
-				<Field
-					key={field}
-					label={FIELD_LABEL[field]}
-					text={prompt.answers[field] || "none"}
-					width={width}
-					cursor={false}
-				/>
-			))}
-			<Gap />
-			<Line bold>{FIELD_QUESTION[prompt.field]}</Line>
-			<Field label={FIELD_LABEL[prompt.field]} text={prompt.text} width={width} />
-			<Gap />
+			<Line bold>{field.label}</Line>
+			{field.choices.length ? <Line>{field.choices.join(" / ")}</Line> : null}
+			<Field label={field.name} text={prompt.text} width={width} />
 			{prompt.error ? (
 				<Line intent="warning">{prompt.error}</Line>
 			) : (
-				<Line intent="faintText">Tab completes the path · Enter accepts · Esc cancels</Line>
+				<Line intent="dimText">
+					Enter accepts · Esc cancels{field.required ? "" : " · optional"}
+				</Line>
 			)}
 		</Box>
 	);
@@ -344,7 +362,7 @@ function RunResult({
 			{ok ? null : (
 				<ErrorPanel
 					tone={refused ? "warning" : "danger"}
-					title={refused ? "recab changed nothing" : exitText(result)}
+					title={refused ? "recab refused the request" : exitText(result)}
 					error={recabError(result)}
 				/>
 			)}
@@ -410,19 +428,15 @@ export function ActionPage({
 		);
 	const heading = <Heading title={plan.title} subtitle={plan.summary} />;
 	const fork =
-		plan.id === "try" || (plan.id === "reboot" && status.trial_pending && status.next_boot) ? (
+		plan.id === "set_next" || (plan.id === "reboot" && status.trial_pending && status.next_boot) ? (
 			<Fork
-				target={plan.id === "try" ? status.inactive_slot : status.next_boot!}
+				target={plan.id === "set_next" ? status.inactive_slot : status.next_boot!}
 				fallback={status.known_good_slot ?? status.active_slot}
 			/>
 		) : (
 			<ChangeTable changes={plan.changes} />
 		);
-	const argv =
-		plan.argv ??
-		(prompt?.kind === "token"
-			? prompt.argv
-			: ["recab", "stage", "--rootfs", "<image>", "--kernel", "<vmlinuz>", "[--initrd <img>]"]);
+	const argv = plan.argv;
 
 	if (prompt?.kind === "path")
 		return (
@@ -431,40 +445,13 @@ export function ActionPage({
 				<PathQuestions prompt={prompt} />
 			</Box>
 		);
-	if (prompt?.kind === "token")
-		return (
-			<Box flexDirection="column">
-				<Heading
-					title={`Write over slot ${prompt.slot}?`}
-					subtitle={`Type ${prompt.slot} to erase slot ${prompt.slot} and write the new system. Everything in it is lost.`}
-				/>
-				<SlotBlocks
-					blocks={(
-						[
-							{
-								...slotBlock(status, status.active_slot),
-								role: "untouched",
-								standing: { text: "keeps running", intent: "info" as const },
-							},
-							{
-								...slotBlock(status, prompt.slot),
-								role: "erased",
-								standing: { text: "then the new system", intent: "text" },
-								tag: "formatted",
-							},
-						] satisfies SlotBlock[]
-					).sort((a, b) => a.slot.localeCompare(b.slot))}
-				/>
-				<WordSlots word={prompt.slot} typed={prompt.text.trim().toUpperCase()} />
-			</Box>
-		);
 	if (prompt?.kind === "confirm")
 		return (
 			<Box flexDirection="column">
 				{heading}
 				<Callout
 					tone="warning"
-					title={`Run ${prompt.argv.join(" ")}?`}
+					title={`${prompt.plan.label}?${prompt.destructive ? " Prepared changes will be lost." : ""}`}
 					keys={[
 						["y", "run it"],
 						["n", "cancel"],

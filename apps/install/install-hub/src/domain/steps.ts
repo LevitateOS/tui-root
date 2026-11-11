@@ -119,7 +119,17 @@ export function installSteps(
 	state: InstallState,
 	exists: (path: string) => boolean,
 ): Step[] {
-	const done = (id: InstallStepId) => id !== "finish" && state.steps[id] !== undefined;
+	const done = (id: InstallStepId) => {
+		if (id === "finish") return false;
+		const boot = state.steps.boot?.result;
+		if (id === "boot" && boot?.mode === "ab")
+			return (
+				!!boot.generation &&
+				!!boot.verified_slots?.includes("A") &&
+				!!boot.verified_slots?.includes("B")
+			);
+		return state.steps[id] !== undefined;
+	};
 	const steps = procedure(d, { disk: state.steps.disk?.result }).map(
 		(step): Omit<Step, "status"> => {
 			const record = recordFor(step.id, state);
