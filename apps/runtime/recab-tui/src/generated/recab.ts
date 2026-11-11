@@ -311,6 +311,10 @@ export type SyncReport = {
 export type TrialRecord = {
 	slot: Slot;
 	/**
+	 * Identifies this scheduled attempt, including retries of the same generation.
+	 */
+	attempt: string | null;
+	/**
 	 * Missing only in historical records written before generation-bound assessment.
 	 */
 	generation: string | null;
