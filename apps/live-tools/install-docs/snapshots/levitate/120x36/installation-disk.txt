@@ -1,36 +1,36 @@
-┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│LevitateOS docs               ││Disk Preparation  lines 1-30/161                                                      │
-├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
-│ ▾ Getting Started            ││ Installation steps 1-5: Boot the live environment and prepare your disk. See         │
-│    Getting Started           ││ Installation (/docs/installation) for an overview.                                   │
-│    Installation              ││                                                                                      │
-│  ▸ Disk Preparation          ││ ◆ 1. Boot the Live Environment                                                       │
-│    Base System               ││                                                                                      │
-│    Configuration             ││ Boot from the LevitateOS ISO (see Getting Started (/docs/getting-started)). The      │
-│    Boot & Finish             ││ install screen opens beside this guide. On the left, install-hub lists the install   │
-│    Post-Installation         ││ steps and does each one: it starts disk-plan for the disk and base-system for the    │
-│    Troubleshooting           ││ base system, runs this guide's commands for the boot loader, and opens a shell for   │
-│                              ││ the rest (s at any time; exit returns). The commands below work the same typed by    │
-│ ▸ Package Manager            ││ hand. Ctrl-] switches between the panes.                                             │
-│                              ││                                                                                      │
-│ ▸ Helpers                    ││ ╭──────────────────────────────────────────────────────────────────────────────────╮ │
-│                              ││ │ INFO                                                                             │ │
-│ ▸ Architecture               ││ │ Secure Boot: LevitateOS's boot files are unsigned. If your system won't boot the │ │
-│                              ││ │ ISO, disable Secure Boot in your UEFI firmware settings.                         │ │
-│ ▸ Rec Tooling                ││ ╰──────────────────────────────────────────────────────────────────────────────────╯ │
-│                              ││                                                                                      │
-│                              ││ Verify you booted in UEFI mode                                                       │
-│                              ││ $ ls /sys/firmware/efi/efivars                                                       │
-│                              ││                                                                                      │
-│                              ││ If /sys/firmware/efi/efivars doesn't exist, you booted in legacy BIOS mode.          │
-│                              ││ LevitateOS requires UEFI. Reboot and select UEFI boot in your firmware settings.     │
-│                              ││                                                                                      │
-│                              ││ Set keyboard layout (optional, default is US)                                        │
-│                              ││ $ loadkeys us                                                                        │
-│                              ││                                                                                      │
-│                              ││ ◆ WiFi Connection (Optional)                                                         │
-│                              ││                                                                                      │
-│                              ││ Installation is fully offline - no network required. NetworkManager configures a     │
-└──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
- navigation | <masked> | q quit | Tab switch pane | m sidebar mode | h/l prev/next page | [/] prev/next section
- j/k scroll content | space/b scroll a page
+ ◆ LevitateOS                                                                                  Guide   Disk Preparation
+
+ █████████████ █████████████ █████████████ █████████████ █████████████ █████████████ █████████████ █████████████
+
+
+   ✓  Getting Started            ▀▀▀▀▄   Disk Preparation
+   ✓  Installation                ▀▀▀▄   Getting Started, <masked>
+▌  ●  Disk Preparation           ▄▄▄▄▀
+      Base System
+      Configuration              Installation steps 1-5: Boot the live environment and
+      Boot & Finish              prepare your disk. See Installation (/docs/installation)
+      Post-Installation          for an overview.
+      Troubleshooting
+                                 1  Boot the Live Environment
+      Package Manager      ▸     Boot from the LevitateOS ISO (see Getting Started
+      Helpers              ▸     (/docs/getting-started)). The install screen opens
+      Architecture         ▸     beside this guide. On the left, install-hub lists the
+      Rec Tooling          ▸     install steps and does each one: it starts disk-plan for
+                                 the disk and base-system for the base system, runs this
+                                 guide's commands for the boot loader, and opens a shell
+                                 for the rest (s at any time; exit returns). The commands
+                                 below work the same typed by hand. Ctrl-] switches
+                                 between the panes.
+
+                                 Secure Boot: LevitateOS's boot files are unsigned. If
+                                 your system won't boot the ISO, disable Secure Boot in
+                                 your UEFI firmware settings.
+
+                                 Verify you booted in UEFI mode
+
+
+
+
+  q  quit    Tab  switch pane    m  sidebar mode    h/l  prev/next page    [/]  prev/next section
+  j/k  scroll content    space/b  scroll a page                                                            <masked>
+

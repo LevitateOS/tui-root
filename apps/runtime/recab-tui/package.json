@@ -107,7 +107,7 @@
 					},
 					"steps": [
 						{
-							"expect": "Slot B boots once on the next reboot"
+							"expect": "Slot B boots next, once"
 						}
 					]
 				},
@@ -198,7 +198,7 @@
 					},
 					"steps": [
 						{
-							"expect": "Slot A boots once on the next reboot"
+							"expect": "Slot A boots next, once"
 						}
 					]
 				},

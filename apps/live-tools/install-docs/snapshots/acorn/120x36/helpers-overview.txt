@@ -1,36 +1,36 @@
-┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│AcornOS docs                  ││Helpers Overview  lines 1-30/95                                                       │
-├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
-│ ▸ Getting Started            ││ Functions available in recipe scripts (/docs/recipe-format) with const RECIPE_API =  │
-│                              ││ 2;. Helpers take explicit paths and return explicit results; paths come from RUNTIME │
-│ ▸ Package Manager            ││ during setup and ctx.runtime in hooks.                                               │
-│                              ││                                                                                      │
-│ ▾ Helpers                    ││ ◆ Where Helpers Run                                                                  │
-│  ▸ Helpers Overview          ││                                                                                      │
-│    Acquire Helpers           ││ Every helper with an effect runs inside the recipe's Ginux domain, under its         │
-│    Build Helpers             ││ filesystem, task, memory and network limits. Paths refer to the domain's filesystem: │
-│    Install Helpers           ││ /inputs, /work/build, /work/tools, /work/tmp and /out. Commands need their binaries  │
-│    Filesystem Helpers        ││ in the selected image or in dependency tools. Network helpers need an endpoint the   │
-│    Environment Helpers       ││ caller granted with --network-host.                                                  │
-│    Command Helpers           ││                                                                                      │
-│    HTTP Helpers              ││ A helper that fails throws, and the error fails the phase unless the recipe handles  │
-│    Path Helpers              ││ it. Readiness checks report work with needs_work(ctx, reason), never by throwing.    │
-│                              ││                                                                                      │
-│ ▸ Architecture               ││ ◆ Example                                                                            │
-│                              ││                                                                                      │
-│ ▸ Rec Tooling                ││ ┌ RHAI • foo.rhai ─────────────────────────────────────────────────────────────────┐ │
-│                              ││ │ 1 │const RECIPE_API = 2;                                                         │ │
-│                              ││ │ 2 │let ctx = #{                                                                  │ │
-│                              ││ │ 3 │    name: "foo",                                                              │ │
-│                              ││ │ 4 │    version: "1.0",                                                           │ │
-│                              ││ │ 5 │    url: "https://example.com/foo-1.0.tar.gz",                                │ │
-│                              ││ │ 6 │    sha256: "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"│ │
-│                              ││ │   │,                                                                             │ │
-│                              ││ │ 7 │    src: join_path(RUNTIME.paths.build, "foo-1.0"),                           │ │
-│                              ││ │ 8 │    program: join_path(RUNTIME.paths.output, "bin/foo"),                      │ │
-│                              ││ │ 9 │};                                                                            │ │
-│                              ││ │10 │                                                                              │ │
-│                              ││ │11 │fn is_acquired(ctx) {                                                         │ │
-└──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
- navigation | <masked> | q quit | Tab switch pane | m sidebar mode | h/l prev/next page | [/] prev/next section
- j/k scroll content | space/b scroll a page
+ ◆ AcornOS                                                                                     Guide   Helpers Overview
+
+ ████████████ ████████████ ████████████ ████████████ ████████████ ████████████ ████████████ ████████████ ████████████
+
+
+      Getting Started      ▸     Helpers Overview
+      Package Manager      ▸     Helpers, <masked>
+
+   HELPERS
+▌  ●  Helpers Overview           Functions available in recipe scripts
+      Acquire Helpers            (/docs/recipe-format) with const RECIPE_API = 2; and a
+      Build Helpers              literal NEEDS declaration. Helpers take explicit paths
+      Install Helpers            and return explicit results; paths come from RUNTIME
+      Filesystem Helpers         during setup and ctx.runtime in hooks.
+      Environment Helpers
+      Command Helpers            Where Helpers Run
+      HTTP Helpers               Every helper with an effect runs inside the recipe's
+      Path Helpers               Ginux domain, under its filesystem, task, memory and
+                                 network limits. Paths refer to the domain's filesystem:
+      Architecture         ▸     /inputs, /work/build, /work/tools, /work/tmp and /out.
+      Rec Tooling          ▸     Commands need their binaries in the selected image or in
+                                 dependency tools. Network helpers need an endpoint
+                                 declared in NEEDS.network. Caller endpoint/limit options
+                                 only narrow that authority, including dependencies.
+                                 Declare all imported inputs and returned outputs with
+                                 their kinds.
+
+                                 A helper that fails throws, and the error fails the
+                                 phase unless the recipe handles it. Readiness checks
+
+
+
+
+  q  quit    Tab  switch pane    m  sidebar mode    h/l  prev/next page    [/]  prev/next section
+  j/k  scroll content    space/b  scroll a page                                                           <masked>
+

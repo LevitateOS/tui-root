@@ -1,36 +1,36 @@
-┌──────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────────┐
-│LevitateOS docs               ││Command Helpers  lines 1-30/75                                                        │
-├──────────────────────────────┤├──────────────────────────────────────────────────────────────────────────────────────┤
-│ ▸ Getting Started            ││ Functions for running programs and shell commands inside the recipe's domain.        │
-│                              ││                                                                                      │
-│ ▸ Package Manager            ││ ◆ Overview                                                                           │
-│                              ││                                                                                      │
-│ ▾ Helpers                    ││ Commands run inside Ginux and need their binaries in the selected image or in        │
-│    Helpers Overview          ││ dependency tools, whose executables are on PATH. Prefer the exec family: arguments   │
-│    Acquire Helpers           ││ are an array, so nothing is reparsed by a shell. Their output goes to stderr with    │
-│    Build Helpers             ││ the rest of the diagnostics.                                                         │
-│    Install Helpers           ││                                                                                      │
-│    Filesystem Helpers        ││ Helper                         │ On nonzero exit   │ Returns                         │
-│    Environment Helpers       ││ ───────────────────────────────┼───────────────────┼───────────────────────────────  │
-│  ▸ Command Helpers           ││ exec_checked(cmd, args[,       │ Throws            │ ()                              │
-│    HTTP Helpers              ││ options])                      │                   │                                 │
-│    Path Helpers              ││ exec_output(cmd, args[,        │ Throws            │ stdout as a string              │
-│                              ││ options])                      │                   │                                 │
-│ ▸ Architecture               ││ exec(cmd, args[, options])     │ Returns the       │ exit status (int)               │
-│                              ││                                │ status            │                                 │
-│ ▸ Rec Tooling                ││ shell(cmd) / shell_in(dir,     │ Throws            │ ()                              │
-│                              ││ cmd)                           │                   │                                 │
-│                              ││ shell_output(cmd) /            │ Throws            │ stdout as a string              │
-│                              ││ shell_output_in(dir, cmd)      │                   │                                 │
-│                              ││ shell_status(cmd) /            │ Returns the       │ exit status, or -1 if it could  │
-│                              ││ shell_status_in(dir, cmd)      │ status            │ not run                         │
-│                              ││                                                                                      │
-│                              ││ ◆ exec_checked                                                                       │
-│                              ││                                                                                      │
-│                              ││ Run a program and throw if it exits nonzero. The optional map sets cwd and env for   │
-│                              ││ this command only; the worker's own directory and environment don't change.          │
-│                              ││                                                                                      │
-│                              ││ ┌ RHAI ────────────────────────────────────────────────────────────────────────────┐ │
-└──────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────────┘
- navigation | <masked> | q quit | Tab switch pane | m sidebar mode | h/l prev/next page | [/] prev/next section
- j/k scroll content | space/b scroll a page
+ ◆ LevitateOS                                                                                   Guide   Command Helpers
+
+ ████████████ ████████████ ████████████ ████████████ ████████████ ████████████ ████████████ ████████████ ████████████
+
+
+      Getting Started      ▸     Command Helpers
+      Package Manager      ▸     Helpers, <masked>
+
+   HELPERS
+      Helpers Overview           Functions for running programs and shell commands inside
+      Acquire Helpers            the recipe's domain.
+      Build Helpers
+      Install Helpers            Overview
+      Filesystem Helpers         Commands run inside Ginux and need their binaries in the
+      Environment Helpers        selected image or in dependency tools, whose executables
+▌  ●  Command Helpers            are on PATH. Prefer the exec family: arguments are an
+      HTTP Helpers               array, so nothing is reparsed by a shell. Their output
+      Path Helpers               goes to stderr with the rest of the diagnostics.
+
+      Architecture         ▸     Helper                On nonzero   Returns
+      Rec Tooling          ▸                           exit
+                                 exec_checked(cmd,     Throws       ()
+                                 args[, options])
+                                 exec_output(cmd,      Throws       stdout as a string
+                                 args[, options])
+                                 exec(cmd, args[,      Returns the  exit status (int)
+                                 options])             status
+                                 shell(cmd) /          Throws       ()
+                                 shell_in(dir, cmd)
+
+
+
+
+  q  quit    Tab  switch pane    m  sidebar mode    h/l  prev/next page    [/]  prev/next section
+  j/k  scroll content    space/b  scroll a page                                                           <masked>
+

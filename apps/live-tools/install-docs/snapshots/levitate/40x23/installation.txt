@@ -1,0 +1,23 @@
+ ◆ LevitateOS      Guide   Installation
+
+ ███ ███ ███ ███ ███ ███ ███ ███
+
+
+  ▄▀▀▀▄   Installation
+    ▄▀    Getting Started, <masked>
+  ▄█▄▄▄
+
+  Step-by-step guide to installing
+  LevitateOS from the live
+  environment.
+
+    Open Atomic Updates (…    Enter
+
+
+ 1/7    q  quit    Tab  switch pane
+  m  sidebar mode
+  j/k  next/prev action
+  Enter  open link / copy    c/y  copy
+  space/b  scroll a page    g/home  top
+  G/end  end               <masked>
+
