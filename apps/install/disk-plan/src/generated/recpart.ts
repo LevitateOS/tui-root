@@ -183,23 +183,23 @@ export type InstallMode = "ab" | "mutable";
 
 export type LayoutRequest = {
 	/**
-	 * EFI partition size in MB
+	 * EFI partition size in MiB (1024 * 1024 bytes)
 	 */
 	efi_size_mb: number | null;
 	/**
-	 * Mutable root partition size in MB (mutable mode only)
+	 * Mutable root partition size in MiB (mutable mode only)
 	 */
 	root_size_mb: number | null;
 	/**
-	 * A/B slot A partition size in MB (ab mode only)
+	 * A/B slot A partition size in MiB (ab mode only)
 	 */
 	root_a_size_mb: number | null;
 	/**
-	 * A/B slot B partition size in MB (ab mode only)
+	 * A/B slot B partition size in MiB (ab mode only)
 	 */
 	root_b_size_mb: number | null;
 	/**
-	 * A/B state partition size in MB (ab mode only). Omit to use remaining space.
+	 * A/B state partition size in MiB (ab mode only). Omit to use remaining space.
 	 */
 	state_size_mb: number | null;
 };
