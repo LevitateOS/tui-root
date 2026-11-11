@@ -100,6 +100,9 @@ export type DownloadProgress = {
 	 * False when a previous failed producer may have written unreported bytes.
 	 */
 	accounting_complete: boolean;
+	assembly_write_bytes: number;
+	verified_parts: number;
+	reused_parts: number;
 };
 
 export type Finalization = {
