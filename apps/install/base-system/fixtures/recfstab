@@ -39,4 +39,4 @@ else
 	entries="$entries,$(entry /dev/vda1 UUID=1C2B-3A4D /boot vfat relatime,fmask=0022,dmask=0022 0)"
 fi
 entries="$entries,$(entry /dev/vda4 UUID=9e8d7c6b-state /var ext4 relatime 2)"
-echo "{\"schema_version\":1,\"root\":\"$root\",\"fstab_path\":\"$root/etc/fstab\",\"entries\":[$entries],\"existing\":$existing,\"warnings\":$warnings,\"written\":$write}"
+printf '%s\n' "{\"schema_version\":1,\"root\":\"$root\",\"fstab_path\":\"$root/etc/fstab\",\"entries\":[$entries],\"existing\":$existing,\"warnings\":$warnings,\"written\":$write}"

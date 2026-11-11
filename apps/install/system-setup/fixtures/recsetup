@@ -52,7 +52,7 @@ if [ "$cmd" = inspect ]; then
 	for map in be-latin1 br-abnt2 cz de de-latin1 dvorak es fi fr fr-latin9 it jp106 nl no pl pt-latin1 ru se-latin1 sg uk us us-acentos; do
 		keymaps="$keymaps${keymaps:+,}\"$map\""
 	done
-	echo "{\"schema_version\":1,\"target\":$target,\"choices\":{\"timezones\":[$zones],\"locales\":[$locales],\"keymaps\":[$keymaps],\"shells\":[\"/bin/bash\",\"/bin/sh\"],\"groups\":[\"root\",\"wheel\"],\"users\":[\"root\"],\"services\":[]}}"
+	printf '%s\n' "{\"schema_version\":1,\"target\":$target,\"choices\":{\"timezones\":[$zones],\"locales\":[$locales],\"keymaps\":[$keymaps],\"shells\":[\"/bin/bash\",\"/bin/sh\"],\"groups\":[\"root\",\"wheel\"],\"users\":[\"root\"],\"services\":[]}}"
 	exit 0
 fi
 
@@ -99,12 +99,12 @@ names=$(printf '%s' "$who" | sed 's/, /","/g')
 [ -n "$names" ] && names="\"$names\""
 
 if [ "$cmd" = plan ]; then
-	echo "{\"schema_version\":1,\"target\":$target,\"request\":{},\"steps\":[$steps],\"warnings\":[],\"password_users\":[$names]}"
+	printf '%s\n' "{\"schema_version\":1,\"target\":$target,\"request\":{},\"steps\":[$steps],\"warnings\":[],\"password_users\":[$names]}"
 	exit 0
 fi
 [ -n "$stdin" ] && cat >/dev/null
 if [ -n "$failed" ]; then
-	echo "{\"schema_version\":1,\"dry_run\":false,\"target\":$target,\"steps\":[$steps],\"warnings\":[],\"error\":{\"schema_version\":1,\"code\":\"E022\",\"message\":\"'Create user $user' failed with exit status 9\"}}"
+	printf '%s\n' "{\"schema_version\":1,\"dry_run\":false,\"target\":$target,\"steps\":[$steps],\"warnings\":[],\"error\":{\"schema_version\":1,\"code\":\"E022\",\"message\":\"'Create user $user' failed with exit status 9\"}}"
 	fail E022 22 "'Create user $user' failed with exit status 9" "fix what the step's output says, then apply again"
 fi
-echo "{\"schema_version\":1,\"dry_run\":false,\"target\":$target,\"steps\":[$steps],\"warnings\":[],\"error\":null}"
+printf '%s\n' "{\"schema_version\":1,\"dry_run\":false,\"target\":$target,\"steps\":[$steps],\"warnings\":[],\"error\":null}"
