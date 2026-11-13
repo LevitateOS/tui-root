@@ -1,16 +1,10 @@
 import { parseHexColor } from "@levitate/tui-kit";
 
-const ESCAPED_OPEN = "\u0000TUI_ESCAPED_OPEN\u0000";
-
 /** A run of text in one colour, from docs-content's `[[fg=#hex]]…[[/]]` markup. */
 export type SyntaxToken = {
 	text: string;
 	color?: `#${string}`;
 };
-
-function restoreEscapes(value: string): string {
-	return value.replaceAll(ESCAPED_OPEN, "[[").replaceAll("\\{", "{").replaceAll("\\}", "}");
-}
 
 function pushToken(target: SyntaxToken[], token: SyntaxToken): void {
 	if (token.text.length === 0) {
@@ -24,54 +18,57 @@ function pushToken(target: SyntaxToken[], token: SyntaxToken): void {
 	target.push(token);
 }
 
+/**
+ * Parses one highlighted line. In text, the docs build writes `\\` for a backslash and
+ * `\{`, `\}`, `\[[` for the characters that would otherwise be markup, so a backslash at
+ * the end of a token is never mistaken for an escape of the closing tag.
+ */
 export function parseSyntaxTokenLine(line: string): SyntaxToken[] {
-	const source = line.replaceAll("\\[[", ESCAPED_OPEN);
 	const tokens: SyntaxToken[] = [];
-	let offset = 0;
 	let activeColor: `#${string}` | undefined;
+	let text = "";
 
-	while (offset < source.length) {
-		const open = source.indexOf("[[", offset);
-		if (open < 0) {
-			pushToken(tokens, {
-				text: restoreEscapes(source.slice(offset)),
-				color: activeColor,
-			});
-			break;
-		}
+	const flush = (): void => {
+		pushToken(tokens, { text, color: activeColor });
+		text = "";
+	};
 
-		if (open > offset) {
-			pushToken(tokens, {
-				text: restoreEscapes(source.slice(offset, open)),
-				color: activeColor,
-			});
-		}
-
-		const close = source.indexOf("]]", open + 2);
-		if (close < 0) {
-			pushToken(tokens, {
-				text: restoreEscapes(source.slice(open)),
-				color: activeColor,
-			});
-			break;
-		}
-
-		const tag = source.slice(open + 2, close).trim();
-		if (tag === "/") {
-			activeColor = undefined;
-		} else if (tag.startsWith("fg=")) {
-			const color = parseHexColor(tag.slice(3));
-			if (color) {
-				activeColor = color;
+	let offset = 0;
+	while (offset < line.length) {
+		const char = line[offset];
+		if (char === "\\") {
+			if (line.startsWith("[[", offset + 1)) {
+				text += "[[";
+				offset += 3;
+				continue;
+			}
+			const next = line[offset + 1];
+			if (next === "\\" || next === "{" || next === "}") {
+				text += next;
+				offset += 2;
+				continue;
+			}
+		} else if (char === "[" && line.startsWith("[[", offset)) {
+			const close = line.indexOf("]]", offset + 2);
+			if (close >= 0) {
+				const tag = line.slice(offset + 2, close).trim();
+				flush();
+				if (tag === "/") {
+					activeColor = undefined;
+				} else if (tag.startsWith("fg=")) {
+					const color = parseHexColor(tag.slice(3));
+					if (color) {
+						activeColor = color;
+					}
+				}
+				offset = close + 2;
+				continue;
 			}
 		}
-
-		offset = close + 2;
+		text += char;
+		offset += 1;
 	}
+	flush();
 
-	if (tokens.length === 0) {
-		return [{ text: restoreEscapes(source) }];
-	}
-
-	return tokens;
+	return tokens.length === 0 ? [{ text: "" }] : tokens;
 }
