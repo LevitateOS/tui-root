@@ -8,7 +8,6 @@ import {
 	useFocusPlane,
 	useKeymap,
 	useScrollState,
-	useTuiTheme,
 	useTuiViewport,
 	fitFooter,
 	movesBack,
@@ -60,11 +59,7 @@ export function InstallViewerScreen({ docs, initialIndex }: InstallViewerScreenP
 	const position = section.findIndex((page) => page.slug === currentItem.slug);
 	const isGuide = currentItem.sectionTitle === docs.pages[0]!.sectionTitle;
 	const content = docs.content(currentItem.slug);
-	const { appearance } = useTuiTheme();
-	const page = useMemo(
-		() => layoutPage(content, columns, appearance),
-		[content, columns, appearance],
-	);
+	const page = useMemo(() => layoutPage(content, columns), [content, columns]);
 	const actions = page.anchors;
 	// The footer wraps onto as many lines as the pane's width needs; the page gets the rest.
 	const layout = fitFooter(

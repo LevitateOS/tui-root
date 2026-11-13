@@ -61,7 +61,7 @@ export { brandTheme } from "./theme/create-theme";
 export type { Brand } from "./theme/create-theme";
 export { readOsRelease } from "./app/os-release";
 export type { ColorIntent, ThemeColor, TuiTheme } from "./theme/tokens";
-export type { Appearance, Palette } from "./theme/palette";
+export type { Palette } from "./theme/palette";
 export { errorMessage, textWidth, truncateLine } from "./utils/strings";
 export { formatBytes, formatCount, shortDevice } from "./utils/format";
 export { appendRun, runsText, truncateLines, wrapRuns } from "./utils/runs";

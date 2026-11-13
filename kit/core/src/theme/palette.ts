@@ -1,12 +1,10 @@
 import type { ThemeColor } from "./tokens";
 
-/** The mode a theme is drawn in: its surfaces are light or dark. */
-export type Appearance = "light" | "dark";
-
 /**
- * One mode's colours, as `#rrggbb`: the only colours a theme is made of. Each distro
- * declares one per mode in its `distro.toml` (`[look.light]`, `[look.dark]`), and
- * `@levitate/docs-content`'s `brandOf` hands the one for its starting mode to `brandTheme`.
+ * A palette as `#rrggbb`: the only colours a theme is made of. Each distro declares its
+ * palettes in its `distro.toml` (`[look.light]`, `[look.dark]`); terminal apps are dark on
+ * both distros, so `@levitate/docs-content`'s `brandOf` hands the distro's dark one to
+ * `brandTheme`.
  */
 export type Palette = {
 	/** The base surface: the nav pane, panels, the footer. */

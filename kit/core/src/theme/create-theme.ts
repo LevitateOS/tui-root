@@ -1,4 +1,4 @@
-import type { Appearance, Palette } from "./palette";
+import type { Palette } from "./palette";
 import {
 	defaultThemeChrome,
 	defaultThemeLayout,
@@ -9,12 +9,10 @@ import {
 	type TuiTheme,
 } from "./tokens";
 
-/** What sets one product's apps apart from another's: its name, the mode it starts in,
- * and that mode's whole palette. */
+/** What sets one product's apps apart from another's: its name and its whole palette. */
 export type Brand = {
 	/** Named at the start of the header band; empty names nobody. */
 	name: string;
-	appearance: Appearance;
 	palette: Palette;
 };
 
@@ -27,7 +25,6 @@ export function brandTheme(
 ): TuiTheme {
 	return {
 		brand: brand.name,
-		appearance: brand.appearance,
 		colors: { ...paletteColors(brand.palette), ...colors },
 		layout: { ...defaultThemeLayout, ...layout },
 		chrome: { ...defaultThemeChrome, ...chrome },

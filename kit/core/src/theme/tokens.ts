@@ -1,5 +1,5 @@
 import type { BorderStyle } from "../chrome/glyphs";
-import type { Appearance, Palette } from "./palette";
+import type { Palette } from "./palette";
 
 /**
  * A theme colour: `#rrggbb`, or `"inherit"` to leave the terminal's own colour.
@@ -29,8 +29,7 @@ export type ColorIntent =
 	| "linkActive"
 	| "linkActiveBackground"
 	/** Text on a filled accent, second accent or status colour: the surface colour, which
-	 * contrasts with each of them in both modes (the accent is light in dark mode and dark
-	 * in light mode). */
+	 * contrasts with each of them (the accents are light, the surface dark). */
 	| "onFill"
 	// the two-pane frame
 	| "navBorder"
@@ -74,8 +73,6 @@ export type ThemeChrome = {
 export type TuiTheme = {
 	/** Whose app this is, named at the start of the header band; empty names nobody. */
 	brand: string;
-	/** The mode the palette is in. */
-	appearance: Appearance;
 	colors: ThemeColors;
 	layout: ThemeLayout;
 	chrome: ThemeChrome;

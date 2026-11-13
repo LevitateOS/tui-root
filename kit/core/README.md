@@ -58,21 +58,22 @@ layout, under a header and over the footer:
 each pane's background as the surface (`useSurfaceBackground`), so the parts below fit
 the pane and paint their empty cells in its colour.
 
-## Colour: one palette, both modes
+## Colour: one palette, dark
 
 Every colour of a theme comes from one `Palette`, the fifteen roles of a distro's
-`[look.<mode>]` table in `distro/variants/<id>/distro.toml`: `surface`, `surfaceRaised`,
+`[look.dark]` table in `distro/variants/<id>/distro.toml`: `surface`, `surfaceRaised`,
 `surfaceSunken`, `text`, `textSecondary`, `textMuted`, `rule`, `hairline`, `accent`,
-`highlight`, `band`, `onBand`, `ok`, `warn`, `bad`. A distro starts in the mode its
-`profile.appearance` names (LevitateOS light, AcornOS dark), and the kit has no colours of
-its own: nothing assumes the surface is dark.
+`highlight`, `band`, `onBand`, `ok`, `warn`, `bad`. Terminal apps are dark on both
+distros (a light terminal app is unnatural), each in its own dark palette: LevitateOS's
+green, AcornOS's brown. The mode a distro starts in (`profile.appearance`) is for its
+desktop and its website pages, not for terminal apps. The kit has no colours of its own,
+so the theme has one appearance and no light/dark switch (install-docs bakes only the
+dark syntax colouring).
 
-`brandTheme({ name, appearance, palette })` makes the whole theme (the apps pass
-`brandOf(distro)` from `@levitate/docs-content/brand`, which is exactly that for the
-distro's starting mode; `brandOf(undefined)` is LevitateOS's, nameless). There is no
-default theme: `runApp` needs `theme`. `theme.appearance` says which mode the palette is
-in, for what has its own light and dark sets (install-docs picks the light or the dark
-syntax colouring by it). `paletteColors` (`theme/tokens.ts`) is the one place a role
+`brandTheme({ name, palette })` makes the whole theme (the apps pass `brandOf(distro)`
+from `@levitate/docs-content/brand`, which is exactly that with the distro's dark palette;
+`brandOf(undefined)` is LevitateOS's, nameless). There is no default theme: `runApp`
+needs `theme`. `paletteColors` (`theme/tokens.ts`) is the one place a role
 becomes intents:
 
 | Intents | Role |
@@ -90,16 +91,16 @@ becomes intents:
 | `band` / `onBand` | `band` / `onBand` |
 | `success` / `warning` / `error` | `ok` / `warn` / `bad` |
 
-**Text on a fill.** The accent is light in dark mode and dark in light mode, so text on a
-filled accent, second accent or status colour is never `text`: it is `onFill` (the surface
-colour), which contrasts with each of them in both modes. Selection bars, the active
+**Text on a fill.** The accent is light on a dark surface, so text on a filled accent,
+second accent or status colour is never `text`: it is `onFill` (the surface colour), which
+contrasts with each of them. Selection bars, the active
 link, the action bar, step-line segments, keycaps inside a panel, badges and disk-bar names
 all take it; text on the band is `onBand`. The header picks per cell: its own colour
 where that reads on the fade there (`contrastRatio` at 4.5), else the better of it and
 `onBand`.
 
 **The key bar** (the footer) is drawn from the same roles, so a program that draws its own
-(the install screen's split-pane host) reads the distro's `[look.<profile.appearance>]`
+(the install screen's split-pane host) reads the distro's `[look.dark]`
 table: the bar is `surface`; each keycap is `text` bold on `rule`; the labels, the
 separators between them and a note at the end of a line are `text_muted`.
 
