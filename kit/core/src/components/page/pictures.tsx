@@ -82,7 +82,7 @@ export function DiskBar({
 		const span = spans[i]!;
 		grid.fill(0, span.start, span.width, part.intent);
 		if (part.name && textWidth(part.name) + 2 <= span.width) {
-			grid.put(0, span.start + 1, part.name, "contentBackground", undefined, true);
+			grid.put(0, span.start + 1, part.name, "onFill", undefined, true);
 		}
 	});
 	if (marked) {
@@ -107,14 +107,7 @@ export function WordSlots({ word, typed }: { word: string; typed: string }): Rea
 		const filled = i < keyed.length;
 		const bg: ColorIntent = filled ? (done ? "success" : "error") : "raisedBackground";
 		grid.fill(0, i * 4, 3, bg);
-		grid.put(
-			0,
-			i * 4 + 1,
-			filled ? keyed[i]! : "·",
-			filled ? "contentBackground" : "faintText",
-			bg,
-			true,
-		);
+		grid.put(0, i * 4 + 1, filled ? keyed[i]! : "·", filled ? "onFill" : "faintText", bg, true);
 	});
 	grid.put(0, letters.length * 4 + 2, state, done ? "success" : "error", undefined, true);
 	return <CellRows grid={grid} />;

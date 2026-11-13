@@ -1,4 +1,4 @@
-import { brandTheme, createTheme, type TuiTheme } from "@levitate/tui-kit";
+import { brandTheme, type TuiTheme } from "@levitate/tui-kit";
 import { brandOf } from "@levitate/docs-content/brand";
 import type { Distro } from "@levitate/docs-content/distros";
 
@@ -13,6 +13,7 @@ const LAYOUT = { navWidth: 30, minColumns: 70 } as const;
 export function createInstallDocsTheme(distro: Distro | undefined, pane: boolean): TuiTheme {
 	const brand = brandOf(distro);
 	if (!pane) return brandTheme(brand, {}, LAYOUT);
-	const surface = createTheme().colors.navBackground;
-	return { ...brandTheme({ ...brand, band: surface }, {}, LAYOUT), brand: "" };
+	const { palette } = brand;
+	const flat = { ...palette, band: palette.surface, onBand: palette.text };
+	return { ...brandTheme({ ...brand, palette: flat }, {}, LAYOUT), brand: "" };
 }

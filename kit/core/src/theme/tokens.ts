@@ -1,5 +1,5 @@
 import type { BorderStyle } from "../chrome/glyphs";
-import { palette } from "./palette";
+import type { Appearance, Palette } from "./palette";
 
 /**
  * A theme colour: `#rrggbb`, or `"inherit"` to leave the terminal's own colour.
@@ -28,6 +28,10 @@ export type ColorIntent =
 	| "link"
 	| "linkActive"
 	| "linkActiveBackground"
+	/** Text on a filled accent, second accent or status colour: the surface colour, which
+	 * contrasts with each of them in both modes (the accent is light in dark mode and dark
+	 * in light mode). */
+	| "onFill"
 	// the two-pane frame
 	| "navBorder"
 	| "contentBorder"
@@ -36,6 +40,8 @@ export type ColorIntent =
 	| "footerBackground"
 	/** The header band's colour at its start; it fades into the nav background. */
 	| "band"
+	/** Text on the band's own colour, where the fade has not left it yet. */
+	| "onBand"
 	/** A row or field lifted off its pane: the step you are at, a search field. */
 	| "raisedBackground"
 	// navigation lists
@@ -68,41 +74,48 @@ export type ThemeChrome = {
 export type TuiTheme = {
 	/** Whose app this is, named at the start of the header band; empty names nobody. */
 	brand: string;
+	/** The mode the palette is in. */
+	appearance: Appearance;
 	colors: ThemeColors;
 	layout: ThemeLayout;
 	chrome: ThemeChrome;
 };
 
-export const defaultThemeColors: ThemeColors = {
-	text: palette.paper,
-	dimText: palette.lichen,
-	faintText: palette.gutter,
-	accent: palette.sage,
-	heading: palette.paper,
-	subheading: palette.sage,
-	code: palette.sand,
-	info: palette.moss,
-	warning: palette.sand,
-	error: palette.salmon,
-	success: palette.leaf,
-	highlight: palette.sand,
-	link: palette.sage,
-	linkActive: palette.night,
-	linkActiveBackground: palette.sage,
-	navBorder: palette.rule,
-	contentBorder: palette.hairline,
-	navBackground: palette.ink,
-	contentBackground: palette.night,
-	footerBackground: palette.ink,
-	band: palette.pine,
-	raisedBackground: palette.raised,
-	navHeading: palette.lichen,
-	navItem: palette.moss,
-	selection: palette.night,
-	selectionBackground: palette.sage,
-	panelBorder: palette.rule,
-	panelBackground: palette.ink,
-};
+/** Every colour of a theme, from one palette. */
+export function paletteColors(p: Palette): ThemeColors {
+	return {
+		text: p.text,
+		dimText: p.textMuted,
+		faintText: p.textMuted,
+		accent: p.accent,
+		heading: p.text,
+		subheading: p.accent,
+		code: p.highlight,
+		info: p.textSecondary,
+		warning: p.warn,
+		error: p.bad,
+		success: p.ok,
+		highlight: p.highlight,
+		link: p.accent,
+		linkActive: p.surface,
+		linkActiveBackground: p.accent,
+		onFill: p.surface,
+		navBorder: p.rule,
+		contentBorder: p.hairline,
+		navBackground: p.surface,
+		contentBackground: p.surfaceSunken,
+		footerBackground: p.surface,
+		band: p.band,
+		onBand: p.onBand,
+		raisedBackground: p.surfaceRaised,
+		navHeading: p.textMuted,
+		navItem: p.textSecondary,
+		selection: p.surface,
+		selectionBackground: p.accent,
+		panelBorder: p.rule,
+		panelBackground: p.surface,
+	};
+}
 
 export const defaultThemeLayout: ThemeLayout = {
 	navWidth: 30,
@@ -114,11 +127,4 @@ export const defaultThemeChrome: ThemeChrome = {
 	panePaddingX: 1,
 	panePaddingY: 0,
 	framePaneGap: 1,
-};
-
-export const defaultTuiTheme: TuiTheme = {
-	brand: "",
-	colors: defaultThemeColors,
-	layout: defaultThemeLayout,
-	chrome: defaultThemeChrome,
 };

@@ -72,13 +72,13 @@ function SlotBlocks({ blocks }: { blocks: readonly SlotBlock[] }): ReactNode {
 		const lit = block.state !== "idle";
 		for (let row = 0; row < BLOCK_ROWS; row++) grid.fill(row, x, each, "raisedBackground");
 		grid.fill(0, x, each, BAR[block.state]);
-		grid.put(0, x + 2, block.slot, lit ? "contentBackground" : "text", undefined, true);
+		grid.put(0, x + 2, block.slot, lit ? "onFill" : "text", undefined, true);
 		if (block.tag)
 			grid.put(
 				0,
 				x + each - block.tag.length - 2,
 				block.tag,
-				lit ? "contentBackground" : "dimText",
+				lit ? "onFill" : "text",
 				undefined,
 				lit,
 			);
@@ -102,7 +102,7 @@ function Fork({ target, fallback }: { target: Slot; fallback: Slot }): ReactNode
 	const grid = new CellGrid(width, 3, useSurfaceBackground());
 	grid.put(0, 0, "reboot ─▶", "dimText");
 	const chip = ` slot ${target}, once `;
-	const after = grid.put(0, 10, chip, "contentBackground", "highlight", true);
+	const after = grid.put(0, 10, chip, "onFill", "highlight", true);
 	if (width < FORK_WIDE) {
 		// Narrow: the two ways out hang under the chip instead of beside it.
 		const healthy = grid.put(1, 10, "├─ starts healthy ─▶", "faintText");

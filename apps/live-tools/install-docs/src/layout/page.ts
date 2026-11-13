@@ -6,6 +6,7 @@ import {
 	runsText,
 	textWidth,
 	wrapRuns,
+	type Appearance,
 	type ColorIntent,
 	type RichTextRun,
 	type ThemeColor,
@@ -41,6 +42,9 @@ const COMMAND_COLUMN = 4;
 const BLOCK = "panelBackground" as const;
 
 class Page {
+	/** The theme's mode: which of the docs build's two syntax colourings code is drawn in. */
+	constructor(readonly appearance: Appearance) {}
+
 	lines: Line[] = [];
 	anchors: Anchor[] = [];
 
@@ -309,7 +313,10 @@ function code(
 		return;
 	}
 	source.forEach((plain, i) => {
-		const rows = hardWrap(codeRuns(block.highlightedLines?.[i], plain, undefined), codeWidth);
+		const rows = hardWrap(
+			codeRuns(block.highlightedLines?.[page.appearance][i], plain, undefined),
+			codeWidth,
+		);
 		rows.forEach((cells, j) => {
 			const number = j === 0 ? String(i + 1).padStart(digits) : " ".repeat(digits);
 			row([
@@ -427,11 +434,16 @@ function sectionTitle(title: string, level: number | undefined): Line {
 
 /**
  * The whole page at the reading measure (or `width`, when that is narrower): intro, then
- * each section's title and blocks, one blank line between blocks.
+ * each section's title and blocks, one blank line between blocks. Code is coloured for
+ * the theme's `appearance`.
  */
-export function layoutPage(content: DocsContent, columns: number): PageLayout {
+export function layoutPage(
+	content: DocsContent,
+	columns: number,
+	appearance: Appearance,
+): PageLayout {
 	const width = Math.min(columns, MEASURE);
-	const page = new Page();
+	const page = new Page(appearance);
 	const gap = () => {
 		if (page.lines.length > 0) page.push([]);
 	};

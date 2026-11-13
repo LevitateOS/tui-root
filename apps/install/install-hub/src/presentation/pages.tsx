@@ -119,9 +119,9 @@ function MachineCard({ state, distro }: { state: InstallState; distro: Distro })
 	for (let r = 0; r < rows + 3; r++) grid.fill(r, 0, width, "panelBackground");
 	grid.fill(0, 0, width, "accent");
 	const name = setup?.result.hostname ?? "new system";
-	grid.put(0, 2, truncateLine(name, width - 4), "contentBackground", undefined, true);
+	grid.put(0, 2, truncateLine(name, width - 4), "onFill", undefined, true);
 	const os = truncateLine(distro.osName, Math.max(0, width - name.length - 8));
-	grid.put(0, width - os.length - 2, os, "contentBackground");
+	grid.put(0, width - os.length - 2, os, "onFill");
 	const span = Math.floor(width / columns.length);
 	columns.forEach((column, c) => {
 		const label = Math.max(0, ...column.map(([k]) => k.length)) + 2;

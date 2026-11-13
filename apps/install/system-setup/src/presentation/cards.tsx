@@ -116,12 +116,11 @@ export function MachineCard({
 			answered.hostname && answers.hostname ? answers.hostname : "this machine",
 			width - 4,
 		),
-		whole ? "contentBackground" : "text",
+		whole ? "onFill" : "text",
 		undefined,
 		true,
 	);
-	if (system)
-		putRight(grid, 0, truncateLine(system, width / 2), whole ? "contentBackground" : "dimText");
+	if (system) putRight(grid, 0, truncateLine(system, width / 2), whole ? "onFill" : "dimText");
 	const column = Math.floor(width / 2);
 	FIELDS.forEach((field, i) => {
 		let x = 2 + Math.floor(i / 3) * column;
@@ -191,7 +190,7 @@ export function KeyboardCard({
 				3 + r * step,
 				col,
 				` ${key} `,
-				differs ? "contentBackground" : "text",
+				differs ? "onFill" : "text",
 				differs ? "highlight" : "raisedBackground",
 				true,
 			);
@@ -396,7 +395,7 @@ export function UserCard({
 		return <CellRows grid={grid} />;
 	}
 	for (let r = 1; r <= 3; r++) grid.fill(r, 2, 7, "accent");
-	grid.put(2, 5, [...name][0]!.toUpperCase(), "contentBackground", undefined, true);
+	grid.put(2, 5, [...name][0]!.toUpperCase(), "onFill", undefined, true);
 	const room = Math.max(1, width - 13);
 	grid.put(1, 11, truncateLine(name, room), "text", undefined, true);
 	grid.put(2, 11, truncateLine("administrator", room), "info");
@@ -444,14 +443,7 @@ export function MarkedField({
 	let col = start;
 	[...text].forEach((char, i) => {
 		const marked = i === at;
-		col = grid.put(
-			0,
-			col,
-			char,
-			marked ? "contentBackground" : "text",
-			marked ? "error" : undefined,
-			true,
-		);
+		col = grid.put(0, col, char, marked ? "onFill" : "text", marked ? "error" : undefined, true);
 	});
 	grid.fill(0, col, 1, "accent");
 	return <CellRows grid={grid} />;

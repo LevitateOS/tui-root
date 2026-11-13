@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from "react";
 import { useStdout } from "ink";
 import { resolveIntentColor, type ColorRuntime } from "../theme/colors";
-import { defaultTuiTheme, type ColorIntent, type TuiTheme } from "../theme/tokens";
+import type { ColorIntent, TuiTheme } from "../theme/tokens";
 
 export type TuiAppContextValue = {
 	/** The command name given to runApp. */
@@ -12,15 +12,7 @@ export type TuiAppContextValue = {
 	handOff: (value: unknown) => void;
 };
 
-/** Without a provider (outside runApp) atoms render with the default theme and colour on. */
-const AppContext = createContext<TuiAppContextValue>({
-	name: "tui",
-	theme: defaultTuiTheme,
-	colors: { enabled: true, depth: "truecolor" },
-	handOff: () => {
-		throw new Error("useHandOff needs runApp");
-	},
-});
+const AppContext = createContext<TuiAppContextValue | undefined>(undefined);
 
 type AppProviderProps = PropsWithChildren<{
 	app: TuiAppContextValue;
@@ -31,7 +23,9 @@ export function AppProvider({ app, children }: AppProviderProps) {
 }
 
 function useTuiApp(): TuiAppContextValue {
-	return useContext(AppContext);
+	const app = useContext(AppContext);
+	if (!app) throw new Error("the kit's parts need runApp (it provides the theme)");
+	return app;
 }
 
 /**

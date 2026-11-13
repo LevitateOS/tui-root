@@ -3,7 +3,7 @@ import { Component, type ReactElement, type ReactNode } from "react";
 import { AppProvider } from "./app-provider";
 import { KeyboardProvider, keymapHelp, type Keymap } from "../runtime/keymap";
 import { detectColorRuntime } from "../theme/colors";
-import { defaultTuiTheme, type TuiTheme } from "../theme/tokens";
+import type { TuiTheme } from "../theme/tokens";
 import { errorMessage } from "../utils/strings";
 
 /** A command-line flag. Without `value` it is a switch; with it, it takes one argument. */
@@ -31,7 +31,7 @@ export type AppSpec = {
 	/** Key sections for --help, in order. */
 	keys?: readonly { title: string; keymap: Keymap }[];
 	/** The app's theme, or how to make it from the parsed flags (a distro they name). */
-	theme?: TuiTheme | ((args: Args) => TuiTheme);
+	theme: TuiTheme | ((args: Args) => TuiTheme);
 	/**
 	 * Builds the screen from the parsed flags, or returns undefined after printing
 	 * something itself (a non-interactive flag). Throw `UsageError` for bad input.
@@ -142,7 +142,7 @@ export function runApp(spec: AppSpec, argv: readonly string[] = process.argv.sli
 	let exitScreen: (() => void) | undefined;
 	const app = {
 		name: spec.name,
-		theme: (typeof spec.theme === "function" ? spec.theme(args) : spec.theme) ?? defaultTuiTheme,
+		theme: typeof spec.theme === "function" ? spec.theme(args) : spec.theme,
 		colors: detectColorRuntime(process.env),
 		handOff: (value: unknown) => {
 			handedOff = value;

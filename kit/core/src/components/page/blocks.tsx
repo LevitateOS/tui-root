@@ -155,7 +155,7 @@ function PanelKeys({ keys, tone }: { keys: KeyPairs; tone: ColorIntent }): React
 		<Text backgroundColor={background}>
 			{keys.map(([key, label], i) => (
 				<Text key={i} backgroundColor={background}>
-					<Text bold color={color("contentBackground")} backgroundColor={color(tone)}>
+					<Text bold color={color("onFill")} backgroundColor={color(tone)}>
 						{` ${key} `}
 					</Text>
 					<Text color={color("text")} backgroundColor={background}>

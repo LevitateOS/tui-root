@@ -2,7 +2,13 @@ import { Box, Text } from "ink";
 import type { ReactNode } from "react";
 import { useTuiColors, useTuiTheme, useTuiViewport } from "../app/app-provider";
 import type { FocusPlane } from "../hooks/use-focus-plane";
-import { mixColors, parseHexColor, resolveColor, resolveIntentColor } from "../theme/colors";
+import {
+	contrastRatio,
+	mixColors,
+	parseHexColor,
+	resolveColor,
+	resolveIntentColor,
+} from "../theme/colors";
 import type { ColorIntent, TuiTheme } from "../theme/tokens";
 import { statusLines, type StatusSegment } from "../components/feedback/status-line";
 import { RichTextLine } from "../primitives/display/rich-text";
@@ -31,6 +37,8 @@ const FOOTER_MAX_SHARE = 1 / 2;
 /** The foot of the content pane kept for the page's action: a blank row, the action row,
  * a blank row; so the action sits on the same row of every page. */
 const ACTION_ROWS = 3;
+/** The contrast ratio at which text counts as readable (WCAG AA). */
+const READABLE = 4.5;
 /** The band fades from the brand's colour into the surface over this share of the width. */
 const BAND_FADE = 0.7;
 
@@ -217,7 +225,7 @@ export type PageNote = {
 	intent?: ColorIntent;
 };
 
-/** The action row: a bar in the accent with the label at its left and the key as an
+/** The action row: a bar in the accent with the label (in `onFill`) at its left and the key as an
  * inverted keycap at its right; or the note; with a blank row above and below. */
 function ActionRow({ width, action }: { width: number; action?: PageAction | PageNote }) {
 	const grid = new CellGrid(width, ACTION_ROWS, "contentBackground");
@@ -231,11 +239,11 @@ function ActionRow({ width, action }: { width: number; action?: PageAction | Pag
 			row,
 			2,
 			truncateLine(action.label, Math.max(1, width - textWidth(cap) - 7)),
-			"contentBackground",
+			"onFill",
 			undefined,
 			true,
 		);
-		grid.put(row, width - textWidth(cap) - 2, cap, "accent", "contentBackground", true);
+		grid.put(row, width - textWidth(cap) - 2, cap, "accent", "onFill", true);
 	}
 	return <CellRows grid={grid} />;
 }
@@ -306,10 +314,22 @@ function Header({
 	// The fade is mixed from the theme's colours, then matched to the terminal's.
 	const from = parseHexColor(theme.colors.band);
 	const to = parseHexColor(theme.colors.navBackground);
-	const background = (column: number) =>
-		from && to ? resolveColor(mixColors(from, to, column / fade), colors) : undefined;
+	const backgroundAt = (column: number) =>
+		from && to ? mixColors(from, to, column / fade) : undefined;
+	// Text takes its own colour where that reads on the fade there, else whichever of it
+	// and the band's text colour reads better: over the band the text is `onBand`, past
+	// the fade it is the theme's, in light mode as in dark.
+	const onBand = parseHexColor(theme.colors.onBand);
+	const foreground = (intent: ColorIntent, behind: string | undefined) => {
+		const own = parseHexColor(theme.colors[intent]);
+		if (!own || !onBand || !behind || contrastRatio(own, behind) >= READABLE) return color(intent);
+		return resolveColor(
+			contrastRatio(onBand, behind) > contrastRatio(own, behind) ? onBand : own,
+			colors,
+		);
+	};
 	// Runs of cells that share a style, two columns of the fade at a time.
-	const runs: { key: number; text: string; cell: Cell; background?: string }[] = [];
+	const runs: { key: number; text: string; cell: Cell; behind?: string }[] = [];
 	cells.forEach((cell, column) => {
 		const last = runs.at(-1);
 		const step = column - (column % 2);
@@ -320,7 +340,7 @@ function Header({
 			last.cell.bold === cell.bold
 		)
 			last.text += cell.text;
-		else runs.push({ key: step, text: cell.text, cell, background: background(step) });
+		else runs.push({ key: step, text: cell.text, cell, behind: backgroundAt(step) });
 	});
 
 	const shown = progress && rows >= HEADER_ROWS_WITH_STEPS ? progress : undefined;
@@ -335,8 +355,8 @@ function Header({
 				{runs.map((run, i) => (
 					<Text
 						key={i}
-						color={color(run.cell.intent)}
-						backgroundColor={run.background}
+						color={foreground(run.cell.intent, run.behind)}
+						backgroundColor={run.behind && resolveColor(run.behind, colors)}
 						bold={run.cell.bold}
 					>
 						{run.text}
@@ -410,7 +430,7 @@ function NamedSegments({
 			0,
 			start + 2,
 			truncateLine(segment.label, Math.max(0, width - 3)),
-			lit ? "contentBackground" : "dimText",
+			lit ? "onFill" : "dimText",
 			undefined,
 			lit,
 		);

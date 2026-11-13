@@ -20,7 +20,7 @@ too (`navItem`, `heading`, `panelBorder`); an app's own colours sit in its theme
 - `primitives/`: text, rich text, and `CellGrid` for drawing a part cell by cell.
 - `surfaces/`: `useShellLayout` and `AppShell`, the two-pane frame every app uses.
 - `chrome/`: the one box-drawing glyph table (and the same glyphs as an Ink `borderStyle`).
-- `theme/`: colour intents, palette, colour runtime, `createTheme` and `brandTheme`.
+- `theme/`: colour intents, the `Palette` a theme is made of, colour runtime, contrast, and `brandTheme`.
 - `utils/`: string width, rich-text runs and wrapping, number clamping, error messages.
 
 ## The frame
@@ -58,10 +58,53 @@ layout, under a header and over the footer:
 each pane's background as the surface (`useSurfaceBackground`), so the parts below fit
 the pane and paint their empty cells in its colour.
 
-A brand (`brandTheme`) is a name and three colours on top of the default theme: the
-accent, a second accent and the band. The default colours are the website's. On a
-terminal without 24-bit colour each is matched to the nearest of the 256-colour palette
-here (`nearest256`): left to chalk, the dark greens come out teal.
+## Colour: one palette, both modes
+
+Every colour of a theme comes from one `Palette`, the fifteen roles of a distro's
+`[look.<mode>]` table in `distro/variants/<id>/distro.toml`: `surface`, `surfaceRaised`,
+`surfaceSunken`, `text`, `textSecondary`, `textMuted`, `rule`, `hairline`, `accent`,
+`highlight`, `band`, `onBand`, `ok`, `warn`, `bad`. A distro starts in the mode its
+`profile.appearance` names (LevitateOS light, AcornOS dark), and the kit has no colours of
+its own: nothing assumes the surface is dark.
+
+`brandTheme({ name, appearance, palette })` makes the whole theme (the apps pass
+`brandOf(distro)` from `@levitate/docs-content/brand`, which is exactly that for the
+distro's starting mode; `brandOf(undefined)` is LevitateOS's, nameless). There is no
+default theme: `runApp` needs `theme`. `theme.appearance` says which mode the palette is
+in, for what has its own light and dark sets (install-docs picks the light or the dark
+syntax colouring by it). `paletteColors` (`theme/tokens.ts`) is the one place a role
+becomes intents:
+
+| Intents | Role |
+|---|---|
+| `navBackground`, `panelBackground`, `footerBackground`, `linkActive`, `selection`, `onFill` | `surface` |
+| `contentBackground` | `surfaceSunken` |
+| `raisedBackground` | `surfaceRaised` |
+| `text`, `heading` | `text` |
+| `info`, `navItem` | `textSecondary` |
+| `dimText`, `faintText`, `navHeading` | `textMuted` |
+| `navBorder`, `panelBorder` | `rule` |
+| `contentBorder` | `hairline` |
+| `accent`, `subheading`, `link`, `linkActiveBackground`, `selectionBackground` | `accent` |
+| `highlight`, `code` | `highlight` |
+| `band` / `onBand` | `band` / `onBand` |
+| `success` / `warning` / `error` | `ok` / `warn` / `bad` |
+
+**Text on a fill.** The accent is light in dark mode and dark in light mode, so text on a
+filled accent, second accent or status colour is never `text`: it is `onFill` (the surface
+colour), which contrasts with each of them in both modes. Selection bars, the active
+link, the action bar, step-line segments, keycaps inside a panel, badges and disk-bar names
+all take it; text on the band is `onBand`. The header picks per cell: its own colour
+where that reads on the fade there (`contrastRatio` at 4.5), else the better of it and
+`onBand`.
+
+**The key bar** (the footer) is drawn from the same roles, so a program that draws its own
+(the install screen's split-pane host) reads the distro's `[look.<profile.appearance>]`
+table: the bar is `surface`; each keycap is `text` bold on `rule`; the labels, the
+separators between them and a note at the end of a line are `text_muted`.
+
+On a terminal without 24-bit colour each colour is matched to the nearest of the
+256-colour palette here (`nearest256`): left to chalk, dark greens come out teal.
 
 **The Ink background pitfall.** Inside a pane, Ink gives a `Text` nested in another the
 pane's background, not the outer `Text`'s. A row or block with its own background must
@@ -113,7 +156,8 @@ Text is measured in terminal cells with `string-width`, as Ink does.
 ## Quick Start
 
 ```tsx
-import { AppShell, runApp, UiText, useShellLayout } from "@levitate/tui-kit";
+import { brandOf } from "@levitate/docs-content/brand";
+import { AppShell, brandTheme, runApp, UiText, useShellLayout } from "@levitate/tui-kit";
 
 function Demo() {
 	const layout = useShellLayout();
@@ -130,7 +174,12 @@ function Demo() {
 	);
 }
 
-runApp({ name: "demo", summary: "kit demo", run: () => <Demo /> });
+runApp({
+	name: "demo",
+	summary: "kit demo",
+	theme: brandTheme(brandOf(undefined)),
+	run: () => <Demo />,
+});
 ```
 
 ## Scripts

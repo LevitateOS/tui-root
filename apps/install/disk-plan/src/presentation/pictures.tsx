@@ -187,7 +187,7 @@ export function SlotCards({
 				2,
 				at + 2,
 				truncateLine(slot.label, Math.max(1, box - 3)),
-				slot.running ? "contentBackground" : "text",
+				slot.running ? "onFill" : "text",
 				background,
 				true,
 			);
@@ -195,7 +195,7 @@ export function SlotCards({
 				3,
 				at + 2,
 				truncateLine(slot.state, Math.max(1, box - 3)),
-				slot.running ? "contentBackground" : "dimText",
+				slot.running ? "onFill" : "text",
 				background,
 			);
 			at += box + 1;
