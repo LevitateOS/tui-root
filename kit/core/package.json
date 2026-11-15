@@ -10,9 +10,9 @@
 	},
 	"scripts": {
 		"typecheck": "tsc --noEmit",
-		"lint": "oxlint --config ../../../.oxlintrc.json src --deny-warnings",
-		"format": "oxfmt --config ../../../.oxfmtrc.json --write src package.json tsconfig.json",
-		"format:check": "oxfmt --config ../../../.oxfmtrc.json --check src package.json tsconfig.json"
+		"lint": "oxlint --config ../../../../.oxlintrc.json src --deny-warnings",
+		"format": "oxfmt --config ../../../../.oxfmtrc.json --write src package.json tsconfig.json",
+		"format:check": "oxfmt --config ../../../../.oxfmtrc.json --check src package.json tsconfig.json"
 	},
 	"dependencies": {
 		"chalk": "^5.6.0",
