@@ -32,7 +32,7 @@ action is the bar at the foot (`pageAction` in `pages.tsx`).
 - fstab: the file as a diff built from recfstab's result (entries coming in, conflicting
   lines going out, other lines staying); the replace question is a `Callout` with its two
   keys over the lines it is about.
-- Done: three figures (files, written, taken) and where the step was recorded.
+- Done: three figures (files, written, taken) and where the step was recorded. It says the installation is not finished: next are `system-setup`, then the guide's Boot and Finish steps.
 
 recstrap and recfstab own the checks, the copy and the fstab; this app owns the flow and
 shows every command it ran.

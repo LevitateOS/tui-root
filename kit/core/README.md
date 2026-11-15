@@ -89,6 +89,13 @@ becomes intents:
 | `band` / `onBand` | `band` / `onBand` |
 | `success` / `warning` / `error` | `ok` / `warn` / `bad` |
 
+**Legibility.** No muted text on a filled background, and the chosen item is the
+brightest. `legibleIntent` (`theme/colors.ts`, used through `useLegibleColor`) is the
+one place the rule lives: a quiet text colour (`dimText`, `faintText` and the like) drawn
+over any fill that is not a pane surface is raised to the first of itself, `info`, `text`
+or `onFill` that reaches contrast 7, in both palettes. A selected row is drawn bold and
+bright, and the rows around it are the dimmer ones, never the other way round.
+
 **Text on a fill.** The accent is light on a dark surface, so text on a filled accent,
 second accent or status colour is never `text`: it is `onFill` (the surface colour), which
 contrasts with each of them. Selection bars, the active

@@ -1,6 +1,6 @@
 # install-docs
 
-Terminal viewer for the docs in `@levitate/docs-content`, built on `@levitate/tui-kit`. The install screen's launcher passes `--os-name` (the distro whose docs to show; there is no default) and the page flag its manifest declares (`--slug`).
+Terminal viewer for the docs in `@levitate/docs-content`, built on `@levitate/tui-kit`. On the install screen it is the right pane, beside a root shell; the guide shows the helper apps and the manual commands as alternatives. The install screen's launcher passes `--os-name` (the distro whose docs to show; there is no default) and the page flag its manifest declares (`--slug`).
 
 Style change map: `style-map.md`
 

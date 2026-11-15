@@ -12,5 +12,5 @@ These rules apply to this repository, every nested directory, and nested submodu
 # TUI Workspace Agents Guide (Stub)
 
 - Keep one canonical owner per behavior.
-- Apps consume `tui/kit/core`; kit must not import from apps.
+- Apps consume `tools/tui/kit/core`; kit must not import from apps.
 - Product boundaries and contracts stay explicit.

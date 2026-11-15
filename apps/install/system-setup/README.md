@@ -66,6 +66,9 @@ with one bar to press or one quiet line, on the same row (`AppShell`'s action).
     what each choice means.
   - User: the account as it will exist.
 
+The last page says the installation is not finished: the guide's Boot step still has to
+write the boot files to the EFI partition, and Finish verifies the result.
+
 recsetup owns every rule: a typed hostname or user name is checked by planning it, and
 the app shows recsetup's message and fix. This app owns the order of the questions and
 shows every command before it runs.

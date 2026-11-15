@@ -2,7 +2,7 @@
 
 Interactive disk planning on top of `recpart`: choose a disk and mode, review the plan
 and the exact commands, pass the preflight, type the confirmation token, apply, and get
-the handoff. You type `disk-plan` in the live terminal; it is an alternative to the manual commands, and the installation is not finished after it.
+the handoff. You type `disk-plan` in the live terminal; it is an alternative to the manual commands, and the installation is not finished after it: the last page says the system is not installed yet and names the next step, `base-system`. The chosen item on a page is bold bright text; the others are dimmer.
 
 ## Layout
 
@@ -34,7 +34,7 @@ Each page is laid out as its mock-up in `docs/tui-design` (`check.py app:disk-pl
 - Overview: the line where writing starts (choose and review are safe, apply writes).
 - Disk: each disk as a bar as long as its share of the largest disk, its name and size,
   one line about it; the chosen one has the accent edge.
-- System: A/B and Mutable as the slots each leaves, one sentence each.
+- System: A/B and Mutable as the roots each leaves, one sentence each (two roots, or one with no recab).
 - Disk use: the disk now, then each answer as the disk it leaves (erasing: the template's
   plan; keeping: what is there, with the free space).
 - Partitions: the bar with the selected stretch marked, the table with the selected row as

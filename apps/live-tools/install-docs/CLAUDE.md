@@ -21,11 +21,11 @@ Terminal viewer for the docs in `@levitate/docs-content`. The launcher names the
 |----------------|-----------|
 | Documentation content | `docs/content/` |
 | Website rendering | `docs/website/` |
-| Generic terminal primitives | `tui/kit/core/` |
+| Generic terminal primitives | `tools/tui/kit/core/` |
 
 ## Key Rules
 
 1. This app shows every page in the docs navigation from `@levitate/docs-content`, as the distro named by `--os-name` has it; every distro has the same slugs. A missing or unknown `--os-name` exits 2.
 2. An unknown `--slug` exits 2; without `--slug` the first page opens.
 3. No hidden fallbacks that bypass canonical docs navigation.
-4. Keep generic, vocabulary-free UI code in `tui/kit/core` (styled runs and their wrapping, nav lists, the frame, keys); keep docs-specific code (markup parsing, link rendering, command rows, block layout) here.
+4. Keep generic, vocabulary-free UI code in `tools/tui/kit/core` (styled runs and their wrapping, nav lists, the frame, keys); keep docs-specific code (markup parsing, link rendering, command rows, block layout) here.
