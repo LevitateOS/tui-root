@@ -862,7 +862,7 @@ export function ReviewPage({
 			: apply.kind === "ok"
 				? "Every command ran."
 				: apply.kind === "running"
-					? `Applying to ${target?.path}.`
+					? `Applying to ${target?.path}.${session.inspect.kind === "ok" && session.inspect.value.target.default_set.length > 0 ? " The first step installs the default software through Recipe and takes some minutes." : ""}`
 					: "Nothing has changed yet.";
 	const asking = prompt?.kind === "apply";
 	return (
