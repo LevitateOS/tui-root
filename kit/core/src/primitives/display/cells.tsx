@@ -6,7 +6,7 @@
  */
 import { Box, Text } from "ink";
 import { createContext, useContext, type ReactNode } from "react";
-import { useIntentColor } from "../../app/app-provider";
+import { useIntentColor, useLegibleColor } from "../../app/app-provider";
 import type { ColorIntent } from "../../theme/tokens";
 import { textWidth } from "../../utils/strings";
 
@@ -82,6 +82,7 @@ export class CellGrid {
 /** The grid drawn: one Text a row, one nested Text a run of cells in one style. */
 export function CellRows({ grid }: { grid: CellGrid }): ReactNode {
 	const color = useIntentColor();
+	const legible = useLegibleColor();
 	return (
 		<Box flexDirection="column" flexShrink={0} width={grid.width}>
 			{grid.rows.map((line, r) => {
@@ -102,7 +103,7 @@ export function CellRows({ grid }: { grid: CellGrid }): ReactNode {
 						{runs.map((run, i) => (
 							<Text
 								key={i}
-								color={color(run.cell.fg)}
+								color={legible(run.cell.fg, run.cell.bg)}
 								backgroundColor={color(run.cell.bg)}
 								bold={run.cell.bold}
 							>

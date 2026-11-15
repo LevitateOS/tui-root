@@ -1,3 +1,0 @@
-#!/bin/sh
-# One schema-10 UI fixture shared with the desktop. No disks or firmware touched.
-exec "$(dirname "$0")/../../../../../gui/recab/fixtures/lifecycle" "$@"

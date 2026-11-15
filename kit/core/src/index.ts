@@ -2,6 +2,7 @@
 export {
 	useHandOff,
 	useIntentColor,
+	useLegibleColor,
 	useTuiColors,
 	useTuiTheme,
 	useTuiViewport,
@@ -55,7 +56,7 @@ export { NavList } from "./components/navigation/nav-list";
 export type { NavListMode } from "./components/navigation/nav-list";
 export { UiText } from "./primitives/display/text";
 export { AppShell, fitFooter, useShellLayout } from "./surfaces/shell";
-export type { PageAction, PageNote, Progress, ProgressSegment } from "./surfaces/shell";
+export type { PageAction, PageNote, Progress } from "./surfaces/shell";
 export { parseHexColor, resolveIntentColor } from "./theme/colors";
 export { brandTheme } from "./theme/create-theme";
 export type { Brand } from "./theme/create-theme";

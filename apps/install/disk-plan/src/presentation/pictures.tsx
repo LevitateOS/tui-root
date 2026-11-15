@@ -119,9 +119,10 @@ export function DiskLines({
 		const top = i * 4;
 		const chosen = i === selected;
 		if (chosen) for (let r = 0; r < 3; r++) grid.put(top + r, 0, "▌", "accent");
-		grid.put(top, 2, truncateLine(disk.path, Math.max(1, width - 14)), "text", undefined, chosen);
+		const name: ColorIntent = chosen ? "text" : "info";
+		grid.put(top, 2, truncateLine(disk.path, Math.max(1, width - 14)), name, undefined, chosen);
 		const size = disk.size === null ? "" : formatBytes(disk.size);
-		grid.put(top, width - textWidth(size), size, "text", undefined, chosen);
+		grid.put(top, width - textWidth(size), size, name, undefined, chosen);
 		grid.fill(top + 1, 2, bar, "panelBorder");
 		if (disk.size !== null) {
 			grid.fill(
@@ -169,14 +170,15 @@ export function SlotCards({
 	cards.forEach((card, i) => {
 		const x = i * (each + 3);
 		const chosen = i === selected;
-		grid.put(
+		const mark = grid.put(
 			0,
 			x,
-			`${chosen ? "● " : "○ "}${card.title}`,
-			chosen ? "accent" : "text",
+			chosen ? "● " : "○ ",
+			chosen ? "accent" : "info",
 			undefined,
-			true,
+			chosen,
 		);
+		grid.put(0, mark, card.title, chosen ? "text" : "info", undefined, chosen);
 		if (card.tag) grid.put(0, x + each - textWidth(card.tag), card.tag, "dimText");
 		let at = x;
 		for (const slot of card.slots) {
@@ -220,14 +222,9 @@ export function ChoiceTitle({
 }): ReactNode {
 	const width = useContext(ContentWidth);
 	const grid = new CellGrid(width, 1, useSurfaceBackground());
-	const left = grid.put(
-		0,
-		0,
-		`${chosen ? "● " : "○ "}${title}`,
-		chosen ? "accent" : "text",
-		undefined,
-		true,
-	);
+	// The chosen answer is the brightest text on the page; the other is quieter.
+	const mark = grid.put(0, 0, chosen ? "● " : "○ ", chosen ? "accent" : "info", undefined, chosen);
+	const left = grid.put(0, mark, title, chosen ? "text" : "info", undefined, chosen);
 	const room = Math.max(0, width - left - 2);
 	const shown = truncateLine(cost, room);
 	grid.put(0, width - textWidth(shown), shown, tone);

@@ -2,7 +2,7 @@ import { Text } from "ink";
 import type { ColorIntent } from "../../theme/tokens";
 import type { RichTextRun } from "../../utils/runs";
 import { useTuiColors, useTuiTheme } from "../../app/app-provider";
-import { resolveColor, resolveIntentColor } from "../../theme/colors";
+import { legibleIntent, resolveColor, resolveIntentColor } from "../../theme/colors";
 
 type RichTextLineProps = {
 	runs: ReadonlyArray<RichTextRun>;
@@ -24,7 +24,13 @@ export function RichTextLine({ runs, fallbackIntent = "text" }: RichTextLineProp
 					color={
 						run.color
 							? resolveColor(run.color, colors)
-							: resolveIntentColor(theme, run.intent ?? fallbackIntent, colors)
+							: resolveIntentColor(
+									theme,
+									run.backgroundIntent && !run.background
+										? legibleIntent(theme, run.intent ?? fallbackIntent, run.backgroundIntent)
+										: (run.intent ?? fallbackIntent),
+									colors,
+								)
 					}
 					backgroundColor={
 						run.background

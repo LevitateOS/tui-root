@@ -6,7 +6,7 @@
  */
 import { Box, Text, type BoxProps } from "ink";
 import { createContext, useContext, type ReactNode } from "react";
-import { useIntentColor, useTuiColors, useTuiTheme } from "../../app/app-provider";
+import { useIntentColor, useLegibleColor, useTuiColors, useTuiTheme } from "../../app/app-provider";
 import { UiText } from "../../primitives/display/text";
 import { resolveIntentColor } from "../../theme/colors";
 import type { ColorIntent } from "../../theme/tokens";
@@ -247,12 +247,14 @@ export function Callout({
 export function Facts({ rows }: { rows: FactRows }): ReactNode {
 	const labelWidth = Math.max(0, ...rows.map(([label]) => textWidth(label)));
 	const color = useIntentColor();
-	const background = color(useSurfaceBackground());
+	const legible = useLegibleColor();
+	const surface = useSurfaceBackground();
+	const background = color(surface);
 	return (
 		<Box flexDirection="column">
 			{rows.map(([label, value], index) => (
 				<Text key={`${index}-${label}`} color={color("text")} backgroundColor={background}>
-					<Text color={color("dimText")} backgroundColor={background}>
+					<Text color={legible("dimText", surface)} backgroundColor={background}>
 						{label.padEnd(labelWidth)}
 						{"  "}
 					</Text>

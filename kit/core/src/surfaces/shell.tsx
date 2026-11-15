@@ -248,13 +248,8 @@ function ActionRow({ width, action }: { width: number; action?: PageAction | Pag
 	return <CellRows grid={grid} />;
 }
 
-/** A named segment of the step line: `on` is in the accent, `next` in the second
- * accent, `off` in the rule colour; the label is written inside it. */
-export type ProgressSegment = { label: string; state: "on" | "next" | "off" };
-
-/** How far a run of steps has got, for the line under the band; or, as a list of
- * named segments, what each segment stands for (recab's two slots). */
-export type Progress = StepProgress | readonly ProgressSegment[];
+/** How far a run of steps has got, for the line under the band. */
+export type Progress = StepProgress;
 
 type StepProgress = {
 	total: number;
@@ -344,9 +339,8 @@ function Header({
 	});
 
 	const shown = progress && rows >= HEADER_ROWS_WITH_STEPS ? progress : undefined;
-	const named = shown && isSegments(shown) ? shown : undefined;
-	const steps = shown && !isSegments(shown) ? shown : undefined;
-	const segments = named ? Math.max(1, named.length) : steps ? Math.max(1, steps.total) : 0;
+	const steps = shown;
+	const segments = steps ? Math.max(1, steps.total) : 0;
 	const width = segments ? Math.max(1, Math.floor((columns - 2 - (segments - 1)) / segments)) : 0;
 	const blank = <Text backgroundColor={surface}>{" ".repeat(columns)}</Text>;
 	return (
@@ -363,13 +357,7 @@ function Header({
 					</Text>
 				))}
 			</Text>
-			{named ? (
-				<>
-					{blank}
-					<NamedSegments columns={columns} width={width} segments={named} />
-					{blank}
-				</>
-			) : steps ? (
+			{steps ? (
 				<>
 					{blank}
 					<Text backgroundColor={surface}>
@@ -399,43 +387,6 @@ function Header({
 			)}
 		</Box>
 	);
-}
-
-function isSegments(progress: Progress): progress is readonly ProgressSegment[] {
-	return Array.isArray(progress);
-}
-
-const SEGMENT_INTENT: Record<ProgressSegment["state"], ColorIntent> = {
-	on: "accent",
-	next: "highlight",
-	off: "navBorder",
-};
-
-/** The step line as named segments, each label two cells into its segment. */
-function NamedSegments({
-	columns,
-	width,
-	segments,
-}: {
-	columns: number;
-	width: number;
-	segments: readonly ProgressSegment[];
-}) {
-	const grid = new CellGrid(columns, 1, "navBackground");
-	segments.forEach((segment, i) => {
-		const start = 1 + i * (width + 1);
-		const lit = segment.state !== "off";
-		grid.fill(0, start, width, SEGMENT_INTENT[segment.state]);
-		grid.put(
-			0,
-			start + 2,
-			truncateLine(segment.label, Math.max(0, width - 3)),
-			lit ? "onFill" : "dimText",
-			undefined,
-			lit,
-		);
-	});
-	return <CellRows grid={grid} />;
 }
 
 type AppShellProps = {

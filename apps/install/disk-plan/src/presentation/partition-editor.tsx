@@ -14,6 +14,7 @@ import {
 	Table,
 	UiText,
 	useIntentColor,
+	useLegibleColor,
 	type ColorIntent,
 	type Tone,
 } from "@levitate/tui-kit";
@@ -68,6 +69,7 @@ function holds(segment: Segment): string {
 /** The question being asked, with what an answer may be. */
 function PromptBox({ editor }: { editor: PartitionEditor }): ReactNode {
 	const color = useIntentColor();
+	const legible = useLegibleColor();
 	const raised = color("raisedBackground");
 	const prompt = editor.prompt;
 	if (!prompt) return null;
@@ -80,7 +82,7 @@ function PromptBox({ editor }: { editor: PartitionEditor }): ReactNode {
 						<Box width={labelWidth} flexShrink={0}>
 							<Text
 								bold={i === prompt.index}
-								color={color(i === prompt.index ? "accent" : "text")}
+								color={color(i === prompt.index ? "text" : "info")}
 								backgroundColor={raised}
 							>
 								{i === prompt.index ? "▸ " : "  "}
@@ -88,7 +90,7 @@ function PromptBox({ editor }: { editor: PartitionEditor }): ReactNode {
 							</Text>
 						</Box>
 						<Box flexGrow={1} flexShrink={1}>
-							<Text color={color("dimText")} backgroundColor={raised}>
+							<Text color={legible("dimText", "raisedBackground")} backgroundColor={raised}>
 								{option.help ?? ""}
 							</Text>
 						</Box>

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from "react";
 import { useStdout } from "ink";
-import { resolveIntentColor, type ColorRuntime } from "../theme/colors";
+import { legibleIntent, resolveIntentColor, type ColorRuntime } from "../theme/colors";
 import type { ColorIntent, TuiTheme } from "../theme/tokens";
 
 export type TuiAppContextValue = {
@@ -48,6 +48,13 @@ export function useTuiColors(): ColorRuntime {
 export function useIntentColor(): (intent: ColorIntent) => string | undefined {
 	const { theme, colors } = useTuiApp();
 	return (intent) => resolveIntentColor(theme, intent, colors);
+}
+
+/** Like `useIntentColor`, for text over a background: quiet intents turn legible over a
+ * fill (see `legibleIntent`). Give the background's intent, or none for the pane's surface. */
+export function useLegibleColor(): (fg: ColorIntent, bg?: ColorIntent) => string | undefined {
+	const { theme, colors } = useTuiApp();
+	return (fg, bg) => resolveIntentColor(theme, bg ? legibleIntent(theme, fg, bg) : fg, colors);
 }
 
 type TerminalSize = {

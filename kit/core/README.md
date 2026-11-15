@@ -41,10 +41,8 @@ layout, under a header and over the footer:
   shows no terminal colour.
 - **The footer** shows each key as a keycap, with a row of its surface under them; a
   segment marked `end` sits at the end of its line.
-- **The step line** (`progress`) is either `{ total, done, current }` (a segment a step:
-  done in success, current in the accent, the rest in the rule colour) or a list of named
-  segments `{ label, state }`, where `state` is `on` (accent), `next` (second accent) or
-  `off` (rule colour) and the label is written inside the segment (recab's two slots).
+- **The step line** (`progress`) is `{ total, done, current }` (a segment a step:
+  done in success, current in the accent, the rest in the rule colour).
 - **The action row.** A page has at most one thing to press, always on the same row at
   the foot of the content pane. `useShellLayout({ action: true })` keeps three rows there
   (a blank row, the action row, a blank row; the action lands where the mock-ups put it)
@@ -132,7 +130,7 @@ Marks are one vocabulary (`PathState`): `done` ✓, `ready` ●, `waiting` ○, 
   tall in `tone` (accent by default); `step={n}` is `glyph={n}`.
 - `StepPath` `{ steps, selected, width, rows }`: the rail as a path.
 - `RailList` `{ groups: [{ title?, items: [{ id, label, state, hint? }] }], selected, width }`:
-  the rail as a grouped list (recab, the guide).
+  the rail as a grouped list (the guide).
 - `Panel` `{ edge?, background?, facts?, keys?, width?, flexGrow?, marginBottom? }` and
   `Callout` `{ tone, title, facts?, keys? }`: verdicts and questions; `keys` are keycaps
   in the edge's colour (the yes-or-no), `facts` label and value rows.

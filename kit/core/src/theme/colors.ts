@@ -109,3 +109,43 @@ export function contrastRatio(a: string, b: string): number {
 	const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
 	return (light + 0.05) / (dark + 0.05);
 }
+
+/** Intents drawn quietly: they are for text on a pane's own surface, nowhere else. */
+const QUIET: readonly ColorIntent[] = ["dimText", "faintText", "info", "navItem", "navHeading"];
+
+/** The backgrounds that are a pane's own surface; every other background is a fill. */
+const SURFACES: readonly ColorIntent[] = [
+	"contentBackground",
+	"navBackground",
+	"footerBackground",
+	"panelBackground",
+];
+
+/** Contrast that counts as strong: a selected row or a label on a fill must have it. */
+export const STRONG_CONTRAST = 7;
+
+/**
+ * The intent `fg` text is drawn in over `bg`. Quiet text (muted, dim, faint) belongs on a
+ * pane's own surface only: over any fill (a selection bar, an accent, a raised bar, a
+ * badge) it is replaced by the first of a lighter secondary, the text colour and the text
+ * colour for fills that reads strongly on that fill, or the best of them. This is the one
+ * place the rule lives, so every app follows it in both palettes.
+ */
+export function legibleIntent(theme: TuiTheme, fg: ColorIntent, bg: ColorIntent): ColorIntent {
+	if (!QUIET.includes(fg) || SURFACES.includes(bg)) return fg;
+	const behind = parseHexColor(theme.colors[bg]);
+	if (!behind) return fg;
+	let best: ColorIntent = fg;
+	let bestRatio = 0;
+	for (const candidate of [fg, "info", "text", "onFill"] as const) {
+		const own = parseHexColor(theme.colors[candidate]);
+		if (!own) continue;
+		const ratio = contrastRatio(own, behind);
+		if (ratio >= STRONG_CONTRAST) return candidate;
+		if (ratio > bestRatio) {
+			best = candidate;
+			bestRatio = ratio;
+		}
+	}
+	return best;
+}
