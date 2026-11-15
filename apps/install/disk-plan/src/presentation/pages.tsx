@@ -263,15 +263,15 @@ const SYSTEM: Record<InstallMode, SlotCard> = {
 	ab: {
 		title: "A/B",
 		slots: [
-			{ label: "A", state: "running", running: true },
-			{ label: "B", state: "spare", running: false },
+			{ label: "A", state: "booted", running: true },
+			{ label: "B", state: "other", running: false },
 		],
 		text: "Two roots, A and B. The booted one is locked; changes go into the other, which is unlocked.",
 	},
 	mutable: {
 		title: "Mutable",
 		slots: [{ label: "root", state: "running", running: true }],
-		text: "One root you change in place. An update cannot be undone.",
+		text: "One root you change in place. There is no other root to start instead.",
 	},
 };
 
