@@ -2,7 +2,7 @@
 
 Interactive disk planning on top of `recpart`: choose a disk and mode, review the plan
 and the exact commands, pass the preflight, type the confirmation token, apply, and get
-the handoff. `install-hub` starts it on the live ISO.
+the handoff. You type `disk-plan` in the live terminal; it is an alternative to the manual commands, and the installation is not finished after it.
 
 ## Layout
 

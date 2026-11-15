@@ -1,13 +1,6 @@
 {
 	"schema": 1,
 	"steps": {
-		"preflight": {
-			"done_at": "2026-11-07T11:59:00.000Z",
-			"result": {
-				"uefi": true,
-				"media": true
-			}
-		},
 		"disk": {
 			"done_at": "2026-11-07T12:00:00.000Z",
 			"result": {

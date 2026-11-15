@@ -3,7 +3,7 @@
 The install's base step on top of `recstrap` and `recfstab`: check the target, copy the
 system onto it with a progress bar, review the fstab entries (and any lines already in
 the target's fstab they would replace), write them, and record the step in the install
-state file. `install-hub` starts it once the disk step is done; both distros' live ISOs ship it.
+state file. You type `base-system` in the live terminal after the disk step, as an alternative to the manual commands; both distros' live ISOs ship it.
 
 ## Layout
 

@@ -13,24 +13,23 @@
       Troubleshooting
                                  1  Boot the Live Environment
       Package Manager      ▸     Boot from the AcornOS ISO (see Getting Started
-      Helpers              ▸     (/docs/getting-started)). The install screen opens
-      Architecture         ▸     beside this guide. On the left, install-hub lists the
-      Rec Tooling          ▸     install steps and does each one: it starts disk-plan for
-                                 the disk and base-system for the base system, runs this
-                                 guide's commands for the boot loader, and opens a shell
-                                 for the rest (s at any time; exit returns). The commands
-                                 below work the same typed by hand. Ctrl-] switches
-                                 between the panes.
+      Helpers              ▸     (/docs/getting-started)). The install screen is a root
+      Architecture         ▸     terminal on the left and this guide on the right. Type
+      Rec Tooling          ▸     the commands in the terminal; Ctrl-] switches between
+                                 the panes. For each part of the install you choose one
+                                 way: a helper app, or the commands by hand.
 
                                  Secure Boot: AcornOS's boot files are unsigned. If your
                                  system won't boot the ISO, disable Secure Boot in your
                                  UEFI firmware settings.
 
                                  Verify you booted in UEFI mode
+                                   $ ls /sys/firmware/efi/efivars
+
+                                 If /sys/firmware/efi/efivars doesn't exist, you booted
 
 
 
 
   q  quit    Tab  switch pane    m  sidebar mode    h/l  prev/next page    [/]  prev/next section
   j/k  scroll content    space/b  scroll a page                                                            <masked>
-

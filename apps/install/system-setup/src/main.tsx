@@ -2,7 +2,6 @@
 import manifest from "../package.json";
 import { brandOf, distroOfOsRelease } from "@levitate/docs-content/brand";
 import { brandTheme, readOsRelease, runApp } from "@levitate/tui-kit";
-import { THEN_FLAG, type Then } from "@levitate/install-state";
 import { findTarget } from "./app/runner";
 import {
 	AGAIN_KEYS,
@@ -26,7 +25,6 @@ runApp({
 			value: "PATH",
 			help: "where the new system is mounted (default: the disk step's target from the install state file)",
 		},
-		THEN_FLAG,
 	],
 	notes: [
 		"Passwords are typed twice, shown as dots, and handed to recsetup on its standard input: they are never part of a command line and are not kept after the app ends.",
@@ -46,12 +44,6 @@ runApp({
 	],
 	run: (args) => {
 		const found = findTarget(typeof args.target === "string" ? args.target : "");
-		return (
-			<SetupScreen
-				target={found.target}
-				stateError={found.error}
-				then={(args.then as Then | undefined) ?? "shell"}
-			/>
-		);
+		return <SetupScreen target={found.target} stateError={found.error} />;
 	},
 });

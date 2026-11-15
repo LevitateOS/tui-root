@@ -924,8 +924,8 @@ export function DonePage({ session }: { session: Session }): ReactNode {
 			<Heading
 				glyph="check"
 				tone="success"
-				title="This machine is yours"
-				subtitle="It knows its keyboard, clock, language and name, and who may log in."
+				title="The system is configured"
+				subtitle="It knows its keyboard, clock, language and name, and who may log in. It is not bootable yet."
 			/>
 			{saved.kind === "failed" ? (
 				<Callout tone="warning" title="The step isn't recorded">
@@ -936,6 +936,12 @@ export function DonePage({ session }: { session: Session }): ReactNode {
 				</Callout>
 			) : null}
 			<MachineOf session={session} />
+			<Box marginTop={1}>
+				<UiText>
+					The installation is not finished. Next: the Boot step writes the boot files to the EFI
+					partition, then Finish checks the result. Both are in the guide.
+				</UiText>
+			</Box>
 		</Box>
 	);
 }

@@ -24,7 +24,6 @@ import {
 	type PageAction,
 	type PageNote,
 } from "@levitate/tui-kit";
-import { type Then } from "@levitate/install-state";
 import { guideSteps } from "@levitate/docs-content/install";
 import type { FstabResult } from "../generated/recstrap";
 import {
@@ -45,7 +44,6 @@ export function pageAction(
 	session: Session,
 	page: PageId,
 	prompt: Prompt | null,
-	then: Then,
 ): PageAction | PageNote | undefined {
 	const { target, check, copy, fstab, write, saved } = session;
 	const press = (label: string): PageAction => ({ label, key: "Enter" });
@@ -86,9 +84,7 @@ export function pageAction(
 		return press("Write the fstab");
 	}
 	if (saved?.kind === "ok" && write.kind === "ok") {
-		return then === "hub"
-			? press("Configure the system")
-			: { note: "next: configure the system, with the install guide" };
+		return { note: "the system is copied, not installed: next, configure it (system-setup)" };
 	}
 	return { note: "waits for the fstab to be written" };
 }
@@ -588,8 +584,12 @@ export function DonePage({ session }: { session: Session }): ReactNode {
 				</Callout>
 			)}
 			<CellRows grid={grid} />
-			<Box marginTop={1}>
+			<Box marginTop={1} flexDirection="column">
 				<UiText intent="dimText">{saved.kind === "ok" ? `Recorded in ${saved.path}.` : ""}</UiText>
+				<UiText>
+					The installation is not finished. Next: configure the system (system-setup), then the Boot
+					and Finish steps of the guide.
+				</UiText>
 			</Box>
 		</Box>
 	);

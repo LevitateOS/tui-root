@@ -3,7 +3,7 @@
 The install's configuration step on top of `recsetup`: read the new system, ask for the
 keyboard layout, time zone, language, hostname, root password and a user, show the exact
 commands recsetup would run, apply them after a yes, and record the step in the install
-state file. `install-hub` starts it once the base step is done; both distros' live ISOs
+state file. You type `system-setup` in the live terminal after the base step, as an alternative to the manual commands; both distros' live ISOs
 ship it.
 
 The keyboard comes first and is loaded on the live console (`loadkeys`) as soon as it is

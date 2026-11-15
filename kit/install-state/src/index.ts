@@ -1,6 +1,6 @@
 /**
  * The install's shared state file: what each finished step did, so the next step's app
- * reads it instead of asking again, the hub shows where the install stands, and a crashed
+ * reads it instead of asking again, and a crashed
  * app can resume. It lives under /run, so it lasts as long as the live session.
  *
  * The steps and their results are the install procedure's (`@levitate/docs-content/install`);
@@ -46,20 +46,10 @@ export function statePath(env: Record<string, string | undefined> = process.env)
 	return env[STATE_PATH_ENV]?.trim() || DEFAULT_STATE_PATH;
 }
 
-type Shape =
-	| "string"
-	| "string?"
-	| "number?"
-	| "true"
-	| "boolean"
-	| "mode"
-	| "mounts"
-	| "optional-string"
-	| "slots?";
+type Shape = "string" | "string?" | "number?" | "boolean" | "mode" | "mounts";
 
 /** The fields each step's result must have. */
 const SHAPES: { [S in RecordedStep]: { [K in keyof StepResults[S]]-?: Shape } } = {
-	preflight: { uefi: "true", media: "true" },
 	disk: {
 		disk: "string",
 		mode: "mode",
@@ -71,28 +61,16 @@ const SHAPES: { [S in RecordedStep]: { [K in keyof StepResults[S]]-?: Shape } } 
 	},
 	base: { target: "string", rootfs: "string?", entries: "number?", fstab: "string" },
 	setup: { manual: "boolean", hostname: "string?", user: "string?" },
-	boot: { mode: "mode", verified_slots: "slots?", generation: "optional-string" },
 };
 
 function fits(value: unknown, shape: Shape): boolean {
 	switch (shape) {
-		case "optional-string":
-			return value === undefined || (typeof value === "string" && value.length > 0);
-		case "slots?":
-			return (
-				value === undefined ||
-				(Array.isArray(value) &&
-					value.every((s) => s === "A" || s === "B") &&
-					new Set(value).size === value.length)
-			);
 		case "string":
 			return typeof value === "string" && value.length > 0;
 		case "string?":
 			return value === null || (typeof value === "string" && value.length > 0);
 		case "number?":
 			return value === null || (typeof value === "number" && Number.isFinite(value));
-		case "true":
-			return value === true;
 		case "boolean":
 			return typeof value === "boolean";
 		case "mode":
@@ -181,13 +159,3 @@ export function recordStep<S extends RecordedStep>(
 	renameSync(tmp, path);
 	return state;
 }
-
-/** Where a step app sends the user when its step is done: back to install-hub, or to the shell it was typed in. */
-export type Then = "hub" | "shell";
-/** The `--then` flag of a step app; install-hub passes `--then hub`. */
-export const THEN_FLAG = {
-	name: "then",
-	value: "WHERE",
-	choices: ["hub", "shell"],
-	help: "where the next step is started: hub (install-hub started this app) or shell (default)",
-} as const;

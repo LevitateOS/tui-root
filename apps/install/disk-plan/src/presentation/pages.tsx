@@ -40,7 +40,6 @@ import {
 import { describeSignature, known } from "../domain/recpart";
 import { DOCS, type DocsRef } from "../docs";
 import type { Saved } from "../app/install-state";
-import type { Then } from "@levitate/install-state";
 import { commands, MODE_NAME } from "@levitate/docs-content/install";
 import { DISK_CHANGED } from "../machine";
 import {
@@ -267,7 +266,7 @@ const SYSTEM: Record<InstallMode, SlotCard> = {
 			{ label: "A", state: "running", running: true },
 			{ label: "B", state: "spare", running: false },
 		],
-		text: "An update goes into the other slot and is tried once. If it does not start, it is never kept.",
+		text: "Two roots, A and B. The booted one is locked; changes go into the other, which is unlocked.",
 	},
 	mutable: {
 		title: "Mutable",
@@ -678,11 +677,9 @@ export function ApplyProgress({
 export function ResultHandoff({
 	apply,
 	saved,
-	then,
 }: {
 	apply: Run<ApplyResult>;
 	saved: Saved | null;
-	then: Then;
 }): ReactNode {
 	if (apply.kind !== "ok")
 		return (
@@ -707,7 +704,7 @@ export function ResultHandoff({
 			<BlankRow />
 			{slot ? (
 				<UiText intent="dimText">
-					{`Installing into slot ${slot}; slot ${handoff.mode_context.inactive_slot_hint} stays unmounted for updates.`}
+					{`Root ${slot} is mounted for the install; root ${handoff.mode_context.inactive_slot_hint} stays empty until you copy the system onto it.`}
 				</UiText>
 			) : null}
 			{saved?.kind === "ok" ? (
@@ -715,16 +712,16 @@ export function ResultHandoff({
 			) : saved?.kind === "failed" ? (
 				<Callout tone="warning" title={`Couldn't save the result to ${saved.path}`}>
 					<UiText intent="dimText">
-						{saved.message}. The next steps will ask for the target and the slots again.
+						{saved.message}. The next steps will ask for the target and the two roots again.
 					</UiText>
 				</Callout>
 			) : null}
-			{then === "hub" ? null : (
-				<>
-					<BlankRow />
-					<Commands lines={[commands.baseSystem()]} />
-				</>
-			)}
+			<BlankRow />
+			<UiText intent="dimText">
+				The disk is laid out and mounted; the system is not installed yet. Next step: copy the
+				system onto it.
+			</UiText>
+			<Commands lines={[commands.baseSystem()]} />
 		</Page>
 	);
 }

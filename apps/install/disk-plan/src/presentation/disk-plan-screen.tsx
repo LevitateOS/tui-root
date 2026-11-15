@@ -47,7 +47,6 @@ import {
 	writeLayout,
 } from "../app/plan-runner";
 import { saveDiskStep } from "../app/install-state";
-import type { Then } from "@levitate/install-state";
 import { diskChanged, start, step as advance, tokenFor } from "../machine";
 import { toLayout } from "../domain/layout";
 import {
@@ -113,15 +112,9 @@ type DiskPlanScreenProps = {
 	disk: string;
 	/** The mode the launcher passed (or recpart's default): preselected and marked "default". */
 	mode: InstallMode;
-	/** Where the user goes when the disk is ready. */
-	then: Then;
 };
 
-export function DiskPlanScreen({
-	disk: requestedDisk,
-	mode: defaultMode,
-	then,
-}: DiskPlanScreenProps) {
+export function DiskPlanScreen({ disk: requestedDisk, mode: defaultMode }: DiskPlanScreenProps) {
 	const { exit } = useApp();
 	// The rail gives way on a narrow terminal (the install screen's half), so pages keep
 	// room for their tables.
@@ -362,7 +355,7 @@ export function DiskPlanScreen({
 		"preflight-checks": () => <PreflightChecks session={session} />,
 		"destructive-confirm": () => <DestructiveConfirm session={session} />,
 		"apply-progress": () => <ApplyProgress apply={apply} dryRun={dryRun} />,
-		"result-handoff": () => <ResultHandoff apply={apply} saved={saved} then={then} />,
+		"result-handoff": () => <ResultHandoff apply={apply} saved={saved} />,
 		"failure-diagnostics": () => <FailureDiagnostics session={session} />,
 	};
 
@@ -437,7 +430,6 @@ export function DiskPlanScreen({
 						session,
 						contentFocus,
 						prompting,
-						handoff: then,
 					})}
 					content={
 						<Box
@@ -491,13 +483,11 @@ function action({
 	session,
 	contentFocus,
 	prompting,
-	handoff,
 }: {
 	view: PageId;
 	session: Session;
 	contentFocus: boolean;
 	prompting: boolean;
-	handoff: Then;
 }): PageAction | PageNote {
 	if (prompting) return { note: "Enter accepts, Esc cancels." };
 	if (view === "failure-diagnostics") return { note: "F or k goes back to the apply." };
@@ -515,12 +505,7 @@ function action({
 				? { note: "recpart is writing; wait for it.", intent: "warning" }
 				: { note: "j goes on, k goes back." };
 		case "result-handoff":
-			return {
-				note:
-					handoff === "hub"
-						? "q goes back to the install steps, which start the next one."
-						: "Run the command above to copy the system.",
-			};
+			return { note: "The disk is laid out, not installed. Next: base-system." };
 		default:
 			return { note: "j goes on, k goes back." };
 	}

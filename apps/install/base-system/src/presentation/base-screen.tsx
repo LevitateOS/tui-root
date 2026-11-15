@@ -31,16 +31,13 @@ import {
 import { CONFIRM_KEYS, MAIN_KEYS } from "./keymap";
 import { CheckPage, CopyPage, DonePage, FstabPage, OverviewPage, pageAction } from "./pages";
 import { useBase } from "./use-base";
-import type { Then } from "@levitate/install-state";
 
 export function BaseScreen({
 	target,
 	stateError,
-	then,
 }: {
 	target: Target | null;
 	stateError: string | null;
-	then: Then;
 }): ReactNode {
 	const { exit } = useApp();
 	const { columns } = useTuiViewport();
@@ -168,7 +165,7 @@ export function BaseScreen({
 				}
 				contentTitle={`${place(page)}${scroll.more}`}
 				progress={progress(session, page)}
-				action={pageAction(session, page, prompt, then)}
+				action={pageAction(session, page, prompt)}
 				content={
 					<Box
 						ref={pageHeight.ref}

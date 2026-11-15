@@ -20,8 +20,7 @@ import {
 	type PathStep,
 	type Progress,
 } from "@levitate/tui-kit";
-import type { Then } from "@levitate/install-state";
-import { guideTitle, STEP_INFO } from "@levitate/docs-content/install";
+import { guideTitle } from "@levitate/docs-content/install";
 import {
 	canLogIn,
 	FIELDS,
@@ -59,11 +58,9 @@ import { useSetup } from "./use-setup";
 export function SetupScreen({
 	target,
 	stateError,
-	then,
 }: {
 	target: Target | null;
 	stateError: string | null;
-	then: Then;
 }): ReactNode {
 	const { exit } = useApp();
 	const { columns } = useTuiViewport();
@@ -242,7 +239,7 @@ export function SetupScreen({
 				}
 				contentTitle={`${place(page)}${scroll.more}`}
 				progress={progress(session, page)}
-				action={actionOf(session, page, prompt !== null, target, then)}
+				action={actionOf(session, page, prompt !== null, target)}
 				content={
 					<Box
 						ref={pageHeight.ref}
@@ -264,7 +261,6 @@ function actionOf(
 	page: PageId,
 	asking: boolean,
 	target: Target | null,
-	then: Then,
 ): PageAction | PageNote | undefined {
 	const { inspect, apply, plan, answered } = session;
 	if (asking || !target) return undefined;
@@ -298,9 +294,7 @@ function actionOf(
 		return undefined;
 	}
 	if (session.saved?.kind === "ok" || session.saved?.kind === "failed") {
-		return then === "hub"
-			? { label: `Make it ${STEP_INFO.boot.title.toLowerCase()}`, key: "Enter" }
-			: { note: `Next: ${guideTitle("installation-boot")}.` };
+		return { note: `Not installed yet. Next: ${guideTitle("installation-boot")}, then Finish.` };
 	}
 	return undefined;
 }

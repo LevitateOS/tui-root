@@ -2,7 +2,6 @@
 import manifest from "../package.json";
 import { brandOf, distroOfOsRelease } from "@levitate/docs-content/brand";
 import { brandTheme, readOsRelease, runApp } from "@levitate/tui-kit";
-import { THEN_FLAG, type Then } from "@levitate/install-state";
 import { DEFAULT_INSTALL_MODE, INSTALL_MODES, type InstallMode } from "./generated/recpart";
 import { DiskPlanScreen } from "./presentation/disk-plan-screen";
 import {
@@ -30,7 +29,6 @@ runApp({
 			choices: INSTALL_MODES,
 			help: `install mode (default ${DEFAULT_INSTALL_MODE}): ${INSTALL_MODES.join(", ")}`,
 		},
-		THEN_FLAG,
 	],
 	keys: [
 		{ title: "Keys (every page)", keymap: GLOBAL_KEYS },
@@ -51,7 +49,6 @@ runApp({
 		<DiskPlanScreen
 			disk={typeof args.disk === "string" ? args.disk : ""}
 			mode={(args.mode as InstallMode | undefined) ?? DEFAULT_INSTALL_MODE}
-			then={(args.then as Then | undefined) ?? "shell"}
 		/>
 	),
 });
