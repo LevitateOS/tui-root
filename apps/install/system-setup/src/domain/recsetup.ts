@@ -27,8 +27,10 @@ export type TargetInfo = {
 	has_zoneinfo: boolean;
 	/** The shell of new users: root's login shell in the target. */
 	default_shell: string;
-	/** The base system, or the desktop system (whose user can log in by itself). */
-	flavour: "base" | "desktop";
+	/** The default software set this medium installs (recsetup's software step); empty: the base alone. */
+	default_set: string[];
+	/** The system has a desktop, or gets one from the default set (its user can log in by itself). */
+	desktop: boolean;
 };
 
 /** What the target offers to choose from. */

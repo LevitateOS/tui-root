@@ -351,7 +351,7 @@ export function useSetup(target: Target | null) {
 				error: "The two don't match. Type it again.",
 			});
 		if (prompt.who === "root") return settle("root", { rootPassword: prompt.first });
-		if (system.target.flavour === "desktop")
+		if (system.target.desktop)
 			return setPrompt({ kind: "autologin", name: prompt.name, password: prompt.first });
 		settle("user", { user: prompt.name, userPassword: prompt.first, autologin: false });
 	};
