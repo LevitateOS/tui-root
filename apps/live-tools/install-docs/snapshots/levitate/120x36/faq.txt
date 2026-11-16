@@ -10,27 +10,26 @@
    ARCHITECTURE                  Design decisions and rationale behind LevitateOS
 ▌  ●  Architecture FAQ           components. Each answer explains why we chose a
       How We Compare             particular approach over alternatives.
-      Atomic Updates (A/B)
+      A/B Roots
       Variants                   Core Philosophy
                                  Q
       Rec Tooling          ▸       What is LevitateOS and why does it exist?
                                  A
-                                   LevitateOS is a daily driver Linux distribution
-                                   competing directly with Arch Linux. It borrows Arch's
-                                   philosophy (you maintain your own packages on a
-                                   minimal base) but takes its core system (glibc,
+                                   LevitateOS is an independent operating system for
+                                   daily use, competing directly with Arch Linux. It
+                                   borrows Arch's philosophy (you maintain your own
+                                   packages on a minimal base). Its userland (glibc,
                                    systemd, coreutils, OpenSSH and the rest of a minimal
-                                   base) pre-built from Fedora instead of compiling it,
-                                   and it updates atomically: A/B slots by default, with
-                                   a trial boot before each update is kept.
+                                   base) is built from Fedora 45 RPM packages instead of
+                                   being compiled, and it keeps two root filesystems, A
+                                   and B: the booted one is locked and changes are made
+                                   in the other.
                                    Dimension   Arch Linux          LevitateOS
                                    Target      Power users         Same
                                    User        seeking control
-                                   Philosophy  Minimal base, user  Same
 
 
 
 
   q  quit    Tab  switch pane    m  sidebar mode    h/l  prev/next page    [/]  prev/next section
   j/k  scroll content    space/b  scroll a page                                                           <masked>
-

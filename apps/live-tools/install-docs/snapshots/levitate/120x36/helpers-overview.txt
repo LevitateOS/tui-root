@@ -14,23 +14,22 @@
       Filesystem Helpers         during setup and ctx.runtime in hooks.
       Environment Helpers
       Command Helpers            Where Helpers Run
-      HTTP Helpers               Every helper with an effect runs inside the recipe's
-      Path Helpers               Ginux domain, under its filesystem, task, memory and
-                                 network limits. Paths refer to the domain's filesystem:
-      Architecture         ▸     /inputs, /work/build, /work/tools, /work/tmp and /out.
-      Rec Tooling          ▸     Commands need their binaries in the selected image or in
-                                 dependency tools. Network helpers need an endpoint
-                                 declared in NEEDS.network. Caller endpoint/limit options
-                                 only narrow that authority, including dependencies.
-                                 Declare all imported inputs and returned outputs with
-                                 their kinds.
+      HTTP Helpers               A recipe that starts no program runs on the host, where
+      Path Helpers               helpers reach only the run's own folders (spelled with
+                                 RUNTIME.paths) and the hosts in NEEDS.network. Any other
+      Architecture         ▸     recipe runs inside its Ginux domain, under its
+      Rec Tooling          ▸     filesystem, task, memory and network limits, where paths
+                                 refer to the domain's filesystem: /inputs, /work/build,
+                                 /work/tools, /work/tmp and /out. Commands need their
+                                 binaries in the selected image or in dependency tools.
+                                 Network helpers need an endpoint declared in
+                                 NEEDS.network. Caller endpoint/limit options only narrow
+                                 that authority, including dependencies. Declare all
+                                 imported inputs and returned outputs with their kinds.
 
-                                 A helper that fails throws, and the error fails the
-                                 phase unless the recipe handles it. Readiness checks
 
 
 
 
   q  quit    Tab  switch pane    m  sidebar mode    h/l  prev/next page    [/]  prev/next section
   j/k  scroll content    space/b  scroll a page                                                           <masked>
-
