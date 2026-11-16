@@ -20,3 +20,4 @@
   Enter  open link / copy    c/y  copy
   space/b  scroll a page    g/home  top
   G/end  end               <masked>
+
