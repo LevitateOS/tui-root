@@ -504,7 +504,7 @@ export function PartitionEditorPage({
 const ROLE_SHORT: Partial<Record<string, string>> = {
 	efi: "EFI",
 	root: "System",
-	root_a: "Slot A",
-	root_b: "Slot B",
+	root_a: "Root A",
+	root_b: "Root B",
 	state: "State",
 };

@@ -191,11 +191,11 @@ export type LayoutRequest = {
 	 */
 	root_size_mb: number | null;
 	/**
-	 * A/B slot A partition size in MiB (ab mode only)
+	 * A/B root A partition size in MiB (ab mode only)
 	 */
 	root_a_size_mb: number | null;
 	/**
-	 * A/B slot B partition size in MiB (ab mode only)
+	 * A/B root B partition size in MiB (ab mode only)
 	 */
 	root_b_size_mb: number | null;
 	/**
@@ -406,9 +406,9 @@ export const ROLE_HELP = {
 	home: "/home (ext4)",
 	other: "Mounted at the action's `mountpoint`",
 	root: "The one root of a mutable install, at / (ext4)",
-	root_a: "A/B root slot A, installed now and mounted at / (ext4)",
+	root_a: "A/B root A, installed now and mounted at / (ext4)",
 	root_b:
-		"A/B root slot B, a copy of A once installed: the unlocked other root while A is booted (ext4)",
+		"A/B root B, a copy of A once installed: the unlocked other root while A is booted (ext4)",
 	state: "The persistent /var: the A/B state partition, or a mutable install's own /var (ext4)",
 	swap: "A swap partition, activated with swapon",
 } as const;

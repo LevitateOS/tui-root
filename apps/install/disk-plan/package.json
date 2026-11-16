@@ -300,7 +300,7 @@
 						},
 						{
 							"keys": "",
-							"expect": "Slot A   new"
+							"expect": "Root A   new"
 						},
 						{
 							"keys": "\\rjjj",
