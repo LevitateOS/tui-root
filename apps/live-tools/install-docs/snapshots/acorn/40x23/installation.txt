@@ -11,7 +11,7 @@
   AcornOS from the live environment.
 
 
-    Open Atomic Updates (…    Enter
+    Open Boot & Finish        Enter
 
 
  1/7    q  quit    Tab  switch pane
@@ -20,4 +20,3 @@
   Enter  open link / copy    c/y  copy
   space/b  scroll a page    g/home  top
   G/end  end               <masked>
-

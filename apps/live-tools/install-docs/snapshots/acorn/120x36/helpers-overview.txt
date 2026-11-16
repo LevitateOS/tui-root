@@ -8,19 +8,19 @@
 
    HELPERS
 ▌  ●  Helpers Overview           Functions available in recipe scripts
-      Acquire Helpers            (/docs/recipe-format) with const RECIPE_API = 2; and a
+      Acquire Helpers            (/docs/recipe-format) with const RECIPE_API = 1; and a
       Build Helpers              literal NEEDS declaration. Helpers take explicit paths
-      Install Helpers            and return explicit results; paths come from RUNTIME
-      Filesystem Helpers         during setup and ctx.runtime in hooks.
-      Environment Helpers
-      Command Helpers            Where Helpers Run
-      HTTP Helpers               A recipe that starts no program runs on the host, where
-      Path Helpers               helpers reach only the run's own folders (spelled with
-                                 RUNTIME.paths) and the hosts in NEEDS.network. Any other
-      Architecture         ▸     recipe runs inside its Ginux domain, under its
-      Rec Tooling          ▸     filesystem, task, memory and network limits, where paths
-                                 refer to the domain's filesystem: /inputs, /work/build,
-                                 /work/tools, /work/tmp and /out. Commands need their
+      Install Helpers            and return explicit results; paths come from the
+      Filesystem Helpers         arguments of build(src, out) and from the engine
+      Environment Helpers        constants WORK, INPUTS and DEPS.
+      Command Helpers
+      HTTP Helpers               Where Helpers Run
+      Path Helpers               A recipe that starts no program runs on the host, where
+                                 helpers reach only the run's own folders (src, out,
+      Architecture         ▸     WORK, INPUTS) and the hosts in NEEDS.network. Any other
+      Rec Tooling          ▸     recipe runs inside its Ginux domain, under its
+                                 filesystem, task, memory and network limits, where paths
+                                 refer to the domain's filesystem. Commands need their
                                  binaries in the selected image or in dependency tools.
                                  Network helpers need an endpoint declared in
                                  NEEDS.network. Caller endpoint/limit options only narrow

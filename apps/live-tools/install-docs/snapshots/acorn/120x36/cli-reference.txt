@@ -20,13 +20,13 @@
 
                                  Commands
                                  Command                  Behavior
-                                 recipe install RECIPE    Run necessary
-                                                          acquire/build/install work,
+                                 recipe download RECIPE   The download step only: fetch
+                                                          the sources and pins into the
+                                                          download store.
+                                 recipe build RECIPE      Download what is missing, then
+                                                          build. Does not install.
+                                 recipe install RECIPE    Run every missing step,
                                                           publish outputs and activate a
-                                                          declared package directory.
-                                                          --no-activate keeps
-                                                          producer-only behavior.
-                                 recipe isinstalled       Check the active package
 
 
 
