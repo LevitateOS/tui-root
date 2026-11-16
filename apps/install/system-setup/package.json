@@ -112,7 +112,7 @@
 						},
 						{
 							"keys": "y",
-							"expect": "This machine is yours"
+							"expect": "The system is configured"
 						}
 					]
 				},
