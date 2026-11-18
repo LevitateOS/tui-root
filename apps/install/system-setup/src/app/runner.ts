@@ -37,6 +37,14 @@ export function requestOf(answers: Answers): Request {
 	};
 }
 
+/** The folder given with `--parts-from`: the software step reads the release's package parts
+ * from it instead of the network. Empty: download them. */
+let partsFrom = "";
+
+export function setPartsFrom(dir: string): void {
+	partsFrom = dir;
+}
+
 function requestArgs(request: Request): string[] {
 	return [
 		...(request.timezone ? ["--timezone", request.timezone] : []),
@@ -46,6 +54,7 @@ function requestArgs(request: Request): string[] {
 		...(request.rootPassword ? ["--root-password"] : []),
 		...(request.user ? ["--user", request.user] : []),
 		...(request.autologin ? ["--autologin", request.autologin] : []),
+		...(partsFrom ? ["--parts-from", partsFrom] : []),
 	];
 }
 

@@ -73,6 +73,12 @@ recsetup owns every rule: a typed hostname or user name is checked by planning i
 the app shows recsetup's message and fix. This app owns the order of the questions and
 shows every command before it runs.
 
+On the release medium recsetup's first step fetches the release's package parts (a download of
+some GiB, `recupdate fetch-parts`). A failed fetch shows recsetup's output: the parts still
+missing with their sizes and the way forward. Without a network, start the app with
+`--parts-from DIR` (a folder holding `release.json`, `release.json.sig` and the
+`parts-*.tar.zst` files) and the step reads them from there.
+
 Run it with `cargo xtask tui system-setup`; `--help` lists flags and keys. Headless runs
 use `fixtures/recsetup` and `fixtures/loadkeys`, stand-ins that print the tool's JSON and
 touch nothing; their header comments list the failures they can play.

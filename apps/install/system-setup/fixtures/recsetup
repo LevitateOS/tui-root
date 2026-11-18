@@ -4,6 +4,9 @@
 # system at ROOT; RECSETUP_FIXTURE selects:
 #   no-system    inspect fails: ROOT holds no system built by the builder (E029)
 #   apply-fails  apply stops at the user step (E022); the steps after it are not run
+#   parts-missing  (RECSETUP_FLAVOUR=desktop) apply stops at the step that fetches the
+#                release's package parts (E022), whose output lists the missing parts and the way
+#                forward (the network, or --parts-from DIR); a run given --parts-from succeeds
 # RECSETUP_FLAVOUR=desktop makes it the release medium, which installs the default software
 # set into ROOT (default: base, a medium without one): it plans the software step first,
 # asks whether the user logs in by itself and plans the desktop's steps.
@@ -11,7 +14,7 @@
 # does (E030). Keep the JSON in the shape of recsetup's documents (src/domain/recsetup.ts).
 cmd=$1
 [ $# -gt 0 ] && shift
-root=/mnt tz= locale= keymap= hostname= user= rootpw= stdin= autologin=
+root=/mnt tz= locale= keymap= hostname= user= rootpw= stdin= autologin= partsfrom=
 flavour=${RECSETUP_FLAVOUR:-base}
 default_set='[]' desktop=false
 [ "$flavour" = desktop ] && default_set='["plasma","konsole","firefox","network","rec-apps"]' desktop=true
@@ -24,6 +27,7 @@ while [ $# -gt 0 ]; do
 	--hostname) hostname=$2 && shift 2 ;;
 	--user) user=$2 && shift 2 ;;
 	--autologin) autologin=$2 && shift 2 ;;
+	--parts-from) partsfrom=$2 && shift 2 ;;
 	--root-password) rootpw=1 && shift ;;
 	--passwords-stdin) stdin=1 && shift ;;
 	--json) shift ;;
@@ -69,23 +73,33 @@ case "$user" in *[!a-z0-9_-]* | [0-9-]*) fail E030 30 "'$user' is not a valid us
 
 status=planned
 [ "$cmd" = apply ] && status=done
-steps= index=0 failed=
+steps= index=0 failed= failmsg=
 step() { # section description command
 	state=$status
+	stderr="useradd: cannot lock /etc/passwd; try again later.\\n"
 	if [ "$cmd" = apply ] && [ -n "$failed" ]; then
 		state=not_run
 	elif [ "$cmd" = apply ] && [ "$RECSETUP_FIXTURE" = apply-fails ] && [ "$1" = users ]; then
-		state=failed failed=1
+		state=failed failed=1 failmsg="'Create user $user' failed with exit status 9"
+	elif [ "$cmd" = apply ] && [ "$RECSETUP_FIXTURE" = parts-missing ] && [ -z "$partsfrom" ] && [ "$1" = fetch ]; then
+		state=failed failed=1 failmsg="'Fetch the default software set's package parts' failed with exit status 9"
+		stderr="cannot reach https://github.com/LevitateOS/releases/releases/download/levitateos-7/release.json\\nThe list of parts could not be read either: cannot reach https://github.com/LevitateOS/releases/releases/download/levitateos-7/release.json. Way forward: connect this live session to the network (NetworkManager is running; use the network icon in the panel or nmtui), or give the folder that holds the release's parts (release.json, release.json.sig and the parts-*.tar.zst files) with --parts-from DIR, then run the same command again. Parts already fetched are kept.\\n"
 	fi
+	[ "$1" = fetch ] && set -- software "$2" "$3"
 	extra=
 	[ "$cmd" = apply ] && extra=",\"status\":\"$state\""
 	[ "$state" = done ] && extra="$extra,\"exit_status\":0,\"stdout\":\"\",\"stderr\":\"\""
-	[ "$state" = failed ] && extra="$extra,\"exit_status\":9,\"stdout\":\"\",\"stderr\":\"useradd: cannot lock /etc/passwd; try again later.\\n\""
+	[ "$state" = failed ] && extra="$extra,\"exit_status\":9,\"stdout\":\"\",\"stderr\":\"$stderr\""
 	steps="$steps${steps:+,}{\"index\":$index,\"section\":\"$1\",\"description\":\"$2\",\"command\":\"$3\"$extra}"
 	index=$((index + 1))
 }
 setup=/usr/libexec/recipe-system-setup
-[ "$flavour" = desktop ] && step software "Install the default software set through Recipe (5 recipes), offline from this medium" "recipe --system --root $root --recipes-path /usr/lib/recsetup/default-set/recipes install plasma konsole firefox network rec-apps"
+parts=$root/var/tmp/recipe-parts
+fromflag=
+[ -n "$partsfrom" ] && fromflag=" --from $partsfrom"
+[ "$flavour" = desktop ] && step fetch "Fetch the default software set's package parts (from the network, or the folder given with --parts-from) into the target disk" "RECUPDATE_CACHE_DIR=$parts/download RECUPDATE_RECIPE_CACHE_DIR=$parts/cache recupdate fetch-parts$fromflag"
+[ "$flavour" = desktop ] && step software "Install the default software set through Recipe (5 recipes), from the fetched package parts" "RECIPE_CACHE_DIR=$parts/cache recipe --system --root $root --recipes-path /usr/lib/recsetup/default-set/recipes install plasma konsole firefox network rec-apps"
+[ "$flavour" = desktop ] && step software "Remove the fetched package parts from the target disk" "rm -rf --one-file-system $parts"
 [ -n "$tz" ] && step timezone "Set the time zone to $tz" "recchroot $root -- $setup timezone $tz"
 [ -n "$locale" ] && step locale "Set the system locale to $locale" "recchroot $root -- $setup locale $locale"
 [ -n "$keymap" ] && step keymap "Set the console keymap to $keymap" "recchroot $root -- $setup keymap $keymap"
@@ -108,7 +122,7 @@ if [ "$cmd" = plan ]; then
 fi
 [ -n "$stdin" ] && cat >/dev/null
 if [ -n "$failed" ]; then
-	printf '%s\n' "{\"schema_version\":1,\"dry_run\":false,\"target\":$target,\"steps\":[$steps],\"warnings\":[],\"error\":{\"schema_version\":1,\"code\":\"E022\",\"message\":\"'Create user $user' failed with exit status 9\"}}"
-	fail E022 22 "'Create user $user' failed with exit status 9" "fix what the step's output says, then apply again"
+	printf '%s\n' "{\"schema_version\":1,\"dry_run\":false,\"target\":$target,\"steps\":[$steps],\"warnings\":[],\"error\":{\"schema_version\":1,\"code\":\"E022\",\"message\":\"$failmsg\"}}"
+	fail E022 22 "$failmsg" "fix what the step's output says, then apply again"
 fi
 printf '%s\n' "{\"schema_version\":1,\"dry_run\":false,\"target\":$target,\"steps\":[$steps],\"warnings\":[],\"error\":null}"

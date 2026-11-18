@@ -2,7 +2,7 @@
 import manifest from "../package.json";
 import { brandOf, distroOfOsRelease } from "@levitate/docs-content/brand";
 import { brandTheme, readOsRelease, runApp } from "@levitate/tui-kit";
-import { findTarget } from "./app/runner";
+import { findTarget, setPartsFrom } from "./app/runner";
 import {
 	AGAIN_KEYS,
 	CONFIRM_KEYS,
@@ -25,6 +25,11 @@ runApp({
 			value: "PATH",
 			help: "where the new system is mounted (default: the disk step's target from the install state file)",
 		},
+		{
+			name: "parts-from",
+			value: "DIR",
+			help: "a folder holding the release's package parts (release.json, release.json.sig and parts-*.tar.zst) for the software step, when this system has no network",
+		},
 	],
 	notes: [
 		"Passwords are typed twice, shown as dots, and handed to recsetup on its standard input: they are never part of a command line and are not kept after the app ends.",
@@ -43,6 +48,7 @@ runApp({
 		{ title: "Keys (before the configuration is applied)", keymap: CONFIRM_KEYS },
 	],
 	run: (args) => {
+		setPartsFrom(typeof args["parts-from"] === "string" ? args["parts-from"] : "");
 		const found = findTarget(typeof args.target === "string" ? args.target : "");
 		return <SetupScreen target={found.target} stateError={found.error} />;
 	},
